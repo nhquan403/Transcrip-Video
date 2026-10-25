@@ -1,0 +1,244 @@
+1
+00:00:00,000 --> 00:00:06,000
+Welcome to the first lesson. Workflow and agent are very different things. One runs on fixed code
+
+2
+00:00:06,000 --> 00:00:12,000
+paths that you write. The other lets the model decide its next move at runtime. Knowing which
+
+3
+00:00:12,000 --> 00:00:18,000
+one a job needs is the first design call that you'll make. Let's dive in. So what's the actual
+
+4
+00:00:18,000 --> 00:00:25,000
+line between a workflow and an agent? In a workflow, you write the control flow. The steps run
+
+5
+00:00:25,000 --> 00:00:31,000
+in a fixed order you laid out in code, and the model just fills in each step. In an agent,
+
+6
+00:00:31,000 --> 00:00:38,000
+the model itself decides what to do next. It reasons, calls a tool, looks at the result,
+
+7
+00:00:38,000 --> 00:00:44,000
+and chooses the following action in a loop until the job is done. The tell isn't whether tools get
+
+8
+00:00:44,000 --> 00:00:50,000
+used. Both use tools. The real question is who owns the next decision. If your code owns it,
+
+9
+00:00:50,000 --> 00:00:57,000
+that's a workflow. If the model owns it at runtime, that's an agent. Before you reach for
+
+10
+00:00:57,000 --> 00:01:03,000
+either one, know the building block they share. Anthropic calls it the augmented language model,
+
+11
+00:01:03,000 --> 00:01:08,000
+and it's just the model enhanced with a few capabilities. The first is retrieval, pulling
+
+12
+00:01:08,000 --> 00:01:15,000
+in relevant context so the model answers from real information instead of guessing. The second
+
+13
+00:01:15,000 --> 00:01:21,000
+is tools, letting the model take actions like querying a database or calling a service. The
+
+14
+00:01:21,000 --> 00:01:28,000
+third is memory, so it can carry state across a task. Most of the time, a single call with good
+
+15
+00:01:28,000 --> 00:01:33,000
+retrieval and a couple of examples already solves the problem. Start there. You build agents and
+
+16
+00:01:33,000 --> 00:01:39,000
+workflows on top of this block, not instead of it. Here's the mental model I want you to keep.
+
+17
+00:01:40,000 --> 00:01:46,000
+Every agentic system sits somewhere on one axis, and that axis is control. On one end,
+
+18
+00:01:46,000 --> 00:01:52,000
+your code decides the order of operations. You can read the whole path in your source,
+
+19
+00:01:52,000 --> 00:01:58,000
+top to bottom. On the other end, the model decides the order at runtime based on what it sees as it
+
+20
+00:01:58,000 --> 00:02:06,000
+goes. That single difference drives everything else. A fixed path is predictable and easy to test
+
+21
+00:02:06,000 --> 00:02:11,000
+because it does the same thing every time. A model-driven path is flexible because it can
+
+22
+00:02:11,000 --> 00:02:17,000
+adapt to inputs you didn't anticipate. When you sketch a design, ask where on that line it should
+
+23
+00:02:17,000 --> 00:02:24,000
+sit and why. Anthropic's guidance here is refreshingly blunt. Find the simplest solution
+
+24
+00:02:24,000 --> 00:02:31,000
+that works and only add complexity when it clearly improves the outcome. That matters because agents
+
+25
+00:02:31,000 --> 00:02:37,000
+are the expensive option. Every extra turn spends tokens and adds latency, so you don't
+
+26
+00:02:37,000 --> 00:02:42,000
+want that machinery unless the task genuinely needs it. A surprising number of real problems
+
+27
+00:02:42,000 --> 00:02:48,000
+are solved by one well-crafted model, call with retrieval, and a couple of examples. No loop,
+
+28
+00:02:48,000 --> 00:02:54,000
+no orchestration. So resist the urge to build the impressive thing first. Start with the plainest
+
+29
+00:02:54,000 --> 00:03:01,000
+design that could work, measure it, and only climb the complexity ladder when the results demand it.
+
+30
+00:03:01,000 --> 00:03:08,000
+Simple is a feature, not a compromise. So when is an agent actually the right call? Three signals
+
+31
+00:03:08,000 --> 00:03:14,000
+point that way, and you usually want more than one before you commit. The first is an open-ended
+
+32
+00:03:14,000 --> 00:03:21,000
+space where the task can unfold in many directions you can't enumerate up front. The second is
+
+33
+00:03:21,000 --> 00:03:27,000
+unknown steps where you genuinely can't predict how many actions the job will take. The third is
+
+34
+00:03:27,000 --> 00:03:32,000
+when the model chooses tools, when part of the value is letting it pick which tool to use and
+
+35
+00:03:32,000 --> 00:03:39,000
+when. If a request has a bounded knowable path, none of these fire and a workflow will serve you
+
+36
+00:03:39,000 --> 00:03:46,000
+better. When two or three light up together, that's your cue to build an agent. When a feature request
+
+37
+00:03:46,000 --> 00:03:52,000
+lands on your desk, run the cheap test first. Ask whether a deterministic workflow could handle it
+
+38
+00:03:52,000 --> 00:03:58,000
+before you reach for a loop. Can you write the steps out in order? Does the same input always
+
+39
+00:03:58,000 --> 00:04:04,000
+take the same path? If yes, a workflow is almost certainly enough, and you'll get predictability
+
+40
+00:04:04,000 --> 00:04:10,000
+for free. There are three classic shapes to reach for here, and we'll name them next. The point is
+
+41
+00:04:10,000 --> 00:04:16,000
+that a lot of work that feels agent-shaped is really just a fixed sequence of model calls
+
+42
+00:04:16,000 --> 00:04:22,000
+with some glue code. Prove the workflow can't do the job before you pay for an agent.
+
+43
+00:04:22,000 --> 00:04:29,000
+That order saves you cost and headaches. Three workflow shapes cover most deterministic designs,
+
+44
+00:04:29,000 --> 00:04:35,000
+and knowing them keeps you from overbuilding. Prompt chaining breaks a task into a fixed
+
+45
+00:04:35,000 --> 00:04:40,000
+sequence where each model call works on the previous output. You can even add a simple
+
+46
+00:04:40,000 --> 00:04:47,000
+check between steps to catch problems early. Routing classifies an incoming request and sends
+
+47
+00:04:47,000 --> 00:04:53,000
+it to the handler built for that case, like sorting support tickets by type. Parallelization
+
+48
+00:04:53,000 --> 00:04:59,000
+runs independent pieces at the same time, either splitting a job into sections or running the same
+
+49
+00:04:59,000 --> 00:05:06,000
+task a few times and comparing results. In all three, you defined the structure. The model fills
+
+50
+00:05:06,000 --> 00:05:11,000
+in the reasoning, but your code still owns the path, which is exactly what makes them predictable.
+
+51
+00:05:12,000 --> 00:05:17,000
+Let's put the decision into one clean habit. Start by writing the task down as a sequence
+
+52
+00:05:17,000 --> 00:05:23,000
+of steps. If you can, and the path is stable, build the workflow and stop there. If you find
+
+53
+00:05:23,000 --> 00:05:29,000
+yourself unable to enumerate the steps or the request keeps branching in ways you can't script,
+
+54
+00:05:29,000 --> 00:05:34,000
+that's when an agent earns its keep, and you don't have to pick one for the whole system.
+
+55
+00:05:34,000 --> 00:05:41,000
+A common, powerful design wraps a small agent inside a single workflow stage, so the deterministic
+
+56
+00:05:41,000 --> 00:05:47,000
+parts stay deterministic, and the model only drives where real flexibility is needed. Match
+
+57
+00:05:47,000 --> 00:05:52,000
+the design to the task in front of you, not to the architecture you wish you were building.
+
+58
+00:05:53,000 --> 00:06:01,000
+Let's recap. A workflow runs on fixed paths you write in the code. An agent lets the model choose
+
+59
+00:06:01,000 --> 00:06:06,000
+the next step at runtime. Keep in mind that using tools does not make something an agent,
+
+60
+00:06:06,000 --> 00:06:13,000
+it's about who owns the next decision. And that covers when to build an agent versus a workflow.
+
+61
+00:06:13,000 --> 00:06:14,000
+I'll see you in the next lesson.
+

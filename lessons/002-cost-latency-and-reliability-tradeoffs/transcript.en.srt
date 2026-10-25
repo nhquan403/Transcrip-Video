@@ -1,0 +1,256 @@
+1
+00:00:00,000 --> 00:00:07,000
+Welcome back. Every extra turn an agent loop takes costs more tokens, adds latency, and gives errors
+
+2
+00:00:07,000 --> 00:00:13,000
+another chance to compound. Reach for that power only when you need it, and don't pay for it when
+
+3
+00:00:13,000 --> 00:00:18,000
+you don't need it. This lesson covers the trade-offs you weigh before you build. Let's break it down.
+
+4
+00:00:19,000 --> 00:00:25,000
+When you weigh an agent against a workflow, it comes down to three axes. The first is latency.
+
+5
+00:00:25,000 --> 00:00:31,000
+A loop makes several model calls in sequence, so a user waits longer than they would for a single
+
+6
+00:00:31,000 --> 00:00:38,000
+response. The second is token cost. Every turn resends the growing context, so the bill climbs
+
+7
+00:00:38,000 --> 00:00:44,000
+with each step the agent takes. The third is task performance. This is what you're buying with the
+
+8
+00:00:44,000 --> 00:00:51,000
+other two. The model's ability to adapt, handle messier inputs, and reach outcomes a rigid script
+
+9
+00:00:51,000 --> 00:00:58,000
+couldn't. Anthropic frames it plainly. Agentic systems trade latency and cost for better task
+
+10
+00:00:58,000 --> 00:01:04,000
+performance. The whole decision is deciding whether that trade pays off for the job in front of you.
+
+11
+00:01:05,000 --> 00:01:11,000
+Here's the core trade-off stated as a straight comparison. A deterministic workflow gives you
+
+12
+00:01:11,000 --> 00:01:18,000
+predictability and consistency. It's cheaper, it's faster, and it does the same thing on every run,
+
+13
+00:01:18,000 --> 00:01:25,000
+which makes it easy to test and easy to trust. A model-driven agent gives you flexibility. It
+
+14
+00:01:25,000 --> 00:01:33,000
+handles tasks you couldn't fully script, and it adapts when inputs surprise you. But that autonomy
+
+15
+00:01:33,000 --> 00:01:39,000
+costs more, runs slower, and opens the door to mistakes the workflow would never make.
+
+16
+00:01:40,000 --> 00:01:46,000
+Neither one is better in the abstract. The workflow wins when the task is well defined.
+
+17
+00:01:46,000 --> 00:01:53,000
+The agent wins when flexibility and runtime decision-making genuinely matter at scale.
+
+18
+00:01:53,000 --> 00:01:58,000
+Your job is matching the shape to the problem, not defaulting to the fancier one.
+
+19
+00:01:59,000 --> 00:02:05,000
+Let's make the cost concrete because it surprises people. In a single call, you pay for one prompt
+
+20
+00:02:05,000 --> 00:02:12,000
+and one response. In an agent loop, the context doesn't reset between turns. Everything accumulates.
+
+21
+00:02:12,000 --> 00:02:19,000
+The original instructions, every tool call, and every result the model has seen so far. So turn
+
+22
+00:02:19,000 --> 00:02:26,000
+5 is carrying the weight of turns 1 through 4, and you pay for all of it again on each pass. Large
+
+23
+00:02:26,000 --> 00:02:33,000
+tool outputs are the biggest driver here. Dump a giant document into the loop, and it rides along
+
+24
+00:02:33,000 --> 00:02:40,000
+in every future turn. Latency stacks the same way, since each turn is another round trip to the model.
+
+25
+00:02:40,000 --> 00:02:47,000
+More turns means more money and more waiting. So where does the extra cost actually come from?
+
+26
+00:02:47,000 --> 00:02:53,000
+Four places worth naming. More turns because the loop keeps calling the model until the task is
+
+27
+00:02:53,000 --> 00:02:59,000
+done, and each call is billable. Bigger context because every turn carries the full growing
+
+28
+00:02:59,000 --> 00:03:05,000
+history, so later turns are the most expensive ones. Compounding errors because a wrong step
+
+29
+00:03:05,000 --> 00:03:11,000
+early on feeds into every step after it, and the model builds on its own mistake. And slower
+
+30
+00:03:11,000 --> 00:03:18,000
+responses because sequential round trips add up into real wall clock time your user feels. None
+
+31
+00:03:18,000 --> 00:03:23,000
+of these are deal breakers. They're just the price of admission, and you should know you're paying it
+
+32
+00:03:23,000 --> 00:03:29,000
+before you commit to the loop. Compounding errors deserve their own moment because they're the
+
+33
+00:03:29,000 --> 00:03:36,000
+sneakiest cost. In a workflow, if a step misfires, it fails in a spot you can see, and your code can
+
+34
+00:03:36,000 --> 00:03:42,000
+catch it. In an agent, a small early mistake becomes an input to the next decision. The model
+
+35
+00:03:42,000 --> 00:03:48,000
+treats its own flawed output as fact and reasons forward from there. By a few turns later, it can
+
+36
+00:03:48,000 --> 00:03:55,000
+be confidently far off track with no obvious point of failure. This is why longer autonomous runs
+
+37
+00:03:55,000 --> 00:04:00,000
+carry more risk than short ones. The more steps the model takes without a checkpoint, the more
+
+38
+00:04:00,000 --> 00:04:05,000
+room a single wrong turn has to snowball. Bounding the loop and checking its work is how you keep
+
+39
+00:04:05,000 --> 00:04:12,000
+that in check. So what do you get by staying with a workflow? Three things that matter a lot
+
+40
+00:04:12,000 --> 00:04:18,000
+in production. Predictability because a fixed path produces the same behavior every run,
+
+41
+00:04:18,000 --> 00:04:24,000
+so you can reason about what will happen before it does. Auditability because you can trace exactly
+
+42
+00:04:24,000 --> 00:04:30,000
+which step ran in what order and why, which is priceless when something breaks, or a stakeholder
+
+43
+00:04:30,000 --> 00:04:37,000
+asks what happened. And consistency because there's no runtime improvisation to drift between calls.
+
+44
+00:04:37,000 --> 00:04:42,000
+These are the quiet advantages that don't show up in a demo but decide whether a system is
+
+45
+00:04:42,000 --> 00:04:48,000
+trustworthy at scale. When reliability is the priority, a deterministic design isn't the boring
+
+46
+00:04:48,000 --> 00:04:55,000
+choice. It's the correct one, and I'd reach for it first. Here's a habit that saves real pain.
+
+47
+00:04:55,000 --> 00:05:00,000
+When a problem could plausibly be either, build and validate the workflow version first.
+
+48
+00:05:00,000 --> 00:05:06,000
+It's faster to stand up, easier to test, and it gives you a baseline you actually understand.
+
+49
+00:05:07,000 --> 00:05:13,000
+Run it against real inputs and see how far it gets. Often it gets far enough, and you've saved
+
+50
+00:05:13,000 --> 00:05:19,000
+yourself an agent you didn't need. When it falls short, you now know exactly where and why, which
+
+51
+00:05:19,000 --> 00:05:25,000
+tells you precisely which part needs the model's flexibility. That's a much stronger position than
+
+52
+00:05:25,000 --> 00:05:31,000
+starting with an open-ended agent and trying to rein it in later. Prove the simple thing first.
+
+53
+00:05:31,000 --> 00:05:38,000
+Reach for autonomy only where the evidence says the workflow can't cope. The best real-world designs
+
+54
+00:05:38,000 --> 00:05:44,000
+are rarely all one thing. The most common hybrid puts an agent inside a single stage of a larger
+
+55
+00:05:44,000 --> 00:05:51,000
+workflow. Picture a fixed pipeline, validate the input, do the work, format the output. That middle
+
+56
+00:05:51,000 --> 00:05:58,000
+step, the work, might be genuinely open-ended. So you drop a scoped agent inside just that stage.
+
+57
+00:05:58,000 --> 00:06:04,000
+Everything around it stays deterministic. The workflow around the agent handles ordering,
+
+58
+00:06:04,000 --> 00:06:10,000
+validation, and error handling. While the agent gets freedom only where flexibility earns its
+
+59
+00:06:10,000 --> 00:06:17,000
+cost, you get predictability at the edges and adaptability in the core. So don't think of this
+
+60
+00:06:17,000 --> 00:06:23,000
+as one choice for the whole system. Think of it as choosing, stage by stage, who owns each decision.
+
+61
+00:06:24,000 --> 00:06:30,000
+Here's the bottom line. An agent trades latency and token cost for flexibility that the model
+
+62
+00:06:30,000 --> 00:06:37,000
+brings at runtime. It matters because the trade only pays off for open-ended work. Just remember,
+
+63
+00:06:37,000 --> 00:06:42,000
+validate the workflow first and reach for the loop only when it can't cope on its own.
+
+64
+00:06:43,000 --> 00:06:48,000
+That wraps up the cost, latency, and reliability trade-offs. I'll see you in the next lesson.
+

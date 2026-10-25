@@ -1,0 +1,260 @@
+1
+00:00:00,000 --> 00:00:05,000
+Welcome back. When you push one agent to handle a big, messy job end-to-end,
+
+2
+00:00:05,000 --> 00:00:12,000
+its context balloons and its answers get worse. A manager that delegates scoped pieces to subagents
+
+3
+00:00:12,000 --> 00:00:17,000
+can fix that problem. This lesson covers how a manager decomposes work and orchestrates the
+
+4
+00:00:17,000 --> 00:00:24,000
+results. Let's jump into it. Three roles anchor this pattern. The manager is the orchestrator.
+
+5
+00:00:24,000 --> 00:00:30,000
+It owns the goal, breaks it into pieces, hands each piece off, and stitches the answers together.
+
+6
+00:00:30,000 --> 00:00:36,000
+A subagent is a separate agent instance the manager spawns to handle one focused subtask,
+
+7
+00:00:36,000 --> 00:00:43,000
+and it reports a single result back. Delegation is the act of handing that scoped subtask off,
+
+8
+00:00:43,000 --> 00:00:49,000
+and in the agent SDK it happens through the agent tool. The model itself decides when spinning up
+
+9
+00:00:49,000 --> 00:00:55,000
+a subagent is worth it based on how you described each one. Keep these three straight because the
+
+10
+00:00:55,000 --> 00:01:02,000
+rest of the pattern builds directly on them. So what does the manager actually do? It runs
+
+11
+00:01:02,000 --> 00:01:08,000
+the same loop on every job. First it decomposes the goal, breaking one large request into
+
+12
+00:01:08,000 --> 00:01:14,000
+independent subtasks that can each be handled on their own. Then it delegates, handing each
+
+13
+00:01:14,000 --> 00:01:20,000
+subtask to a subagent chosen for that piece of work. Finally it synthesizes, pulling the
+
+14
+00:01:20,000 --> 00:01:27,000
+returned results together into a single coherent answer for the user. Notice what the manager
+
+15
+00:01:27,000 --> 00:01:33,000
+doesn't do. It doesn't carry out the subtask itself. Its job is coordination, deciding what to
+
+16
+00:01:33,000 --> 00:01:39,000
+split off, who gets what, and how the pieces fit back together. That division of labor is the whole
+
+17
+00:01:39,000 --> 00:01:45,000
+point of the pattern. Here's a distinction that trips people up. Orchestrator workers versus
+
+18
+00:01:45,000 --> 00:01:52,000
+parallelization. They look almost identical on a diagram. One coordinator fanning work out to
+
+19
+00:01:52,000 --> 00:01:59,000
+several agents. The difference is who decides the subtasks. With parallelization, you define the
+
+20
+00:01:59,000 --> 00:02:04,000
+subtasks in your own code ahead of time. You already know the independent sections, so you split them
+
+21
+00:02:04,000 --> 00:02:11,000
+and run them together. With orchestrator workers, the subtasks aren't predefined. The manager looks
+
+22
+00:02:11,000 --> 00:02:18,000
+at the specific input and decides at runtime how to break the job apart. That runtime flexibility
+
+23
+00:02:18,000 --> 00:02:23,000
+is the whole reason to reach for orchestration. If the split is always the same, you don't need
+
+24
+00:02:23,000 --> 00:02:30,000
+a manager deciding it. Plain parallel code is simpler and cheaper. How does delegation actually
+
+25
+00:02:30,000 --> 00:02:36,000
+happen in the SDK? The manager calls a built-in tool named agent, and that tool is what spins up
+
+26
+00:02:36,000 --> 00:02:42,000
+a sub-agent. Each sub-agent you define carries a description, a short statement of what it's good
+
+27
+00:02:42,000 --> 00:02:48,000
+for. When the manager hits a subtask, Claude matches that description against the work in front of it
+
+28
+00:02:48,000 --> 00:02:54,000
+and picks the sub-agent that fits. You aren't forced to leave it to the model, though. You can
+
+29
+00:02:54,000 --> 00:03:00,000
+also name a sub-agent directly in the prompt when you want a specific one. One practical detail
+
+30
+00:03:00,000 --> 00:03:05,000
+include the agent tool in your allowed tools list, so these delegations get auto-approved
+
+31
+00:03:05,000 --> 00:03:11,000
+instead of pausing for a permission prompt every time. That approves the delegation itself. The
+
+32
+00:03:11,000 --> 00:03:16,000
+tools a sub-agent runs still go through permission separately, so pre-approve those with permission
+
+33
+00:03:16,000 --> 00:03:24,000
+rules or a pre-tool use hook. Why bother splitting work into sub-agents at all? Three payoffs and the
+
+34
+00:03:24,000 --> 00:03:31,000
+slide names them. Context isolation, parallelization, and tool restriction. Isolation is the deep one,
+
+35
+00:03:31,000 --> 00:03:37,000
+and it gets a full lesson of its own next, so for now hold just the headline. Whatever a sub-agent
+
+36
+00:03:37,000 --> 00:03:43,000
+does internally stays out of the manager's window. What matters here is what those payoffs demand
+
+37
+00:03:43,000 --> 00:03:48,000
+from your delegation mechanics. Because each sub-agent runs apart from the manager, the handoff
+
+38
+00:03:48,000 --> 00:03:53,000
+has to carry everything the sub-task needs, and the tool list you attach is what draws that
+
+39
+00:03:53,000 --> 00:04:00,000
+sub-agent's lane. Scope the handoff and the tools well, and all three payoffs follow from the same
+
+40
+00:04:00,000 --> 00:04:07,000
+discipline. A lot of delegation quality is decided before a single sub-agent runs in how you scope
+
+41
+00:04:07,000 --> 00:04:14,000
+the work. Start with scope. Give each sub-agent one clear job, not a vague region of the problem.
+
+42
+00:04:14,000 --> 00:04:19,000
+A sub-task with a fuzzy boundary hands you back a fuzzy result you can't trust.
+
+43
+00:04:19,000 --> 00:04:25,000
+Next, be explicit about the output format you expect, whether that's a short summary, a list,
+
+44
+00:04:25,000 --> 00:04:31,000
+or structured data. The sub-agent can only match a shape you've named. Then, back at the manager,
+
+45
+00:04:31,000 --> 00:04:37,000
+don't just accept what returns. Collect every result and validate it before you synthesize.
+
+46
+00:04:37,000 --> 00:04:43,000
+A sub-agent can fail or drift, and the manager is the one place you catch that before it reaches
+
+47
+00:04:43,000 --> 00:04:50,000
+the user. Three guardrails keep delegation safe. The first is least privilege. Give each sub-agent
+
+48
+00:04:50,000 --> 00:04:56,000
+only the tools and permissions its task actually requires, so it simply can't reach outside its
+
+49
+00:04:56,000 --> 00:05:02,000
+lane, even if something goes sideways. The second is the side effect boundary. A well-scoped
+
+50
+00:05:02,000 --> 00:05:09,000
+sub-agent should produce no writes and no actions beyond its assigned sub-task. If a summarizer
+
+51
+00:05:09,000 --> 00:05:15,000
+starts deleting files, the scope was wrong. The third is result validation. The manager checks
+
+52
+00:05:15,000 --> 00:05:20,000
+each returned result before folding it into the final answer, because a sub-agent can return
+
+53
+00:05:20,000 --> 00:05:26,000
+something plausible, but wrong. Notice these are the manager's job. The sub-agent stays narrow
+
+54
+00:05:26,000 --> 00:05:33,000
+on purpose, and the manager holds the authority and the final check. Let's close the loop on where
+
+55
+00:05:33,000 --> 00:05:39,000
+developers go wrong. Three anti-patterns show up again and again. The first is overly broad scope.
+
+56
+00:05:40,000 --> 00:05:46,000
+You hand a sub-agent a job that's really five jobs, and it wanders, burns tokens, and comes back with
+
+57
+00:05:46,000 --> 00:05:53,000
+something muddy. Keep each sub-agent narrow. The second is underpowered context. Because a sub-agent
+
+58
+00:05:53,000 --> 00:05:59,000
+starts fresh, it only knows what you hand it. Give it too little, and it fails a task it could easily
+
+59
+00:05:59,000 --> 00:06:05,000
+have done. The third is treating sub-agents as nothing but parallel workers. Speed is a nice bonus,
+
+60
+00:06:05,000 --> 00:06:12,000
+but the deeper win is context isolation, keeping the manager's window clean. Miss that, and you've
+
+61
+00:06:12,000 --> 00:06:19,000
+turned a strong pattern into an unreliable one. Let's recap. A manager breaks a goal into scoped
+
+62
+00:06:19,000 --> 00:06:26,000
+sub-tasks, delegates each to a sub-agent, and synthesizes the results. It matters because it
+
+63
+00:06:26,000 --> 00:06:33,000
+keeps one agent from drowning in a job too big for it. Just remember, orchestrator workers decide
+
+64
+00:06:33,000 --> 00:06:39,000
+the split at runtime, which is what sets them apart from fixed parallel code. That covers how
+
+65
+00:06:39,000 --> 00:06:43,000
+a manager delegates work to sub-agents. I'll see you in the next one.
+

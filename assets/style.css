@@ -1,0 +1,57 @@
+:root {
+  --bg: #111; --panel: #1c1c1c; --line: #333; --text: #eee; --muted: #999;
+  --accent: #4f9cff; --ok: #3fb950; --bad: #f85149; --sub-size: 28px;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 system-ui, sans-serif; }
+main { max-width: 1000px; margin: 0 auto; padding: 16px; }
+a { color: var(--accent); }
+h1 { font-size: 24px; margin: 8px 0 4px; }
+h2 { font-size: 20px; margin: 32px 0 12px; border-bottom: 1px solid var(--line); padding-bottom: 6px; }
+h3 { font-size: 17px; margin: 20px 0 6px; }
+.muted { color: var(--muted); }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+.nav { display: flex; gap: 16px; font-size: 14px; }
+.tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; position: sticky; top: 0; background: var(--bg); padding: 8px 0; z-index: 2; }
+.tabs a { background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 4px 14px; text-decoration: none; color: var(--text); font-size: 14px; }
+
+/* Player */
+.drop { border: 2px dashed #444; border-radius: 10px; padding: 12px; text-align: center; color: var(--muted); }
+.drop.over { border-color: var(--accent); color: var(--text); }
+.pickers { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-top: 8px; }
+label.btn { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 6px 14px; cursor: pointer; color: var(--text); }
+label.btn input { display: none; }
+.status { margin: 8px 0; color: var(--muted); font-size: 14px; }
+video { width: 100%; max-height: 70vh; background: #000; border-radius: 8px; display: block; }
+video::cue { font-size: var(--sub-size); background: rgba(0, 0, 0, .6); }
+.controls { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin-top: 10px; background: var(--panel); padding: 8px 14px; border-radius: 8px; font-size: 14px; }
+.controls button { background: #333; color: var(--text); border: 0; border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+.controls output { min-width: 4.5em; display: inline-block; text-align: center; }
+.transcript { max-height: 260px; overflow-y: auto; margin-top: 10px; padding: 6px; }
+.transcript p { margin: 0; padding: 4px 8px; border-radius: 6px; cursor: pointer; }
+.transcript p:hover { background: #262626; }
+.transcript p.active { background: #1d3557; }
+.transcript time { color: var(--muted); font-size: 12px; margin-right: 8px; font-variant-numeric: tabular-nums; }
+
+/* Lesson list */
+.lesson-list { list-style: none; padding: 0; display: grid; gap: 12px; }
+.lesson-list a { text-decoration: none; color: var(--text); display: block; }
+.lesson-list a:hover .card { border-color: var(--accent); }
+
+/* Explanation */
+.explain p, .explain li { color: #ddd; }
+.explain .key { border-left: 4px solid var(--accent); background: #16202e; padding: 10px 14px; border-radius: 6px; }
+.explain em.en { color: #9ecbff; font-style: normal; }
+
+/* Quiz */
+.score { position: sticky; top: 52px; z-index: 1; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+.score button { background: #333; color: var(--text); border: 0; border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+.question { margin-top: 14px; }
+.question .q { font-weight: 600; margin-bottom: 8px; }
+.question button.opt { display: block; width: 100%; text-align: left; margin: 6px 0; padding: 8px 12px; background: #262626; color: var(--text); border: 1px solid var(--line); border-radius: 8px; cursor: pointer; font: inherit; }
+.question button.opt:hover:not(:disabled) { border-color: var(--accent); }
+.question button.opt:disabled { cursor: default; }
+.question button.opt.right { border-color: var(--ok); background: #12261a; }
+.question button.opt.wrong { border-color: var(--bad); background: #2d1414; }
+.question .why { margin-top: 8px; font-size: 14px; color: #cfcfcf; }
+.question .why[hidden] { display: none; }

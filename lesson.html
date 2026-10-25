@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bài học</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<main>
+  <nav class="nav"><a href="index.html">← Danh sách bài học</a></nav>
+  <p class="muted" id="lessonNo"></p>
+  <h1 id="title"></h1>
+  <p class="muted" id="titleVi"></p>
+
+  <div class="tabs">
+    <a href="#video">🎬 Video + transcript</a>
+    <a href="#explain">📖 Giải thích</a>
+    <a href="#quiz">✅ Trắc nghiệm</a>
+  </div>
+
+  <h2 id="video">🎬 Video + transcript</h2>
+  <p class="muted">Chọn file video của bài này trên máy bạn. Transcript tiếng Anh của bài được nạp sẵn; bạn vẫn có thể import file .srt khác.</p>
+  <div id="player"></div>
+
+  <h2 id="explain">📖 Giải thích dễ hiểu</h2>
+  <div class="explain" id="explanation"></div>
+
+  <h2 id="quiz">✅ Trắc nghiệm ôn tập</h2>
+  <div id="quizRoot"></div>
+</main>
+<script src="assets/player.js"></script>
+<script src="lessons/registry.js"></script>
+<script src="assets/lesson.js"></script>
+</body>
+</html>
