@@ -96,9 +96,10 @@ Hãy thiết kế theo bài toán trước mặt, không theo kiến trúc mình
 </ul>
 
 <h3>💻 Bài tập Java</h3>
-<p>Mở <code>java-app/src/lesson01/Lesson01.java</code>. Có 5 bài: chọn workflow hay agent theo số tín hiệu,
+<p>Mở <code>java-app/src/main/java/lesson01/Lesson01.java</code>. Có 5 bài: chọn workflow hay agent theo số tín hiệu,
 viết prompt chaining có gate, routing, parallelization, và một vòng lặp agent có giới hạn số bước.
-Chấm bài bằng <code>java -cp out Main 01</code> (xem hướng dẫn trong <code>docs/java-app.md</code>).</p>
+Chấm bài bằng <code>./mvnw -q compile exec:java -Dexec.args="01"</code> (xem hướng dẫn trong <code>docs/java-app.md</code>).</p>
+<p>Làm xong, chạy với Claude thật bằng <code>-Dexec.args="01 --live"</code> (cần API key): Claude viết đoạn văn qua prompt chain, phân loại ticket, dịch song song, và tự chọn tool trong vòng lặp agent của bạn.</p>
 `,
 
   // answer = index of the correct option in `options` (options are shuffled on screen).

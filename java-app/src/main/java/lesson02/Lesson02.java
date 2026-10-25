@@ -6,7 +6,7 @@ import java.util.function.UnaryOperator;
 
 /**
  * Bài tập bài 02. Xóa từng dòng "throw new UnsupportedOperationException" và viết code của bạn,
- * rồi chạy: java -cp out Main 02
+ * rồi chạy: ./mvnw -q compile exec:java -Dexec.args="02" (thêm --live để chạy với Claude thật)
  */
 public class Lesson02 implements Lesson02Api {
 

@@ -8,7 +8,7 @@ import java.util.function.UnaryOperator;
 
 /**
  * Bài tập bài 01. Xóa từng dòng "throw new UnsupportedOperationException" và viết code của bạn,
- * rồi chạy: java -cp out Main 01
+ * rồi chạy: ./mvnw -q compile exec:java -Dexec.args="01" (thêm --live để chạy với Claude thật)
  */
 public class Lesson01 implements Lesson01Api {
 

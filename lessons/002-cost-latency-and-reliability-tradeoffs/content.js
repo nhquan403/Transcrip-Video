@@ -97,9 +97,10 @@ hãy chọn <strong>theo từng bước</strong> xem ai sở hữu quyết đị
 </ul>
 
 <h3>💻 Bài tập Java</h3>
-<p>Mở <code>java-app/src/lesson02/Lesson02.java</code>. Có 5 bài: tính tổng token khi context cộng dồn,
+<p>Mở <code>java-app/src/main/java/lesson02/Lesson02.java</code>. Có 5 bài: tính tổng token khi context cộng dồn,
 xác suất lỗi dồn, số bước tối đa để vẫn đạt độ tin cậy mục tiêu, thời gian chờ, và một pipeline lai
-"validate, agent, format" có xử lý lỗi. Chấm bằng <code>java -cp out Main 02</code>.</p>
+"validate, agent, format" có xử lý lỗi. Chấm bằng <code>./mvnw -q compile exec:java -Dexec.args="02"</code>.</p>
+<p>Làm xong, chạy với Claude thật bằng <code>-Dexec.args="02 --live"</code> (cần API key): bạn sẽ thấy số token thật tăng dần qua từng vòng và độ trễ thật cộng dồn, đối chiếu với các hàm bạn viết.</p>
 `,
 
   // answer = index of the correct option in `options` (options are shuffled on screen).

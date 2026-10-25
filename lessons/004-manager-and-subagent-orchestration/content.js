@@ -109,9 +109,10 @@ và danh sách tool bạn gắn cho nó chính là "làn đường" của nó. L
 </ul>
 
 <h3>💻 Bài tập Java</h3>
-<p>Mở <code>java-app/src/lesson04/Lesson04.java</code>. Có 4 bài: chọn subagent theo description (và theo <code>@tên</code>),
+<p>Mở <code>java-app/src/main/java/lesson04/Lesson04.java</code>. Có 4 bài: chọn subagent theo description (và theo <code>@tên</code>),
 chặn tool ngoài quyền (least privilege), dựng handoff mang đủ ngữ cảnh và định dạng output,
-và một manager loop đầy đủ decompose, delegate, validate, synthesize. Chấm bằng <code>java -cp out Main 04</code>.</p>
+và một manager loop đầy đủ decompose, delegate, validate, synthesize. Chấm bằng <code>./mvnw -q compile exec:java -Dexec.args="04"</code>.</p>
+<p>Làm xong, chạy với Claude thật bằng <code>-Dexec.args="04 --live"</code> (cần API key): Claude làm manager chia việc lúc chạy, các subagent nhận handoff do code của bạn dựng, và manager tổng hợp thành ghi chú ôn bài.</p>
 `,
 
   // answer = index of the correct option in `options` (options are shuffled on screen).
