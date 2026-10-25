@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Xem video kèm phụ đề</title>
+<style>
+  :root { --bg: #111; --panel: #1c1c1c; --text: #eee; --muted: #999; --accent: #4f9cff; --sub-size: 28px; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 system-ui, sans-serif; }
+  main { max-width: 1100px; margin: 0 auto; padding: 16px; }
+  h1 { font-size: 20px; margin: 0 0 12px; }
+  #drop { border: 2px dashed #444; border-radius: 10px; padding: 16px; text-align: center; color: var(--muted); }
+  #drop.over { border-color: var(--accent); color: var(--text); }
+  .pickers { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-top: 10px; }
+  label.btn { background: var(--panel); border: 1px solid #333; border-radius: 8px; padding: 8px 14px; cursor: pointer; }
+  label.btn input { display: none; }
+  #status { margin: 10px 0; color: var(--muted); min-height: 1.5em; }
+  video { width: 100%; max-height: 75vh; background: #000; border-radius: 8px; display: block; }
+  video::cue { font-size: var(--sub-size); background: rgba(0, 0, 0, .6); }
+  .controls { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin-top: 12px; background: var(--panel); padding: 10px 14px; border-radius: 8px; }
+  .controls button { background: #333; color: var(--text); border: 0; border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+  .controls output { min-width: 4.5em; display: inline-block; text-align: center; }
+  .hint { color: var(--muted); font-size: 13px; margin-top: 8px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Xem video kèm phụ đề (SRT)</h1>
+
+  <div id="drop">
+    Kéo thả file video và file .srt vào đây, hoặc chọn file:
+    <div class="pickers">
+      <label class="btn">🎬 Chọn video <input type="file" id="videoInput" accept="video/*,.mkv"></label>
+      <label class="btn">💬 Chọn phụ đề <input type="file" id="subInput" accept=".srt,.vtt"></label>
+    </div>
+  </div>
+
+  <div id="status">Chưa chọn file nào.</div>
+
+  <video id="video" controls playsinline></video>
+
+  <div class="controls">
+    <label><input type="checkbox" id="showSub" checked> Hiện phụ đề</label>
+    <span>
+      Lệch sub:
+      <button data-shift="-0.5">−0.5s</button>
+      <output id="offsetOut">0.0s</output>
+      <button data-shift="0.5">+0.5s</button>
+      <button id="resetOffset">Đặt lại</button>
+    </span>
+    <label>Cỡ chữ <input type="range" id="fontSize" min="14" max="60" value="28"></label>
+  </div>
+  <p class="hint">
+    Phím tắt: <b>G</b> / <b>H</b> = sub sớm hơn / trễ hơn 0.1s. File chỉ được đọc trên máy bạn, không tải lên đâu cả.
+  </p>
+</main>
+
+<script>
+const video = document.getElementById('video');
+const statusEl = document.getElementById('status');
+const offsetOut = document.getElementById('offsetOut');
+const showSub = document.getElementById('showSub');
+
+let cues = [];       // [{start, end, text}] in seconds
+let offset = 0;      // seconds added to every cue
+let videoUrl = null;
+let trackUrl = null;
+let videoName = '', subName = '';
+
+function setStatus() {
+  const parts = [];
+  parts.push(videoName ? `Video: ${videoName}` : 'Chưa có video');
+  parts.push(subName ? `Phụ đề: ${subName} (${cues.length} dòng)` : 'Chưa có phụ đề');
+  statusEl.textContent = parts.join(' · ');
+}
+
+// Try UTF-8 first; old Vietnamese SRT files are often Windows-1258.
+async function readText(file) {
+  const buf = await file.arrayBuffer();
+  try {
+    return new TextDecoder('utf-8', { fatal: true }).decode(buf);
+  } catch {
+    return new TextDecoder('windows-1258').decode(buf);
+  }
+}
+
+function parseTime(s) {
+  const m = s.trim().match(/(?:(\d+):)?(\d{1,2}):(\d{1,2})[,.](\d{1,3})/);
+  if (!m) return null;
+  return (+(m[1] || 0)) * 3600 + (+m[2]) * 60 + (+m[3]) + (+m[4].padEnd(3, '0')) / 1000;
+}
+
+// Parses both SRT and VTT cue blocks.
+function parseSubs(text) {
+  const blocks = text.replace(/^﻿/, '').replace(/\r\n?/g, '\n').split(/\n{2,}/);
+  const out = [];
+  for (const block of blocks) {
+    const lines = block.split('\n');
+    const i = lines.findIndex(l => l.includes('-->'));
+    if (i < 0) continue;
+    const [a, b] = lines[i].split('-->');
+    const start = parseTime(a), end = parseTime(b);
+    if (start == null || end == null) continue;
+    const body = lines.slice(i + 1).join('\n')
+      .replace(/\{\\[^}]*\}/g, '')          // ASS override tags like {\an8}
+      .replace(/<\/?font[^>]*>/gi, '')       // <font> is not valid in VTT
+      .trim();
+    if (body) out.push({ start, end, text: body });
+  }
+  return out;
+}
+
+function fmt(t) {
+  t = Math.max(0, t);
+  const h = Math.floor(t / 3600), m = Math.floor(t % 3600 / 60), s = Math.floor(t % 60);
+  const ms = Math.round((t - Math.floor(t)) * 1000);
+  const p = (n, w = 2) => String(n).padStart(w, '0');
+  return `${p(h)}:${p(m)}:${p(s)}.${p(Math.min(ms, 999), 3)}`;
+}
+
+function toVtt() {
+  return 'WEBVTT\n\n' + cues.map(c =>
+    `${fmt(c.start + offset)} --> ${fmt(c.end + offset)}\n${c.text.replace(/-->/g, '→')}`
+  ).join('\n\n') + '\n';
+}
+
+// A <track> element keeps subtitles visible in native fullscreen.
+// It is rebuilt whenever the offset changes.
+function rebuildTrack() {
+  video.querySelectorAll('track').forEach(t => t.remove());
+  if (trackUrl) URL.revokeObjectURL(trackUrl);
+  trackUrl = null;
+  if (!cues.length) return;
+  trackUrl = URL.createObjectURL(new Blob([toVtt()], { type: 'text/vtt' }));
+  const track = document.createElement('track');
+  track.kind = 'subtitles';
+  track.label = 'Tiếng Việt';
+  track.srclang = 'vi';
+  track.src = trackUrl;
+  track.default = true;
+  video.appendChild(track);
+  track.addEventListener('load', applyVisibility);
+  applyVisibility();
+}
+
+function applyVisibility() {
+  for (const t of video.textTracks) t.mode = showSub.checked ? 'showing' : 'hidden';
+}
+
+function setOffset(v) {
+  offset = Math.round(v * 10) / 10;
+  offsetOut.textContent = (offset > 0 ? '+' : '') + offset.toFixed(1) + 's';
+  rebuildTrack();
+}
+
+async function loadFiles(files) {
+  for (const file of files) {
+    const name = file.name.toLowerCase();
+    if (name.endsWith('.srt') || name.endsWith('.vtt')) {
+      cues = parseSubs(await readText(file));
+      subName = file.name;
+      rebuildTrack();
+    } else if (file.type.startsWith('video/') || /\.(mp4|m4v|webm|mkv|mov)$/.test(name)) {
+      if (videoUrl) URL.revokeObjectURL(videoUrl);
+      videoUrl = URL.createObjectURL(file);
+      video.src = videoUrl;
+      videoName = file.name;
+      rebuildTrack();
+    }
+  }
+  setStatus();
+}
+
+document.getElementById('videoInput').addEventListener('change', e => loadFiles(e.target.files));
+document.getElementById('subInput').addEventListener('change', e => loadFiles(e.target.files));
+
+const drop = document.getElementById('drop');
+['dragenter', 'dragover'].forEach(ev => document.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
+['dragleave', 'drop'].forEach(ev => document.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
+document.addEventListener('drop', e => loadFiles(e.dataTransfer.files));
+
+showSub.addEventListener('change', applyVisibility);
+document.querySelectorAll('[data-shift]').forEach(b =>
+  b.addEventListener('click', () => setOffset(offset + parseFloat(b.dataset.shift))));
+document.getElementById('resetOffset').addEventListener('click', () => setOffset(0));
+document.getElementById('fontSize').addEventListener('input', e =>
+  document.documentElement.style.setProperty('--sub-size', e.target.value + 'px'));
+
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.key === 'g' || e.key === 'G') setOffset(offset - 0.1);
+  if (e.key === 'h' || e.key === 'H') setOffset(offset + 0.1);
+});
+</script>
+</body>
+</html>
