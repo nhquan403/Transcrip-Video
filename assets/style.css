@@ -42,6 +42,7 @@ video::cue { font-size: var(--sub-size); background: rgba(0, 0, 0, .6); }
 .explain p, .explain li { color: #ddd; }
 .explain .key { border-left: 4px solid var(--accent); background: #16202e; padding: 10px 14px; border-radius: 6px; }
 .explain em.en { color: #9ecbff; font-style: normal; }
+.explain code { overflow-wrap: anywhere; }
 
 /* Quiz */
 .score { position: sticky; top: 52px; z-index: 1; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }

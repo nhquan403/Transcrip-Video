@@ -1,0 +1,328 @@
+1
+00:00:00,000 --> 00:00:04,000
+Welcome back. Every capable agent rests on two patterns, and we'll walk through both.
+
+2
+00:00:05,000 --> 00:00:10,000
+The first is the tool-use loop, where the model acts and then reacts to what it sees.
+
+3
+00:00:10,000 --> 00:00:17,000
+The second is sub-agents, which keep focused work from crowding your main context. Let's look at the details.
+
+4
+00:00:18,000 --> 00:00:26,000
+Three ideas anchor everything that follows. First, the tool-use loop. Without tools, a model can only produce
+
+5
+00:00:26,000 --> 00:00:34,000
+text. Give it tools, and it can act. It requests a tool, the runtime runs that tool, and the result comes back,
+
+6
+00:00:34,000 --> 00:00:36,000
+so the model can decide what to do next.
+
+7
+00:00:37,000 --> 00:00:44,000
+Second, the augmented model. That's the real building block underneath every agent, a model wired up with retrieval,
+
+8
+00:00:44,000 --> 00:00:48,000
+tools, and memory, so it does more than generate.
+
+9
+00:00:48,000 --> 00:00:55,000
+Third, the sub-agent. That's a separate agent your main agent spawns to handle one focused piece of work.
+
+10
+00:00:55,000 --> 00:01:01,000
+Running in its own space and reporting back just its answer. Keep these three straight, and the rest
+
+11
+00:01:01,000 --> 00:01:03,000
+of this lesson clicks into place.
+
+12
+00:01:04,000 --> 00:01:09,000
+Let's slow down on the loop, because it's the engine of every agent. On each pass,
+
+13
+00:01:09,000 --> 00:01:15,000
+the model looks at the task and decides whether it needs a tool. If it does, it names the tool and
+
+14
+00:01:15,000 --> 00:01:16,000
+the input it wants.
+
+15
+00:01:17,000 --> 00:01:23,000
+Your runtime executes that call, maybe reading a file or hitting an API, and hands the result back.
+
+16
+00:01:23,000 --> 00:01:28,000
+Now the model has a fresh observation, and it decides again. Maybe it calls another tool.
+
+17
+00:01:28,000 --> 00:01:36,000
+Maybe it has enough to answer. This repeats turn after turn until the model responds with plain text and no tool call.
+
+18
+00:01:36,000 --> 00:01:44,000
+That text-only reply is the signal that the loop is done. Nothing magical, just request, execute, observe, repeat.
+
+19
+00:01:45,000 --> 00:01:49,000
+Here's a detail that trips people up. Not every tool call runs the same way.
+
+20
+00:01:50,000 --> 00:01:56,000
+Read-only tools, the ones that just observe, like reading a file, searching, or running a query,
+
+21
+00:01:56,000 --> 00:01:58,000
+have no side effects.
+
+22
+00:01:58,000 --> 00:02:03,000
+Because they can't step on each other, the runtime is free to run several of them at once,
+
+23
+00:02:04,000 --> 00:02:09,000
+concurrently, which saves you real wall clock time. State modifying tools are different.
+
+24
+00:02:09,000 --> 00:02:14,000
+Anything that writes a file, edits code, or runs a shell command changes the world.
+
+25
+00:02:14,000 --> 00:02:19,000
+So the runtime runs those one at a time, in order to avoid conflicts.
+
+26
+00:02:20,000 --> 00:02:22,000
+One thing to watch with your own custom tools,
+
+27
+00:02:22,000 --> 00:02:30,000
+they default to sequential. If a custom tool only reads, mark it read-only, so it can join the parallel group.
+
+28
+00:02:31,000 --> 00:02:35,000
+Now to the second pattern, the sub-agent, and the most important reason to use one.
+
+29
+00:02:36,000 --> 00:02:43,000
+Context isolation. When you delegate a subtask to a sub-agent, it runs in its own separate conversation.
+
+30
+00:02:43,000 --> 00:02:49,000
+All the noisy middle steps, the exploratory tool calls, the dead ends, the long tool outputs,
+
+31
+00:02:49,000 --> 00:02:55,000
+they stay inside that sub-agent's context. Your main agent never sees them.
+
+32
+00:02:55,000 --> 00:03:01,000
+What comes back to the parent is just the sub-agent's final message, a clean summary of the result.
+
+33
+00:03:02,000 --> 00:03:06,000
+So the parent's context grows by that one summary, instead of the entire transcript.
+
+34
+00:03:06,000 --> 00:03:12,000
+If you remember one thing about sub-agents, make it this. Their value isn't just parallelism,
+
+35
+00:03:12,000 --> 00:03:15,000
+it's keeping junk out of your main window.
+
+36
+00:03:16,000 --> 00:03:21,000
+So, why actually reach for a sub-agent? Four reasons, and they stack.
+
+37
+00:03:21,000 --> 00:03:27,000
+First, context isolation, which we just covered. The intermediate tool output stays out of the parent.
+
+38
+00:03:28,000 --> 00:03:30,000
+Second, parallelization.
+
+39
+00:03:30,000 --> 00:03:36,000
+Independent sub-agents run at the same time, so a batch of subtasks finishes in the time of the slowest one,
+
+40
+00:03:36,000 --> 00:03:38,000
+not the sum of all of them.
+
+41
+00:03:38,000 --> 00:03:43,000
+Third, tool restriction. You give each sub-agent only the tools its job needs,
+
+42
+00:03:43,000 --> 00:03:47,000
+which shrinks the surface for mistakes and keeps it on task.
+
+43
+00:03:48,000 --> 00:03:54,000
+Fourth, specialized prompts. Each sub-agent gets its own system prompt and instructions, tuned for
+
+44
+00:03:54,000 --> 00:03:55,000
+one job it does well.
+
+45
+00:03:56,000 --> 00:04:01,000
+Isolation, parallelism, restriction, focus, that's the case for delegating.
+
+46
+00:04:02,000 --> 00:04:08,000
+Let's make delegation concrete. Your main agent, the manager, is working a big goal.
+
+47
+00:04:08,000 --> 00:04:11,000
+It hits a chunk of work that stands on its own, say,
+
+48
+00:04:12,000 --> 00:04:18,000
+researching one file while other work continues. It hands that chunk to a sub-agent as a scoped task.
+
+49
+00:04:19,000 --> 00:04:23,000
+Here's the catch you can't skip, that sub-agent starts completely fresh.
+
+50
+00:04:23,000 --> 00:04:30,000
+It doesn't inherit the manager's conversation or history. It sees only the prompt you hand it.
+
+51
+00:04:31,000 --> 00:04:38,000
+So, anything it needs to do, the job, the relevant context, the constraints, you pass in explicitly.
+
+52
+00:04:38,000 --> 00:04:43,000
+The sub-agent goes off, does its work in isolation, and returns its final result.
+
+53
+00:04:43,000 --> 00:04:47,000
+The manager takes that answer and folds it into the larger task.
+
+54
+00:04:48,000 --> 00:04:55,000
+Three ideas lock in how isolation works. First, the manager, sometimes called the orchestrator,
+
+55
+00:04:55,000 --> 00:05:01,000
+that's the lead agent that breaks the goal into scoped sub-tasks, hands them out, and stitches the
+
+56
+00:05:01,000 --> 00:05:02,000
+answers back together.
+
+57
+00:05:03,000 --> 00:05:09,000
+Second, no shared context, and you know that rule from the isolation lesson, so here's where it bites in practice.
+
+58
+00:05:10,000 --> 00:05:14,000
+Picture two parallel workers researching different parts of a codebase.
+
+59
+00:05:14,000 --> 00:05:16,000
+Neither one sees what the other found,
+
+60
+00:05:17,000 --> 00:05:23,000
+so if worker two needs worker one's result, the manager has to carry it across in the next handoff.
+
+61
+00:05:23,000 --> 00:05:28,000
+State never leaks between sub-agents on its own. Third, bounded token growth.
+
+62
+00:05:29,000 --> 00:05:34,000
+Because each sub-agent returns only a summary, the parent's context grows slowly,
+
+63
+00:05:35,000 --> 00:05:41,000
+even when you fire off many sub-tasks. That bound is exactly what lets an agent scale to big,
+
+64
+00:05:42,000 --> 00:05:44,000
+multi-step jobs without its window ballooning.
+
+65
+00:05:45,000 --> 00:05:47,000
+So, how do you pick?
+
+66
+00:05:47,000 --> 00:05:52,000
+Think of it as matching the pattern to the problem. When the model needs to act, look at what
+
+67
+00:05:52,000 --> 00:05:54,000
+happened and act again.
+
+68
+00:05:54,000 --> 00:06:00,000
+That's the tool use loop doing its job. When a piece of work would generate a mountain of intermediate tokens
+
+69
+00:06:00,000 --> 00:06:03,000
+you don't want in your main window,
+
+70
+00:06:03,000 --> 00:06:08,000
+that's your cue to hand it to a sub-agent. When you've got several independent sub-tasks, run them
+
+71
+00:06:08,000 --> 00:06:10,000
+as parallel sub-agents and
+
+72
+00:06:10,000 --> 00:06:12,000
+collapse the wall clock time. And
+
+73
+00:06:12,000 --> 00:06:18,000
+underneath all of it, keep each agent's tools scoped to just what its job requires. The best agents
+
+74
+00:06:18,000 --> 00:06:19,000
+don't pick one pattern,
+
+75
+00:06:19,000 --> 00:06:21,000
+they layer all of them.
+
+76
+00:06:22,000 --> 00:06:28,000
+Let's recap. Two patterns carry every agent. The tool use loop lets the model act, observe, and
+
+77
+00:06:28,000 --> 00:06:30,000
+iterate until it answers.
+
+78
+00:06:30,000 --> 00:06:38,000
+Sub-agents isolate the sub-tasks so only the final message returns, buying you parallelism, tool restriction, and clean
+
+79
+00:06:38,000 --> 00:06:40,000
+parental context and
+
+80
+00:06:40,000 --> 00:06:42,000
+specialized focus.
+
+81
+00:06:42,000 --> 00:06:49,000
+Just remember, you layer them, you don't choose between them. And that covers tool use loops and sub-agent patterns.
+
+82
+00:06:49,000 --> 00:06:51,000
+I'll see you in the next one.
+

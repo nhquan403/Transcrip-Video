@@ -1,0 +1,632 @@
+1
+00:00:00,000 --> 00:00:01,000
+Hello.
+
+2
+00:00:01,000 --> 00:00:03,000
+You've launched an agent and watched its loop run.
+
+3
+00:00:03,000 --> 00:00:07,000
+Now let's talk about how prompts get into that loop.
+
+4
+00:00:07,000 --> 00:00:10,000
+The Agent SDK takes your input two ways.
+
+5
+00:00:10,000 --> 00:00:12,000
+You can stream a live series of messages
+
+6
+00:00:12,000 --> 00:00:16,000
+or send a single string and get one answer back.
+
+7
+00:00:16,000 --> 00:00:18,000
+That sounds similar,
+
+8
+00:00:18,000 --> 00:00:20,000
+but they actually behave quite differently,
+
+9
+00:00:20,000 --> 00:00:23,000
+and this lesson is going to draw that line. Let's dig in.
+
+10
+00:00:24,000 --> 00:00:27,000
+Let's set the two modes side by side
+
+11
+00:00:27,000 --> 00:00:30,000
+because the choice shapes what your agent can do.
+
+12
+00:00:30,000 --> 00:00:32,000
+Streaming Input is the first mode.
+
+13
+00:00:32,000 --> 00:00:35,000
+Your prompt isn't a single string.
+
+14
+00:00:35,000 --> 00:00:37,000
+It's an async series of messages,
+
+15
+00:00:37,000 --> 00:00:40,000
+and the agent runs as a persistent, long-lived process
+
+16
+00:00:40,000 --> 00:00:42,000
+that you feed over time.
+
+17
+00:00:42,000 --> 00:00:45,000
+This is the default, and it's the recommended one.
+
+18
+00:00:45,000 --> 00:00:48,000
+Single Message Input is the other mode.
+
+19
+00:00:48,000 --> 00:00:50,000
+Your prompt is just one string,
+
+20
+00:00:50,000 --> 00:00:53,000
+the agent answers once, and the run is done.
+
+21
+00:00:53,000 --> 00:00:55,000
+That's a clean fit for one-off requests
+
+22
+00:00:55,000 --> 00:00:59,000
+or stateless environments, like a serverless function
+
+23
+00:00:59,000 --> 00:01:03,000
+that spins up fresh for each call, same loop underneath.
+
+24
+00:01:03,000 --> 00:01:07,000
+What differs is how prompts flow in and what that unlocks.
+
+25
+00:01:08,000 --> 00:01:11,000
+So why is Streaming Input the recommended default?
+
+26
+00:01:11,000 --> 00:01:14,000
+Because running the agent as a live process
+
+27
+00:01:14,000 --> 00:01:18,000
+unlocks things a one-shot string simply can't do.
+
+28
+00:01:18,000 --> 00:01:21,000
+You can attach images directly in the messages you send,
+
+29
+00:01:21,000 --> 00:01:23,000
+so vision is on the table.
+
+30
+00:01:23,000 --> 00:01:26,000
+You can queue new messages while a turn is still running,
+
+31
+00:01:26,000 --> 00:01:29,000
+feeding the agent more as it works.
+
+32
+00:01:29,000 --> 00:01:31,000
+You can interrupt a run in real time
+
+33
+00:01:31,000 --> 00:01:32,000
+through the client object
+
+34
+00:01:32,000 --> 00:01:34,000
+instead of waiting for it to finish.
+
+35
+00:01:34,000 --> 00:01:38,000
+And you get natural, multi-turn context,
+
+36
+00:01:38,000 --> 00:01:40,000
+where the conversation persists
+
+37
+00:01:40,000 --> 00:01:42,000
+without you stitching it together.
+
+38
+00:01:42,000 --> 00:01:44,000
+Add it up, and Streaming Input is the mode
+
+39
+00:01:44,000 --> 00:01:47,000
+built for real, interactive agents.
+
+40
+00:01:48,000 --> 00:01:49,000
+Let's be fair to Single Message Input,
+
+41
+00:01:49,000 --> 00:01:51,000
+because it earns its place.
+
+42
+00:01:51,000 --> 00:01:54,000
+Its shape is a one-shot string.
+
+43
+00:01:54,000 --> 00:01:57,000
+You hand the agent a prompt, it answers once,
+
+44
+00:01:57,000 --> 00:02:00,000
+and no live session stays open afterward.
+
+45
+00:02:00,000 --> 00:02:03,000
+That's exactly what you want in a stateless setting,
+
+46
+00:02:03,000 --> 00:02:06,000
+a serverless function, or a batch job
+
+47
+00:02:06,000 --> 00:02:10,000
+that spins up, answers, and shuts down for each request.
+
+48
+00:02:10,000 --> 00:02:12,000
+There's no persistent process to manage,
+
+49
+00:02:12,000 --> 00:02:14,000
+which keeps deployment simple.
+
+50
+00:02:14,000 --> 00:02:18,000
+Now, does that mean no memory ever? Not quite.
+
+51
+00:02:18,000 --> 00:02:20,000
+You can still get multi-turn behavior,
+
+52
+00:02:20,000 --> 00:02:23,000
+but only by using the Continue and Resume Session options
+
+53
+00:02:23,000 --> 00:02:25,000
+to reconnect to a prior run.
+
+54
+00:02:25,000 --> 00:02:28,000
+It's more deliberate than Streaming's natural persistence,
+
+55
+00:02:28,000 --> 00:02:32,000
+but for one-off work, that trade is usually the right one.
+
+56
+00:02:33,000 --> 00:02:35,000
+So how do you actually choose?
+
+57
+00:02:35,000 --> 00:02:38,000
+Match the mode to the shape of your workload.
+
+58
+00:02:38,000 --> 00:02:40,000
+If you're building something interactive,
+
+59
+00:02:40,000 --> 00:02:44,000
+tool-heavy, or multi-turn, reach for Streaming Input.
+
+60
+00:02:44,000 --> 00:02:47,000
+It's built for agents that carry a conversation
+
+61
+00:02:47,000 --> 00:02:48,000
+and act as they go.
+
+62
+00:02:48,000 --> 00:02:50,000
+If you just need a single answer,
+
+63
+00:02:50,000 --> 00:02:52,000
+or you're deploying into a stateless function
+
+64
+00:02:52,000 --> 00:02:55,000
+that wakes up per request,
+
+65
+00:02:55,000 --> 00:02:58,000
+single message input is the cleaner fit.
+
+66
+00:02:58,000 --> 00:02:59,000
+And here's a quick test.
+
+67
+00:02:59,000 --> 00:03:01,000
+Do you need to attach images
+
+68
+00:03:01,000 --> 00:03:04,000
+or interrupt a run while it's live?
+
+69
+00:03:04,000 --> 00:03:06,000
+Both of those point straight at Streaming.
+
+70
+00:03:06,000 --> 00:03:09,000
+When you're genuinely unsure, lean on the default.
+
+71
+00:03:09,000 --> 00:03:12,000
+Streaming Input is the recommended mode,
+
+72
+00:03:12,000 --> 00:03:15,000
+so starting there rarely puts you in the wrong place.
+
+73
+00:03:16,000 --> 00:03:18,000
+This is the spot where people get tangled,
+
+74
+00:03:18,000 --> 00:03:20,000
+so let's clear it up directly.
+
+75
+00:03:20,000 --> 00:03:24,000
+First, Streaming and Single Message are input modes
+
+76
+00:03:24,000 --> 00:03:26,000
+into one shared agent loop.
+
+77
+00:03:26,000 --> 00:03:28,000
+They aren't separate engines.
+
+78
+00:03:28,000 --> 00:03:32,000
+Second, Streaming Input doesn't require the client object.
+
+79
+00:03:32,000 --> 00:03:35,000
+Query itself accepts an async prompt,
+
+80
+00:03:35,000 --> 00:03:38,000
+so you can stream input straight through Query.
+
+81
+00:03:39,000 --> 00:03:41,000
+Interrupts are the one exception.
+
+82
+00:03:41,000 --> 00:03:45,000
+They still require Clawed SDK Client,
+
+83
+00:03:45,000 --> 00:03:46,000
+even in streaming mode.
+
+84
+00:03:46,000 --> 00:03:51,000
+Third, keep SDK Input separate from API Output Streaming.
+
+85
+00:03:51,000 --> 00:03:54,000
+The stream true flag on a raw model call
+
+86
+00:03:54,000 --> 00:03:56,000
+is a different mechanism entirely.
+
+87
+00:03:56,000 --> 00:04:00,000
+And fourth, if you want live output as it's generated,
+
+88
+00:04:00,000 --> 00:04:03,000
+turn on Include Partial Messages.
+
+89
+00:04:03,000 --> 00:04:05,000
+That gives you stream event deltas,
+
+90
+00:04:05,000 --> 00:04:08,000
+token by token, as the agent writes.
+
+91
+00:04:08,000 --> 00:04:09,000
+Sort those apart,
+
+92
+00:04:09,000 --> 00:04:12,000
+and the whole streaming picture snaps into focus.
+
+93
+00:04:13,000 --> 00:04:16,000
+Keep this slide handy as your side-by-side reminder,
+
+94
+00:04:16,000 --> 00:04:19,000
+because two different ideas share the word streaming.
+
+95
+00:04:19,000 --> 00:04:21,000
+Input streaming is about sending.
+
+96
+00:04:21,000 --> 00:04:24,000
+It's how you feed prompts into the loop
+
+97
+00:04:24,000 --> 00:04:26,000
+as an async series of messages.
+
+98
+00:04:26,000 --> 00:04:28,000
+Output streaming is about receiving.
+
+99
+00:04:28,000 --> 00:04:32,000
+It's watching the model's tokens arrive as they generate
+
+100
+00:04:32,000 --> 00:04:34,000
+instead of waiting for the finished response.
+
+101
+00:04:34,000 --> 00:04:38,000
+In Python, you turn that on with Include Partial Messages,
+
+102
+00:04:38,000 --> 00:04:41,000
+which delivers live deltas while the agent writes.
+
+103
+00:04:41,000 --> 00:04:44,000
+Here's the part that trips people up.
+
+104
+00:04:44,000 --> 00:04:47,000
+The two are independent choices you can mix freely.
+
+105
+00:04:47,000 --> 00:04:50,000
+You can stream input without streaming output,
+
+106
+00:04:50,000 --> 00:04:53,000
+and you can stream output on a single message run.
+
+107
+00:04:53,000 --> 00:04:55,000
+Picture a chat UI.
+
+108
+00:04:55,000 --> 00:04:58,000
+Streaming input carries the user's messages in,
+
+109
+00:04:58,000 --> 00:05:00,000
+and output streaming paints the reply
+
+110
+00:05:00,000 --> 00:05:03,000
+on-screen token by token.
+
+111
+00:05:03,000 --> 00:05:04,000
+With the directions clear,
+
+112
+00:05:04,000 --> 00:05:06,000
+let's lock down the exact vocabulary.
+
+113
+00:05:07,000 --> 00:05:09,000
+Let's lock the vocabulary,
+
+114
+00:05:09,000 --> 00:05:12,000
+because these three terms get swapped constantly.
+
+115
+00:05:12,000 --> 00:05:14,000
+Streaming input means feeding the loop
+
+116
+00:05:14,000 --> 00:05:16,000
+an async series of messages.
+
+117
+00:05:16,000 --> 00:05:20,000
+It's the default input mode and the recommended one.
+
+118
+00:05:20,000 --> 00:05:23,000
+Include Partial Messages is a different lever.
+
+119
+00:05:23,000 --> 00:05:26,000
+It's the Python flag that turns on live output,
+
+120
+00:05:26,000 --> 00:05:28,000
+delivering the model's tokens to you
+
+121
+00:05:28,000 --> 00:05:31,000
+as stream event messages while it writes.
+
+122
+00:05:31,000 --> 00:05:33,000
+And stream true is different again.
+
+123
+00:05:33,000 --> 00:05:37,000
+That's the API-level response flag on a raw model call,
+
+124
+00:05:37,000 --> 00:05:41,000
+and it has nothing to do with the SDK's input modes.
+
+125
+00:05:41,000 --> 00:05:42,000
+Notice the pattern.
+
+126
+00:05:42,000 --> 00:05:45,000
+One term is about how prompts go in,
+
+127
+00:05:45,000 --> 00:05:49,000
+one is about watching output come out through the SDK,
+
+128
+00:05:49,000 --> 00:05:51,000
+and one belongs to the raw API.
+
+129
+00:05:51,000 --> 00:05:53,000
+Same word, three jobs.
+
+130
+00:05:54,000 --> 00:05:56,000
+Let's turn all of this into a default
+
+131
+00:05:56,000 --> 00:05:58,000
+you can actually reach for.
+
+132
+00:05:58,000 --> 00:06:02,000
+For most agents, you build startWithStreamingInput.
+
+133
+00:06:02,000 --> 00:06:03,000
+It's the recommended mode,
+
+134
+00:06:03,000 --> 00:06:06,000
+and it keeps the full toolbox open.
+
+135
+00:06:06,000 --> 00:06:08,000
+Images, interrupts, queued messages,
+
+136
+00:06:08,000 --> 00:06:11,000
+and natural multi-turn context
+
+137
+00:06:11,000 --> 00:06:14,000
+only drop to single message input
+
+138
+00:06:14,000 --> 00:06:16,000
+when you have a real reason,
+
+139
+00:06:16,000 --> 00:06:18,000
+usually a stateless one-off job
+
+140
+00:06:18,000 --> 00:06:21,000
+where a persistent process would just be overhead.
+
+141
+00:06:21,000 --> 00:06:24,000
+Layer output streaming on top whenever a human
+
+142
+00:06:24,000 --> 00:06:28,000
+is watching responses appear, and you want them live.
+
+143
+00:06:28,000 --> 00:06:30,000
+The through line is simple.
+
+144
+00:06:30,000 --> 00:06:32,000
+Begin from the default,
+
+145
+00:06:32,000 --> 00:06:33,000
+understand what each mode gives up,
+
+146
+00:06:34,000 --> 00:06:37,000
+and switch deliberately when the workload asks for it.
+
+147
+00:06:37,000 --> 00:06:41,000
+That way, your input mode is a decision, not an accident.
+
+148
+00:06:42,000 --> 00:06:44,000
+Let's go over the bottom line.
+
+149
+00:06:44,000 --> 00:06:47,000
+Streaming input and single message sound alike,
+
+150
+00:06:47,000 --> 00:06:50,000
+but they pull in different directions.
+
+151
+00:06:50,000 --> 00:06:53,000
+Streaming input runs a live process with images,
+
+152
+00:06:53,000 --> 00:06:57,000
+interrupts, and natural multi-turn, and it's the default.
+
+153
+00:06:57,000 --> 00:06:59,000
+Single message input is a single string
+
+154
+00:06:59,000 --> 00:07:01,000
+for stateless one-off work.
+
+155
+00:07:01,000 --> 00:07:03,000
+Both feed the same shared loop,
+
+156
+00:07:04,000 --> 00:07:07,000
+so you're choosing capability, not a different engine.
+
+157
+00:07:07,000 --> 00:07:10,000
+That wraps up streaming versus single message input.
+
+158
+00:07:10,000 --> 00:07:11,000
+Join me in the next video.
+

@@ -1,0 +1,328 @@
+1
+00:00:00,000 --> 00:00:06,000
+Hello. Give an agent a shell, and eventually it'll reach for a command you never wanted it to run.
+
+2
+00:00:06,000 --> 00:00:10,000
+You can ask it not to, but asking isn't a control.
+
+3
+00:00:10,000 --> 00:00:17,000
+This lesson covers how to turn a hook into a real guardrail that stops the action cold. Let's dig in.
+
+4
+00:00:18,000 --> 00:00:22,000
+Three ideas frame the whole lesson. First, a guardrail.
+
+5
+00:00:22,000 --> 00:00:28,000
+It's a control that denies or gates a dangerous action before it runs, and the key word is before.
+
+6
+00:00:29,000 --> 00:00:33,000
+A guardrail that catches things afterward isn't a guardrail. It's a report.
+
+7
+00:00:34,000 --> 00:00:36,000
+Second, the pre-tool use deny decision.
+
+8
+00:00:37,000 --> 00:00:43,000
+That's the specific hook move that blocks a pending tool call outright, so the action simply never happens.
+
+9
+00:00:44,000 --> 00:00:46,000
+It's the teeth behind the guardrail.
+
+10
+00:00:46,000 --> 00:00:54,000
+Third, leased privilege. That means giving the agent only the tools and access it actually needs for its job.
+
+11
+00:00:54,000 --> 00:01:00,000
+The two work together. Leased privilege shrinks how much damage is even possible, and the guardrail
+
+12
+00:01:00,000 --> 00:01:01,000
+catches the dangerous cases
+
+13
+00:01:02,000 --> 00:01:04,000
+inside what's left.
+
+14
+00:01:04,000 --> 00:01:06,000
+Narrow the surface first, then guard what remains.
+
+15
+00:01:08,000 --> 00:01:14,000
+Let's make the guardrail pattern concrete, because it's smaller than you'd think. It has three moving parts.
+
+16
+00:01:14,000 --> 00:01:18,000
+You start with a matcher, which selects which tool calls your hook even looks at.
+
+17
+00:01:19,000 --> 00:01:22,000
+You might match on shell commands or on write operations,
+
+18
+00:01:23,000 --> 00:01:30,000
+so the hook stays focused instead of firing on everything. Then, inside the hook, you inspect the pending input.
+
+19
+00:01:30,000 --> 00:01:36,000
+You're looking for the specific thing you want to stop, say a recursive delete at the root of the file system.
+
+20
+00:01:36,000 --> 00:01:42,000
+When you find it, you return deny, and the call never executes. That's the entire shape.
+
+21
+00:01:42,000 --> 00:01:46,000
+Match the risky tool, inspect the call, deny the dangerous ones.
+
+22
+00:01:47,000 --> 00:01:52,000
+And because all of it happens before execution, the bad action is stopped, not just noticed.
+
+23
+00:01:53,000 --> 00:02:00,000
+This comparison is the heart of picking the right hook. Block before, detect after. With a pre-tool use deny,
+
+24
+00:02:01,000 --> 00:02:06,000
+you stop the action while the call is still pending. The dangerous command never touches your
+
+25
+00:02:06,000 --> 00:02:08,000
+system, because it never ran.
+
+26
+00:02:08,000 --> 00:02:10,000
+That's real prevention.
+
+27
+00:02:10,000 --> 00:02:17,000
+Now contrast a post-tool use hook. It only sees the result after the tool has already executed.
+
+28
+00:02:18,000 --> 00:02:23,000
+It can absolutely alert you or write a log entry, and that's genuinely useful for an audit trail,
+
+29
+00:02:23,000 --> 00:02:25,000
+but it can't undo what happened.
+
+30
+00:02:26,000 --> 00:02:33,000
+If your intent is to prevent harm, detection after the fact is the wrong tool, no matter how good the logging is.
+
+31
+00:02:33,000 --> 00:02:40,000
+So the rule writes itself. Prevention lives before execution, which means it lives in pre-tool use.
+
+32
+00:02:41,000 --> 00:02:46,000
+Choosing the right lifecycle event is where guardrails quietly go wrong, and the fix is one question.
+
+33
+00:02:46,000 --> 00:02:53,000
+Ask what you actually need to do at this point. If you need to prevent something, the event has to be pre-tool use,
+
+34
+00:02:53,000 --> 00:02:59,000
+because that's the only one that runs before the action. If you just need to observe or clean up afterward,
+
+35
+00:02:59,000 --> 00:03:03,000
+then a later event like post-tool use or stop is exactly right.
+
+36
+00:03:04,000 --> 00:03:06,000
+Here's the failure mode that makes this worth stressing.
+
+37
+00:03:07,000 --> 00:03:13,000
+Say you put a check for destructive commands in a post-tool use hook. It registers cleanly, and it even fires.
+
+38
+00:03:14,000 --> 00:03:20,000
+But it fires after the delete has already run, so your guardrail is really just a polite incident report.
+
+39
+00:03:20,000 --> 00:03:23,000
+Match the event to the moment, and the guardrail works.
+
+40
+00:03:24,000 --> 00:03:26,000
+Guardrails aren't only about blocking.
+
+41
+00:03:26,000 --> 00:03:31,000
+There are three deterministic uses worth keeping in mind, and they map to the decisions we covered.
+
+42
+00:03:32,000 --> 00:03:38,000
+The first is block. You deny a destructive command outright, a recursive delete, or a drop of a production table,
+
+43
+00:03:39,000 --> 00:03:43,000
+before it can execute. That's the deny decision doing its job.
+
+44
+00:03:43,000 --> 00:03:51,000
+The second is gate. Instead of a hard block, you use ask to route a high-stakes action to a human for approval.
+
+45
+00:03:51,000 --> 00:03:56,000
+The agent pauses, a person decides, and only then does it proceed.
+
+46
+00:03:56,000 --> 00:04:00,000
+The third is audit. You log every tool call deterministically,
+
+47
+00:04:00,000 --> 00:04:05,000
+so your record of what the agent did never depends on the model choosing to report it.
+
+48
+00:04:05,000 --> 00:04:10,000
+Block, gate, audit. Same mechanism, three different jobs.
+
+49
+00:04:11,000 --> 00:04:17,000
+Here's the property that makes hooks worth the trouble. A guardrail built as a hook can't be prompted away.
+
+50
+00:04:18,000 --> 00:04:21,000
+Think about why. The check lives in your code,
+
+51
+00:04:22,000 --> 00:04:27,000
+completely outside the model's reach. The model never even sees it, so there's nothing for a clever
+
+52
+00:04:27,000 --> 00:04:28,000
+input to talk around.
+
+53
+00:04:29,000 --> 00:04:34,000
+Compare that to a rule you write into the prompt, like never run destructive commands.
+
+54
+00:04:34,000 --> 00:04:40,000
+That instruction sits right there in the context, and the right adversarial input, or honestly,
+
+55
+00:04:40,000 --> 00:04:46,000
+just an unlucky phrasing, can get the model to step over it. The hook has no such weakness.
+
+56
+00:04:46,000 --> 00:04:51,000
+It fires the same way on every run, with no memory of past turns and no mood.
+
+57
+00:04:52,000 --> 00:04:57,000
+That's the whole reason serious guardrails live in hooks, not in prompt text.
+
+58
+00:04:58,000 --> 00:05:03,000
+So how do you actually wire a hookup? In the SDK, the primary path is code,
+
+59
+00:05:03,000 --> 00:05:08,000
+attaching your callback to options.hooks on your clod agent options.
+
+60
+00:05:08,000 --> 00:05:13,000
+The second surface is settings.json, where shell command hooks live.
+
+61
+00:05:13,000 --> 00:05:19,000
+Loaded when you enable setting sources. Either way, you name the lifecycle event
+
+62
+00:05:19,000 --> 00:05:23,000
+you're attaching to, like pre-tool use, and you give it a matcher.
+
+63
+00:05:23,000 --> 00:05:27,000
+The matcher is a filter that decides which tool calls the hook watches.
+
+64
+00:05:27,000 --> 00:05:33,000
+It might be an exact tool name, a pattern that catches a family of tools, or nothing at all,
+
+65
+00:05:34,000 --> 00:05:40,000
+which means match everything. One more mechanism worth knowing. A command style hook can return exit code, too,
+
+66
+00:05:41,000 --> 00:05:45,000
+and that's the deterministic signal that blocks the action at the shell level.
+
+67
+00:05:46,000 --> 00:05:52,000
+Register it, point the matcher at the right calls, then test it by trying the exact action you meant to block.
+
+68
+00:05:53,000 --> 00:05:58,000
+Let's put hooks in their place in the bigger picture, because they're one layer, not the whole story.
+
+69
+00:05:58,000 --> 00:06:04,000
+The foundation is least privilege. You give the agent only the tools and access it genuinely needs,
+
+70
+00:06:04,000 --> 00:06:10,000
+which shrinks the risk surface before any hook runs. If the agent can't reach production at all,
+
+71
+00:06:10,000 --> 00:06:14,000
+you don't need a guardrail for it. Then hooks sit on top,
+
+72
+00:06:15,000 --> 00:06:20,000
+guarding the dangerous actions that live inside the tools the agent legitimately does have.
+
+73
+00:06:20,000 --> 00:06:22,000
+Think of it as a stack.
+
+74
+00:06:22,000 --> 00:06:28,000
+Permissions set the baseline of what's even possible, and hooks add deterministic, case-by-case control
+
+75
+00:06:29,000 --> 00:06:31,000
+over the risky calls that remain.
+
+76
+00:06:31,000 --> 00:06:36,000
+When you layer them this way, a single missed instruction in a prompt doesn't turn into a real
+
+77
+00:06:36,000 --> 00:06:38,000
+incident, because the deterministic
+
+78
+00:06:38,000 --> 00:06:40,000
+controls underneath still hold.
+
+79
+00:06:41,000 --> 00:06:47,000
+Here's what to take away. When you build a guardrail, you're testing a pending action before it runs.
+
+80
+00:06:47,000 --> 00:06:51,000
+What to reach for is a pre-tool use deny or ask.
+
+81
+00:06:51,000 --> 00:06:58,000
+The trap is using a post-tool hook and trying to put your check after the fact, where the damage is already done.
+
+82
+00:06:59,000 --> 00:07:03,000
+That wraps up hooks as deterministic guardrails. I'll see you in the next one.
+

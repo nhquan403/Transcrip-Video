@@ -1,0 +1,264 @@
+1
+00:00:00,000 --> 00:00:05,000
+Welcome back. Shared context and isolated context sound similar, but they're completely
+
+2
+00:00:05,000 --> 00:00:11,000
+different territory for a subagent. Assume the wrong one and your subagents fail in confusing
+
+3
+00:00:11,000 --> 00:00:17,000
+ways. This lesson maps what a subagent actually does, what it never inherits, and why that
+
+4
+00:00:17,000 --> 00:00:24,000
+isolation is a feature, not a bug. Let's dig in. Start with three basics that define isolation.
+
+5
+00:00:24,000 --> 00:00:31,000
+First, every subagent runs in its own fresh conversation. Its context window is fully
+
+6
+00:00:31,000 --> 00:00:38,000
+separate from the manager's, a clean slate rather than a copy. Second, it doesn't inherit history.
+
+7
+00:00:38,000 --> 00:00:43,000
+The manager's conversation, its earlier tool results, and its system prompt don't carry over.
+
+8
+00:00:44,000 --> 00:00:50,000
+The subagent gets its own prompt and whatever you explicitly pass and nothing else. Third,
+
+9
+00:00:50,000 --> 00:00:55,000
+only the final message returns. Everything the subagent does along the way, its reasoning and
+
+10
+00:00:55,000 --> 00:01:02,000
+its tool calls, stays inside its context. The manager receives just the final result as the
+
+11
+00:01:02,000 --> 00:01:08,000
+tool output. Hold on to those three basics because every practical rule in this lesson follows from
+
+12
+00:01:08,000 --> 00:01:16,000
+them. Why is each subagent walled off like this? Because isolation is exactly what you're buying
+
+13
+00:01:16,000 --> 00:01:22,000
+when you delegate. Think about what happens without it. If every subagent's full transcript
+
+14
+00:01:22,000 --> 00:01:28,000
+flowed back into the manager, the manager's context would balloon with detail it never needs
+
+15
+00:01:28,000 --> 00:01:34,000
+and it would fill up fast. Isolation keeps the manager's context clean and focused on the goal.
+
+16
+00:01:35,000 --> 00:01:42,000
+It also bounds token growth. You can add a fifth or a tenth subtask and the manager only pays for
+
+17
+00:01:42,000 --> 00:01:48,000
+each short summary that comes back, not the entire back and forth inside every subagent.
+
+18
+00:01:48,000 --> 00:01:55,000
+And each subagent, seeing only its own slice, can focus hard on one problem instead of getting
+
+19
+00:01:55,000 --> 00:02:01,000
+distracted by everything else in flight. Let's be concrete about what a subagent actually has
+
+20
+00:02:01,000 --> 00:02:07,000
+to work with. It starts from a known limited set of inputs. It inherits its own system prompt,
+
+21
+00:02:07,000 --> 00:02:13,000
+the project, Claude.md file, and the tool definitions you gave it. It also receives
+
+22
+00:02:13,000 --> 00:02:18,000
+anything you explicitly passed into the delegated task, the specific data and instructions for this
+
+23
+00:02:18,000 --> 00:02:24,000
+piece of work. What it never sees is just as important. It doesn't get the manager's conversation
+
+24
+00:02:24,000 --> 00:02:29,000
+history, the manager's earlier tool results, or the manager's system prompt. Here's the practical
+
+25
+00:02:29,000 --> 00:02:34,000
+rule that falls out of this. If a subagent needs a fact to do its job, you have to hand that fact
+
+26
+00:02:34,000 --> 00:02:42,000
+over. Assuming it already knows is the isolation bug to watch for. Because context is isolated,
+
+27
+00:02:42,000 --> 00:02:49,000
+the delegated task is your one channel to set a subagent up to succeed. Four things belong in it.
+
+28
+00:02:50,000 --> 00:02:56,000
+Task instructions come first. State exactly what the subagent should do and what a finished result
+
+29
+00:02:56,000 --> 00:03:04,000
+looks like. Next, relevant data. Hand over the specific facts, files, or values the subtask
+
+30
+00:03:04,000 --> 00:03:11,000
+depends on, since the subagent can't pull them from the manager. Third, output shape. Name the
+
+31
+00:03:11,000 --> 00:03:18,000
+format you want back, whether that's a summary, a list, or structured data. And fourth, scoped tools.
+
+32
+00:03:19,000 --> 00:03:25,000
+Give it only the tools this task needs and nothing that widens its reach. Get these four right and
+
+33
+00:03:25,000 --> 00:03:32,000
+the subagent has everything it needs on the first try. This comparison captures that same isolation
+
+34
+00:03:32,000 --> 00:03:39,000
+bug in one picture. The wrong assumption is that a subagent shares the manager's full context, that
+
+35
+00:03:39,000 --> 00:03:46,000
+it can see everything the manager has already seen and done. Developers reach for a subagent,
+
+36
+00:03:46,000 --> 00:03:53,000
+then write a task that quietly relies on shared knowledge. The actual behavior is narrower. A
+
+37
+00:03:53,000 --> 00:04:00,000
+subagent sees only its own prompt and whatever inputs you pass into the task. Shared context
+
+38
+00:04:00,000 --> 00:04:06,000
+is the exception you deliberately build by passing things in, not a default you get for free. So
+
+39
+00:04:06,000 --> 00:04:13,000
+whenever you delegate, ask one question. Does this subagent already have, in its own inputs, everything
+
+40
+00:04:13,000 --> 00:04:21,000
+it needs? If not, the assumption is doing the work and it will break. Let's put a cost lens on isolation
+
+41
+00:04:21,000 --> 00:04:28,000
+because this is where it pays off for real builds. When a subagent finishes, the only thing that lands
+
+42
+00:04:28,000 --> 00:04:34,000
+in the manager's context is its final summary. Everything in between, the long reasoning, the noisy
+
+43
+00:04:34,000 --> 00:04:42,000
+tool output, the retries, all of that stays inside the subagent and never reaches the parent window.
+
+44
+00:04:42,000 --> 00:04:50,000
+That has a direct consequence for scaling. As you add more subtasks, the manager's context grows
+
+45
+00:04:50,000 --> 00:04:57,000
+predictably. One small summary at a time instead of exploding. One subagent can chew through a huge
+
+46
+00:04:57,000 --> 00:05:03,000
+document or a messy tool loop and the manager barely feels it because only the distilled result
+
+47
+00:05:03,000 --> 00:05:10,000
+comes back. Without isolation, that same work would flood the manager and blow your token budget.
+
+48
+00:05:11,000 --> 00:05:16,000
+Isolation isn't only about context. It should extend to authority and that gives you three
+
+49
+00:05:16,000 --> 00:05:23,000
+boundaries. Least privilege comes first. A subagent holds only the permissions its task requires,
+
+50
+00:05:23,000 --> 00:05:30,000
+so it can read or write exactly what it needs and nothing else. Second, keep side effects limited.
+
+51
+00:05:30,000 --> 00:05:36,000
+A well-scoped subagent produces no writes and no actions outside its assigned subtask.
+
+52
+00:05:36,000 --> 00:05:42,000
+If your summarizer can send email, the scope is too wide. Third, you get a contained blast radius.
+
+53
+00:05:42,000 --> 00:05:48,000
+When a subagent misbehaves, and eventually one will, its narrow scope and small tool set
+
+54
+00:05:48,000 --> 00:05:54,000
+keep the damage local and easy to trace. Design authority the same way you design context,
+
+55
+00:05:54,000 --> 00:06:00,000
+hand over the minimum, and no more. Let's name the trap directly because it's the one that costs teams
+
+56
+00:06:00,000 --> 00:06:07,000
+the most. The common misread is treating subagents as nothing more than a speed trick, a way to run
+
+57
+00:06:07,000 --> 00:06:12,000
+several things at once. Parallel speed is real and it's genuinely useful, but it's the smaller
+
+58
+00:06:12,000 --> 00:06:19,000
+benefit by far. The deeper reason to delegate is context isolation, keeping intermediate work out
+
+59
+00:06:19,000 --> 00:06:24,000
+of the manager's window. Here's the tell that makes the point. Reaching for a subagent pays
+
+60
+00:06:24,000 --> 00:06:31,000
+off even when you only spin up one, run sequentially, purely to keep that subtask's context out of the
+
+61
+00:06:31,000 --> 00:06:38,000
+parent. If you only ever think in terms of parallel speed, you'll miss half of what subagents are for
+
+62
+00:06:38,000 --> 00:06:45,000
+and you'll skip them exactly when they'd help most. Here's the bottom line. Context isolation
+
+63
+00:06:45,000 --> 00:06:51,000
+gives you a clean frame for delegation. Each subagent starts fresh, so anything it needs has
+
+64
+00:06:51,000 --> 00:06:58,000
+to be passed in. Just remember, that isolation is the reason to delegate, not a limitation, since it
+
+65
+00:06:58,000 --> 00:07:04,000
+bounds token growth and contains authority. And that wraps up context isolation with scoped agents.
+
+66
+00:07:04,000 --> 00:07:06,000
+I'll see you in the next one.
+

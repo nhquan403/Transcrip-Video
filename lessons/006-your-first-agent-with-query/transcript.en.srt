@@ -1,0 +1,452 @@
+1
+00:00:00,000 --> 00:00:03,000
+Let's get into building your first agent in code.
+
+2
+00:00:03,000 --> 00:00:06,000
+When you want to run an agent yourself, you hit a problem.
+
+3
+00:00:06,000 --> 00:00:08,000
+Where do you even start?
+
+4
+00:00:08,000 --> 00:00:11,000
+The Cloud Agent SDK answers that with Query,
+
+5
+00:00:11,000 --> 00:00:16,000
+one clean entry point that runs the very same loop powering Cloud Code.
+
+6
+00:00:16,000 --> 00:00:17,000
+Let's dig into it.
+
+7
+00:00:18,000 --> 00:00:20,000
+Let's define the pieces.
+
+8
+00:00:20,000 --> 00:00:22,000
+The Agent SDK is a library.
+
+9
+00:00:22,000 --> 00:00:28,000
+It packages the same tools, agent loop, and context management that run inside Cloud Code,
+
+10
+00:00:28,000 --> 00:00:32,000
+and it ships for both Python and TypeScript.
+
+11
+00:00:32,000 --> 00:00:35,000
+Query is the primary entry point into that library.
+
+12
+00:00:35,000 --> 00:00:38,000
+You call it, and it runs the agent loop for you.
+
+13
+00:00:38,000 --> 00:00:40,000
+Here's the part people miss.
+
+14
+00:00:40,000 --> 00:00:42,000
+The SDK is standalone.
+
+15
+00:00:42,000 --> 00:00:46,000
+You don't need the Cloud Code command line tool installed anywhere.
+
+16
+00:00:46,000 --> 00:00:51,000
+You import the package, call Query, and you are running an agent.
+
+17
+00:00:51,000 --> 00:00:55,000
+And by default, every call to Query starts a fresh session,
+
+18
+00:00:55,000 --> 00:00:57,000
+with no memory of any earlier call.
+
+19
+00:00:58,000 --> 00:01:00,000
+That fresh start is the default you build around.
+
+20
+00:01:02,000 --> 00:01:03,000
+So how do you get running?
+
+21
+00:01:03,000 --> 00:01:08,000
+In Python, you install with pip install Cloud Agent SDK,
+
+22
+00:01:08,000 --> 00:01:11,000
+and you need Python 3.10 or newer.
+
+23
+00:01:11,000 --> 00:01:17,000
+In TypeScript, you pull the at anthropic AI Cloud Agent SDK package from npm.
+
+24
+00:01:18,000 --> 00:01:20,000
+Authentication is just an environment variable.
+
+25
+00:01:21,000 --> 00:01:24,000
+Set anthropic API key, and you are ready.
+
+26
+00:01:25,000 --> 00:01:27,000
+If your company runs Cloud through a cloud provider,
+
+27
+00:01:27,000 --> 00:01:30,000
+you flip an environment flag instead.
+
+28
+00:01:30,000 --> 00:01:34,000
+There are flags for Amazon Bedrock and for Google's Vertex platform.
+
+29
+00:01:34,000 --> 00:01:38,000
+So you route through the provider your infrastructure already uses.
+
+30
+00:01:38,000 --> 00:01:40,000
+Notice what you didn't do.
+
+31
+00:01:40,000 --> 00:01:42,000
+You never installed a separate command line tool.
+
+32
+00:01:43,000 --> 00:01:48,000
+One import, one credential, and the whole agent loop is available to your code.
+
+33
+00:01:49,000 --> 00:01:52,000
+You will hear that the SDK has two entry points,
+
+34
+00:01:52,000 --> 00:01:56,000
+Query and Cloud SDK Client,
+
+35
+00:01:56,000 --> 00:01:58,000
+and that they are somehow rival designs.
+
+36
+00:01:58,000 --> 00:02:01,000
+Let me correct that now, because it trips people up.
+
+37
+00:02:01,000 --> 00:02:03,000
+They aren't two separate loops.
+
+38
+00:02:03,000 --> 00:02:07,000
+They are two Python ways into the exact same agent loop.
+
+39
+00:02:07,000 --> 00:02:10,000
+Query is the function you reach for most.
+
+40
+00:02:10,000 --> 00:02:14,000
+It runs a task and starts a fresh session every call.
+
+41
+00:02:14,000 --> 00:02:20,000
+Cloud SDK Client is an object that holds one session open across several calls
+
+42
+00:02:20,000 --> 00:02:22,000
+and lets you interrupt a run in progress.
+
+43
+00:02:22,000 --> 00:02:27,000
+The real difference is session lifecycle and interrupts, not the underlying engine.
+
+44
+00:02:28,000 --> 00:02:30,000
+Reach for Query first,
+
+45
+00:02:30,000 --> 00:02:33,000
+and move to the client when you need a persistent session or live interruption.
+
+46
+00:02:35,000 --> 00:02:37,000
+So how do you actually control the agent?
+
+47
+00:02:37,000 --> 00:02:39,000
+You pass options into Query.
+
+48
+00:02:40,000 --> 00:02:43,000
+The system prompt sets the agent's role
+
+49
+00:02:43,000 --> 00:02:45,000
+and the standing instructions it follows on every turn.
+
+50
+00:02:46,000 --> 00:02:50,000
+The tools list decides which actions the model is even allowed to take,
+
+51
+00:02:50,000 --> 00:02:53,000
+from reading files to calling your own functions.
+
+52
+00:02:53,000 --> 00:02:57,000
+The model option picks which Cloud model runs the loop,
+
+53
+00:02:57,000 --> 00:03:03,000
+and max turns caps how many tool using turns the loop will take before it stops.
+
+54
+00:03:04,000 --> 00:03:06,000
+That last cap matters more than it looks.
+
+55
+00:03:06,000 --> 00:03:10,000
+Without a bound, an agent can loop far longer than you intended.
+
+56
+00:03:10,000 --> 00:03:15,000
+The same query, function, configured differently, gives you very different agents.
+
+57
+00:03:16,000 --> 00:03:21,000
+When you call Query, what comes back isn't a finished string.
+
+58
+00:03:21,000 --> 00:03:23,000
+It is an async iterator.
+
+59
+00:03:23,000 --> 00:03:27,000
+You loop over it, reading each message as the agent produces it,
+
+60
+00:03:27,000 --> 00:03:30,000
+from its reasoning, to its tool calls, to its final answer.
+
+61
+00:03:31,000 --> 00:03:34,000
+That streaming shape is why the SDK feels live.
+
+62
+00:03:34,000 --> 00:03:39,000
+You watch the run unfold instead of blocking on one big response.
+
+63
+00:03:39,000 --> 00:03:41,000
+The second thing to hold on to is the session.
+
+64
+00:03:42,000 --> 00:03:47,000
+Each call opens a fresh session, with no memory of any prior call.
+
+65
+00:03:47,000 --> 00:03:50,000
+If you want the agent to remember an earlier conversation,
+
+66
+00:03:50,000 --> 00:03:54,000
+that persistence is something you opt into, not something you get for free.
+
+67
+00:03:54,000 --> 00:03:59,000
+Design for that fresh start, and the whole run happens inside your own process,
+
+68
+00:03:59,000 --> 00:04:01,000
+with no command line tool running behind it.
+
+69
+00:04:03,000 --> 00:04:06,000
+Let's look at what actually flows through that stream.
+
+70
+00:04:06,000 --> 00:04:09,000
+The messages are typed, and they arrive in the order the agent produces them.
+
+71
+00:04:10,000 --> 00:04:12,000
+First comes an init message.
+
+72
+00:04:12,000 --> 00:04:15,000
+It opens the run, and reports the resolved configuration,
+
+73
+00:04:15,000 --> 00:04:18,000
+the model, the tools, the system prompt.
+
+74
+00:04:19,000 --> 00:04:24,000
+Then you see assistant messages carrying the model's reasoning and any tool calls,
+
+75
+00:04:24,000 --> 00:04:26,000
+followed by the results those tools return.
+
+76
+00:04:27,000 --> 00:04:31,000
+This back and forth repeats as the agent works.
+
+77
+00:04:31,000 --> 00:04:33,000
+Finally, a result message closes the run.
+
+78
+00:04:33,000 --> 00:04:36,000
+It carries the total cost, the token usage,
+
+79
+00:04:36,000 --> 00:04:40,000
+and a status telling you whether the run succeeded or hit a limit.
+
+80
+00:04:41,000 --> 00:04:46,000
+Iterating that sequence is how your code follows the agent live, message by message.
+
+81
+00:04:47,000 --> 00:04:50,000
+Let me pull the run's character into three traits,
+
+82
+00:04:50,000 --> 00:04:53,000
+because they shape everything you build next.
+
+83
+00:04:53,000 --> 00:04:55,000
+First, it's standalone.
+
+84
+00:04:55,000 --> 00:04:57,000
+The run needs no command line tool.
+
+85
+00:04:57,000 --> 00:05:01,000
+The library alone carries the full agent loop into your process.
+
+86
+00:05:02,000 --> 00:05:03,000
+Second, it's streamed.
+
+87
+00:05:04,000 --> 00:05:09,000
+Messages arrive as an async iterator, and you read them live as the agent works,
+
+88
+00:05:09,000 --> 00:05:11,000
+rather than waiting for one final block.
+
+89
+00:05:12,000 --> 00:05:14,000
+Third, it's session-scoped.
+
+90
+00:05:14,000 --> 00:05:17,000
+Each call is its own fresh session,
+
+91
+00:05:17,000 --> 00:05:21,000
+and any memory across calls is something you opt into deliberately.
+
+92
+00:05:21,000 --> 00:05:23,000
+Hold those three together and query.
+
+93
+00:05:24,000 --> 00:05:26,000
+Stops feeling like magic.
+
+94
+00:05:26,000 --> 00:05:32,000
+It's a standalone, streaming, session-scoped call into one well-defined agent loop.
+
+95
+00:05:33,000 --> 00:05:37,000
+Let's tie it together into a path you can actually follow.
+
+96
+00:05:37,000 --> 00:05:39,000
+Your first call can be tiny.
+
+97
+00:05:39,000 --> 00:05:43,000
+Pass a prompt, take the default options, and loop over the messages
+
+98
+00:05:43,000 --> 00:05:45,000
+just to watch the agent loop run end-to-end.
+
+99
+00:05:46,000 --> 00:05:50,000
+Once that works, add tools so the agent can take real actions
+
+100
+00:05:50,000 --> 00:05:52,000
+instead of only answering in text.
+
+101
+00:05:53,000 --> 00:05:56,000
+Then, before you hand it anything long or expensive,
+
+102
+00:05:56,000 --> 00:06:00,000
+add a maxTurnsBound so a stuck run can't spin forever.
+
+103
+00:06:01,000 --> 00:06:04,000
+Notice that you never switched entry points to do any of this.
+
+104
+00:06:05,000 --> 00:06:08,000
+The same query, call, that ran your two-line example
+
+105
+00:06:08,000 --> 00:06:11,000
+is the one that runs a tool-using agent.
+
+106
+00:06:11,000 --> 00:06:13,000
+It grows with you as the task grows.
+
+107
+00:06:14,000 --> 00:06:16,000
+Here's what to take away.
+
+108
+00:06:16,000 --> 00:06:21,000
+Query runs the agent SDK's agent loop right inside your code.
+
+109
+00:06:21,000 --> 00:06:25,000
+A single function, configured with a prompt, tools, and a turncap,
+
+110
+00:06:25,000 --> 00:06:28,000
+takes you from a first call to a real agent.
+
+111
+00:06:28,000 --> 00:06:32,000
+Just remember, query and the client share a single loop, not two.
+
+112
+00:06:33,000 --> 00:06:36,000
+That covers writing your first agent with query.
+
+113
+00:06:36,000 --> 00:06:37,000
+I'll see you in the next lesson.
+

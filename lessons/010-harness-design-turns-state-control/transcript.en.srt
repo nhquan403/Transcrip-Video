@@ -1,0 +1,244 @@
+1
+00:00:00,000 --> 00:00:06,000
+Okay, let's get into harness design. A raw loop calls the model and runs tools,
+
+2
+00:00:06,000 --> 00:00:12,000
+but on its own it's fragile. The harness is everything around that loop that makes it safe
+
+3
+00:00:12,000 --> 00:00:18,000
+to run. It gives you four jobs to handle. Turn accounting, state tracking, error handling,
+
+4
+00:00:18,000 --> 00:00:21,000
+and stop conditions. We'll walk through each one. Let's break it down.
+
+5
+00:00:22,000 --> 00:00:28,000
+Let's lock down three terms before we build. First, the harness itself. It's the loop plus
+
+6
+00:00:28,000 --> 00:00:35,000
+all the infrastructure around it. The code that gathers context, sends requests, runs tools,
+
+7
+00:00:35,000 --> 00:00:41,000
+and feeds results back. Second, turn accounting. That's counting each tool use round trip,
+
+8
+00:00:41,000 --> 00:00:49,000
+so your runtime, not the model, enforces a budget. Third, a stop condition, an explicit rule that
+
+9
+00:00:49,000 --> 00:00:54,000
+ends the loop. Whether the task is done, the turn cap is hit, or an error forces you out.
+
+10
+00:00:55,000 --> 00:01:00,000
+Keep these three straight and the design work ahead makes sense. They're the shared vocabulary
+
+11
+00:01:00,000 --> 00:01:06,000
+for everything else we design in this lesson, so let's put them to work. Let's separate the
+
+12
+00:01:06,000 --> 00:01:10,000
+loop from the harness because people blur them. The model call is the loop. The harness is
+
+13
+00:01:10,000 --> 00:01:17,000
+everything around it. It gathers and formats the context you send in. It executes the tools and
+
+14
+00:01:17,000 --> 00:01:22,000
+captures their output, and it records what happened so you have logging and an audit trail
+
+15
+00:01:22,000 --> 00:01:28,000
+when something goes wrong. A useful picture is the engine and the car. The loop is the engine
+
+16
+00:01:28,000 --> 00:01:35,000
+that turns model output into action. The harness is the car built around it, the frame, the controls,
+
+17
+00:01:35,000 --> 00:01:40,000
+and the safety features that make the whole thing drivable. You need both working together.
+
+18
+00:01:42,000 --> 00:01:48,000
+Here are the four jobs your harness owns. First, turn accounting. You count every tool use round
+
+19
+00:01:48,000 --> 00:01:54,000
+trip and stop when the budget is reached. Second, state tracking. You hold the growing messages
+
+20
+00:01:54,000 --> 00:02:01,000
+array and any data the loop carries from one turn to the next. Third, error handling. When a tool
+
+21
+00:02:01,000 --> 00:02:09,000
+fails or the model errors, your code decides whether to retry, skip, or abort. Fourth, stop
+
+22
+00:02:09,000 --> 00:02:15,000
+conditions. You define exactly when the loop ends so it never runs unbounded. Miss any one of these
+
+23
+00:02:15,000 --> 00:02:21,000
+and the loop still runs, but it runs unsafely. Together, they're what separates a demo from
+
+24
+00:02:21,000 --> 00:02:26,000
+something you'd put in production. Let's talk about the single most important guard rail,
+
+25
+00:02:26,000 --> 00:02:33,000
+the turn budget. An agent loop needs a hard limit, and that limit has to live in your runtime,
+
+26
+00:02:33,000 --> 00:02:39,000
+not in the model's goodwill. So you count tool use turns as they happen, and the moment the count
+
+27
+00:02:39,000 --> 00:02:44,000
+hits your cap, you stop the loop and return whatever you have. What you never do is trust
+
+28
+00:02:44,000 --> 00:02:51,000
+the model to limit itself. Ask it to stop after a handful of steps, and it might or it might not.
+
+29
+00:02:51,000 --> 00:02:57,000
+An unbounded loop isn't a clever feature you left in for flexibility. It's a defect, a way to burn
+
+30
+00:02:57,000 --> 00:03:04,000
+budget and time with nothing to show. Enforce the bound in code. Let's weigh the two paths honestly.
+
+31
+00:03:04,000 --> 00:03:09,000
+With a hand-rolled harness, you write the turn accounting, the state tracking, and the stop logic
+
+32
+00:03:09,000 --> 00:03:15,000
+yourself. You get more control and fewer dependencies, but you own every line and you
+
+33
+00:03:15,000 --> 00:03:22,000
+maintain it as your needs change. With the agent SDK harness, the loop, the tool execution, context
+
+34
+00:03:22,000 --> 00:03:29,000
+management, and the turn limits all come built in. You write far less code. In exchange, you accept
+
+35
+00:03:29,000 --> 00:03:35,000
+the framework's shape and its updates, and you fit your app to how it works. Neither answer is
+
+36
+00:03:35,000 --> 00:03:41,000
+universal. The more your reliability depends on control you can't compromise, the more a hand-rolled
+
+37
+00:03:41,000 --> 00:03:47,000
+harness earns its cost. One detail bites people the first time they stream a response. A tool's
+
+38
+00:03:47,000 --> 00:03:53,000
+arguments don't arrive all at once. They come in pieces. The stream sends deltas of type input,
+
+39
+00:03:53,000 --> 00:04:00,000
+JSON delta, and each one carries a chunk of partial JSON. Your harness accumulates those fragments
+
+40
+00:04:00,000 --> 00:04:07,000
+as they arrive, and it waits. It parses only when the block closes, not before, because a half-arrived
+
+41
+00:04:07,000 --> 00:04:14,000
+chunk isn't valid JSON yet. Here's the reassuring part. The final tool input is always a complete
+
+42
+00:04:14,000 --> 00:04:20,000
+object once the block finishes. It's never a dangling string, so the rule is simple. Buffer
+
+43
+00:04:20,000 --> 00:04:27,000
+the partial JSON and parse it exactly once at the end. Owning the loop gives you three natural
+
+44
+00:04:27,000 --> 00:04:33,000
+places to inject your own policy. The first is before the tool runs. Your loop can inspect the
+
+45
+00:04:33,000 --> 00:04:39,000
+call, log it, or block it outright before anything executes, and that's where deterministic policy
+
+46
+00:04:39,000 --> 00:04:46,000
+lives. The second is around execution. You wrap each tool call with retries and timeouts, so a
+
+47
+00:04:46,000 --> 00:04:52,000
+transient failure doesn't take down the whole run. The third is after the result comes back. You log
+
+48
+00:04:52,000 --> 00:04:57,000
+the output and record your turn count before feeding the result to the model. These three
+
+49
+00:04:57,000 --> 00:05:04,000
+seams are exactly what you gave up the SDK to get. Use them deliberately. Let's tie the control back
+
+50
+00:05:04,000 --> 00:05:10,000
+to why you're here. When you own the loop, the reliability levers are all yours to pull. You inject
+
+51
+00:05:10,000 --> 00:05:16,000
+deterministic policy at each step, so behavior doesn't drift with the model's mood. A destructive
+
+52
+00:05:16,000 --> 00:05:23,000
+call, like a database delete, gets blocked in code every single time. You log and audit every
+
+53
+00:05:23,000 --> 00:05:29,000
+tool call in whatever format your team needs. Maybe structured JSON lines that feed straight
+
+54
+00:05:29,000 --> 00:05:35,000
+into your existing observability stack. And you add retries exactly where the real failure points
+
+55
+00:05:35,000 --> 00:05:41,000
+are, say a flaky network API. Not everywhere by default. This is the whole payoff. That fine-grained
+
+56
+00:05:41,000 --> 00:05:47,000
+control is the entire reason to hand roll a harness in the first place. And those three seams
+
+57
+00:05:47,000 --> 00:05:54,000
+are how you claim it. Here's the bottom line. A good harness gives your loop a four-part frame.
+
+58
+00:05:54,000 --> 00:06:00,000
+Turn accounting caps it from your runtime. State tracking holds the growing conversation.
+
+59
+00:06:00,000 --> 00:06:06,000
+Error handling decides retry, skip, and abort. And stop conditions end it deterministically.
+
+60
+00:06:06,000 --> 00:06:12,000
+One thing to watch. The payoff is control, but the cost is code that you have to own
+
+61
+00:06:12,000 --> 00:06:17,000
+and maintain. That wraps up harness design and turn control. I'll see you in the next one.
+

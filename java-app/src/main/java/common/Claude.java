@@ -3,6 +3,9 @@ package common;
 import com.anthropic.client.AnthropicClient;
 import com.anthropic.client.okhttp.AnthropicOkHttpClient;
 import com.anthropic.core.JsonValue;
+import com.anthropic.core.http.StreamResponse;
+import com.anthropic.helpers.MessageAccumulator;
+import com.anthropic.models.messages.RawMessageStreamEvent;
 import com.anthropic.models.messages.Message;
 import com.anthropic.models.messages.MessageCreateParams;
 import com.anthropic.models.messages.OutputConfig;
@@ -12,6 +15,8 @@ import com.anthropic.models.messages.StructuredMessageCreateParams;
 import com.anthropic.models.messages.Usage;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -23,6 +28,16 @@ import java.util.stream.Collectors;
  */
 public final class Claude {
     public static final String MODEL = envOr("CLAUDE_MODEL", "claude-opus-5-5");
+
+    /** Giá USD cho mỗi 1 triệu token vào/ra (bảng giá Anthropic tháng 10/2026; model lạ dùng giá Opus 5.5). */
+    public static final Map<String, double[]> PRICE_PER_MTOK = Map.of(
+        "claude-opus-5-5", new double[] {4.00, 20.00},
+        "claude-sonnet-5-5", new double[] {2.00, 10.00},
+        "claude-haiku-5-5", new double[] {0.10, 0.50});
+
+    public static double[] price() {
+        return PRICE_PER_MTOK.getOrDefault(MODEL, PRICE_PER_MTOK.get("claude-opus-5-5"));
+    }
 
     /** Một lần gọi API: token vào, token ra, và thời gian một round trip. */
     public record CallStats(long inputTokens, long outputTokens, long millis) {}
@@ -61,6 +76,35 @@ public final class Claude {
     public Message create(MessageCreateParams params) {
         long start = System.nanoTime();
         Message message = client.messages().create(params);
+        record(message.usage(), start, message.stopReason().orElse(null));
+        return message;
+    }
+
+    /** Gọi API ở chế độ streaming output: onText nhận từng đoạn text ngay khi Claude viết ra. */
+    public Message stream(MessageCreateParams params, Consumer<String> onText) {
+        return stream(params, onText, new ArrayList<>());
+    }
+
+    /** Streaming và chỉ lấy các mảnh partial JSON của input tool (sự kiện input_json_delta), theo đúng thứ tự đến. */
+    public List<String> streamToolInputDeltas(MessageCreateParams params) {
+        List<String> deltas = new ArrayList<>();
+        stream(params, text -> { }, deltas);
+        return deltas;
+    }
+
+    private Message stream(MessageCreateParams params, Consumer<String> onText, List<String> jsonDeltas) {
+        long start = System.nanoTime();
+        MessageAccumulator accumulator = MessageAccumulator.create();
+        try (StreamResponse<RawMessageStreamEvent> response = client.messages().createStreaming(params)) {
+            response.stream()
+                .peek(accumulator::accumulate)
+                .flatMap(event -> event.contentBlockDelta().stream())
+                .forEach(delta -> {
+                    delta.delta().text().ifPresent(text -> onText.accept(text.text()));
+                    delta.delta().inputJson().ifPresent(json -> jsonDeltas.add(json.partialJson()));
+                });
+        }
+        Message message = accumulator.message();
         record(message.usage(), start, message.stopReason().orElse(null));
         return message;
     }
@@ -108,7 +152,9 @@ public final class Claude {
     public String usageSummary() {
         long in = calls.stream().mapToLong(CallStats::inputTokens).sum();
         long out = calls.stream().mapToLong(CallStats::outputTokens).sum();
-        return calls.size() + " lần gọi " + MODEL + ", " + in + " token vào, " + out + " token ra";
+        double usd = (in * price()[0] + out * price()[1]) / 1_000_000;
+        return calls.size() + " lần gọi " + MODEL + ", " + in + " token vào, " + out + " token ra, khoảng $"
+            + String.format("%.4f", usd);
     }
 
     private static String envOr(String name, String fallback) {

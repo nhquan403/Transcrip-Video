@@ -1,0 +1,600 @@
+1
+00:00:00,000 --> 00:00:01,000
+Welcome back.
+
+2
+00:00:01,000 --> 00:00:04,000
+Last time, we launched an agent with Query.
+
+3
+00:00:04,000 --> 00:00:08,000
+Now, let's see what actually happens after you call it.
+
+4
+00:00:08,000 --> 00:00:11,000
+Claude doesn't just answer one time, it runs a loop.
+
+5
+00:00:11,000 --> 00:00:12,000
+Reasoning, calling tools,
+
+6
+00:00:12,000 --> 00:00:15,000
+reading the results, and going again.
+
+7
+00:00:15,000 --> 00:00:18,000
+This lesson walks through the five steps of that loop
+
+8
+00:00:18,000 --> 00:00:20,000
+and how it knows when to stop.
+
+9
+00:00:20,000 --> 00:00:21,000
+Let's break it down.
+
+10
+00:00:23,000 --> 00:00:25,000
+Let's walk the whole loop once, top to bottom.
+
+11
+00:00:25,000 --> 00:00:28,000
+It starts when Claude receives your prompt,
+
+12
+00:00:28,000 --> 00:00:29,000
+along with the system prompt,
+
+13
+00:00:29,000 --> 00:00:32,000
+the tool definitions, and any history.
+
+14
+00:00:32,000 --> 00:00:36,000
+At that moment, the SDK yields an init message,
+
+15
+00:00:36,000 --> 00:00:38,000
+marking the run as open.
+
+16
+00:00:38,000 --> 00:00:40,000
+Claude then responds.
+
+17
+00:00:40,000 --> 00:00:42,000
+Sometimes that's plain text,
+
+18
+00:00:42,000 --> 00:00:46,000
+but often it's a request to call its tools.
+
+19
+00:00:46,000 --> 00:00:48,000
+The SDK executes those tools
+
+20
+00:00:48,000 --> 00:00:50,000
+and feeds the results back to Claude.
+
+21
+00:00:50,000 --> 00:00:52,000
+Now the cycle repeats.
+
+22
+00:00:52,000 --> 00:00:55,000
+Claude reads the results, reasons again,
+
+23
+00:00:55,000 --> 00:00:57,000
+and may call more tools.
+
+24
+00:00:57,000 --> 00:01:00,000
+This continues until Claude answers
+
+25
+00:01:00,000 --> 00:01:02,000
+with no tool call at all.
+
+26
+00:01:02,000 --> 00:01:05,000
+That tool-free answer is the signal the loop is done.
+
+27
+00:01:06,000 --> 00:01:08,000
+Now let's nail down the word turn,
+
+28
+00:01:08,000 --> 00:01:10,000
+because people trip on it.
+
+29
+00:01:10,000 --> 00:01:12,000
+A turn is a single round trip.
+
+30
+00:01:12,000 --> 00:01:16,000
+Claude requests some tools, the SDK runs them,
+
+31
+00:01:16,000 --> 00:01:18,000
+and the results feed back,
+
+32
+00:01:18,000 --> 00:01:21,000
+all without handing control to your code in between.
+
+33
+00:01:21,000 --> 00:01:24,000
+That whole exchange counts as one turn.
+
+34
+00:01:24,000 --> 00:01:27,000
+The turn ends when its tool results come back.
+
+35
+00:01:27,000 --> 00:01:28,000
+If Claude looks at those results
+
+36
+00:01:28,000 --> 00:01:31,000
+and decides to call more tools,
+
+37
+00:01:31,000 --> 00:01:33,000
+that's the next turn beginning.
+
+38
+00:01:33,000 --> 00:01:34,000
+So turns keep stacking
+
+39
+00:01:34,000 --> 00:01:37,000
+as long as Claude keeps reaching for tools.
+
+40
+00:01:37,000 --> 00:01:40,000
+The loop only ends when Claude replies
+
+41
+00:01:40,000 --> 00:01:42,000
+with no tool call at all.
+
+42
+00:01:42,000 --> 00:01:44,000
+That final tool-free message
+
+43
+00:01:44,000 --> 00:01:46,000
+is the answer you were waiting for.
+
+44
+00:01:47,000 --> 00:01:51,000
+The loop speaks to your code through five typed messages,
+
+45
+00:01:51,000 --> 00:01:52,000
+so it helps to know each one.
+
+46
+00:01:52,000 --> 00:01:54,000
+A system message opens the run,
+
+47
+00:01:54,000 --> 00:01:58,000
+and its init subtype is the very first thing you see.
+
+48
+00:01:58,000 --> 00:02:01,000
+An assistant message carries Claude's output,
+
+49
+00:02:01,000 --> 00:02:04,000
+both its text and any tool calls it wants to make.
+
+50
+00:02:04,000 --> 00:02:06,000
+A user message delivers the tool results
+
+51
+00:02:06,000 --> 00:02:08,000
+back into the loop,
+
+52
+00:02:08,000 --> 00:02:10,000
+closing that round trip.
+
+53
+00:02:10,000 --> 00:02:11,000
+A stream event shows up
+
+54
+00:02:11,000 --> 00:02:14,000
+only when you turn on partial streaming,
+
+55
+00:02:14,000 --> 00:02:16,000
+giving you token-by-token deltas,
+
+56
+00:02:16,000 --> 00:02:19,000
+and a result message closes the run,
+
+57
+00:02:19,000 --> 00:02:23,000
+carrying the total cost, the usage, and the final status.
+
+58
+00:02:23,000 --> 00:02:26,000
+Learn these five, and the stream stops looking like noise.
+
+59
+00:02:26,000 --> 00:02:28,000
+It reads like a transcript of the loop.
+
+60
+00:02:29,000 --> 00:02:34,000
+So what stops a loop that never produces a tool-free answer? You bound it.
+
+61
+00:02:34,000 --> 00:02:39,000
+Max turns limits how many tool-using turns the loop may take.
+
+62
+00:02:39,000 --> 00:02:44,000
+Max budget USD limits how many dollars a run may spend.
+
+63
+00:02:44,000 --> 00:02:46,000
+That budget is checked between calls,
+
+64
+00:02:46,000 --> 00:02:49,000
+so actual spend can overshoot the cap
+
+65
+00:02:49,000 --> 00:02:51,000
+by up to one call's worth.
+
+66
+00:02:51,000 --> 00:02:53,000
+Cross either one, and the loop halts,
+
+67
+00:02:53,000 --> 00:02:56,000
+and hands back an error result
+
+68
+00:02:56,000 --> 00:02:58,000
+that tells you which limit you hit.
+
+69
+00:02:58,000 --> 00:03:01,000
+Here's the part that surprises people.
+
+70
+00:03:01,000 --> 00:03:03,000
+By default, there is no cap at all.
+
+71
+00:03:03,000 --> 00:03:05,000
+Left unset, a run can loop
+
+72
+00:03:05,000 --> 00:03:08,000
+as long as Claude keeps calling tools.
+
+73
+00:03:08,000 --> 00:03:12,000
+So setting a bound is on you, the developer.
+
+74
+00:03:12,000 --> 00:03:14,000
+On anything autonomous or expensive,
+
+75
+00:03:14,000 --> 00:03:17,000
+a sensible max turns is the difference
+
+76
+00:03:17,000 --> 00:03:20,000
+between a controlled agent and a runaway one.
+
+77
+00:03:21,000 --> 00:03:22,000
+Let's read that result message
+
+78
+00:03:22,000 --> 00:03:25,000
+because it's where a run reports for duty.
+
+79
+00:03:25,000 --> 00:03:28,000
+Every result message carries a subtype.
+
+80
+00:03:28,000 --> 00:03:31,000
+Success means the run finished cleanly,
+
+81
+00:03:31,000 --> 00:03:33,000
+and the error subtypes tell you exactly
+
+82
+00:03:33,000 --> 00:03:36,000
+which limit ended it, turns, or budget.
+
+83
+00:03:36,000 --> 00:03:38,000
+Alongside the subtype, you get accounting,
+
+84
+00:03:38,000 --> 00:03:41,000
+total cost USD for the dollar cost,
+
+85
+00:03:41,000 --> 00:03:44,000
+usage for the tokens, num turns for how many turns ran,
+
+86
+00:03:44,000 --> 00:03:48,000
+and session ID if you want to resume later.
+
+87
+00:03:48,000 --> 00:03:50,000
+Here's the catch worth memorizing.
+
+88
+00:03:50,000 --> 00:03:53,000
+Only the success subtype carries the final result text.
+
+89
+00:03:53,000 --> 00:03:57,000
+On an error subtype, that result field is empty.
+
+90
+00:03:57,000 --> 00:03:58,000
+So if you read the result text
+
+91
+00:03:58,000 --> 00:04:00,000
+without checking the subtype first,
+
+92
+00:04:00,000 --> 00:04:03,000
+you can quietly get nothing back and never notice.
+
+93
+00:04:04,000 --> 00:04:06,000
+Let's put the two outcomes side by side
+
+94
+00:04:06,000 --> 00:04:09,000
+because your code has to handle both.
+
+95
+00:04:09,000 --> 00:04:11,000
+A success result is the happy path.
+
+96
+00:04:11,000 --> 00:04:12,000
+Its subtype is success,
+
+97
+00:04:12,000 --> 00:04:15,000
+and it carries the final result text
+
+98
+00:04:15,000 --> 00:04:18,000
+along with the cost, the usage, and the turn counts.
+
+99
+00:04:18,000 --> 00:04:22,000
+An error result comes from a subtype like error max turns
+
+100
+00:04:22,000 --> 00:04:24,000
+or error max budget USD.
+
+101
+00:04:24,000 --> 00:04:26,000
+It has no result text
+
+102
+00:04:26,000 --> 00:04:29,000
+because the run never reached a clean answer.
+
+103
+00:04:29,000 --> 00:04:31,000
+But, and this matters,
+
+104
+00:04:31,000 --> 00:04:34,000
+it still carries full cost and usage accounting.
+
+105
+00:04:34,000 --> 00:04:36,000
+So even a run that blew its turn cap
+
+106
+00:04:36,000 --> 00:04:38,000
+tells you what it spent.
+
+107
+00:04:38,000 --> 00:04:39,000
+The lesson is simple.
+
+108
+00:04:39,000 --> 00:04:41,000
+Branch on the subtype first,
+
+109
+00:04:41,000 --> 00:04:44,000
+then read the result text only when you know it's a success.
+
+110
+00:04:45,000 --> 00:04:48,000
+Here's a nuance that catches people in production.
+
+111
+00:04:49,000 --> 00:04:53,000
+What happens when a single-shot query hits its turn cap?
+
+112
+00:04:53,000 --> 00:04:55,000
+It first yields the error result message,
+
+113
+00:04:55,000 --> 00:04:58,000
+the one with the error subtype.
+
+114
+00:04:58,000 --> 00:05:00,000
+Then it raises an error with text
+
+115
+00:05:00,000 --> 00:05:03,000
+like reached maximum number of turns.
+
+116
+00:05:03,000 --> 00:05:05,000
+That's deliberate, but if you're not ready for it,
+
+117
+00:05:05,000 --> 00:05:08,000
+the exception stops your program cold.
+
+118
+00:05:08,000 --> 00:05:12,000
+So wrap a single-shot run in try and accept
+
+119
+00:05:12,000 --> 00:05:15,000
+when you want to catch that limit and keep going.
+
+120
+00:05:15,000 --> 00:05:18,000
+A streaming input session behaves differently.
+
+121
+00:05:18,000 --> 00:05:20,000
+It doesn't raise, it stays alive.
+
+122
+00:05:20,000 --> 00:05:24,000
+So you can inspect the result and send another message.
+
+123
+00:05:24,000 --> 00:05:25,000
+Same underlying loop,
+
+124
+00:05:25,000 --> 00:05:28,000
+but the input mode changes how a limit
+
+125
+00:05:28,000 --> 00:05:29,000
+actually reaches your code.
+
+126
+00:05:30,000 --> 00:05:32,000
+Once a run stops,
+
+127
+00:05:32,000 --> 00:05:34,000
+three fields help you understand what happened.
+
+128
+00:05:34,000 --> 00:05:36,000
+The first is stop reason.
+
+129
+00:05:36,000 --> 00:05:39,000
+It tells you why the model ended a given turn,
+
+130
+00:05:39,000 --> 00:05:42,000
+whether that's in turn for a normal finish,
+
+131
+00:05:42,000 --> 00:05:46,000
+max tokens if it ran out of room, or a refusal.
+
+132
+00:05:46,000 --> 00:05:48,000
+The second is numb turns.
+
+133
+00:05:48,000 --> 00:05:50,000
+The count of turns the run actually took.
+
+134
+00:05:50,000 --> 00:05:52,000
+Watch that number because a run
+
+135
+00:05:52,000 --> 00:05:54,000
+that keeps climbing toward your cap
+
+136
+00:05:54,000 --> 00:05:56,000
+is a sign the agent is churning.
+
+137
+00:05:56,000 --> 00:05:58,000
+The third is session ID.
+
+138
+00:05:58,000 --> 00:06:01,000
+It identifies the whole run so you can resume it later
+
+139
+00:06:01,000 --> 00:06:04,000
+or trace it when you're debugging.
+
+140
+00:06:04,000 --> 00:06:06,000
+Together, these three turn a finished run
+
+141
+00:06:06,000 --> 00:06:09,000
+from a black box into something you can read,
+
+142
+00:06:09,000 --> 00:06:13,000
+audit, and pick back up. Let's recap.
+
+143
+00:06:13,000 --> 00:06:15,000
+The agent loop is a repeating cycle.
+
+144
+00:06:15,000 --> 00:06:20,000
+Reason, call tools, read results, repeat, and return.
+
+145
+00:06:20,000 --> 00:06:23,000
+Each part reports through a typed message,
+
+146
+00:06:23,000 --> 00:06:26,000
+and each turn is a single tool round trip.
+
+147
+00:06:26,000 --> 00:06:30,000
+One thing to watch, the loop has no cap unless you set one,
+
+148
+00:06:30,000 --> 00:06:33,000
+so max turns is your safety net.
+
+149
+00:06:33,000 --> 00:06:36,000
+That covers how the agent loop runs under query.
+
+150
+00:06:36,000 --> 00:06:37,000
+I'll see you in the next lesson.
+

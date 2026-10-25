@@ -23,9 +23,25 @@ public class Main {
         CHECKS.put("01", lesson01.Check::run);
         CHECKS.put("02", lesson02.Check::run);
         CHECKS.put("04", lesson04.Check::run);
+        CHECKS.put("05", lesson05.Check::run);
+        CHECKS.put("06", lesson06.Check::run);
+        CHECKS.put("07", lesson07.Check::run);
+        CHECKS.put("08", lesson08.Check::run);
+        CHECKS.put("09", lesson09.Check::run);
+        CHECKS.put("10", lesson10.Check::run);
+        CHECKS.put("11", lesson11.Check::run);
+        CHECKS.put("12", lesson12.Check::run);
         LIVE.put("01", lesson01.Live::run);
         LIVE.put("02", lesson02.Live::run);
         LIVE.put("04", lesson04.Live::run);
+        LIVE.put("05", lesson05.Live::run);
+        LIVE.put("06", lesson06.Live::run);
+        LIVE.put("07", lesson07.Live::run);
+        LIVE.put("08", lesson08.Live::run);
+        LIVE.put("09", lesson09.Live::run);
+        LIVE.put("10", lesson10.Live::run);
+        LIVE.put("11", lesson11.Live::run);
+        LIVE.put("12", lesson12.Live::run);
     }
 
     public static void main(String[] args) {

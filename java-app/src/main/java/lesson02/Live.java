@@ -20,37 +20,41 @@ public final class Live {
     public static void run(boolean useSolution, Claude claude) {
         Lesson02Api api = useSolution ? new Lesson02Solution() : new Lesson02();
 
-        System.out.println("\n▶ Context cộng dồn: agent đọc 3 chương, mỗi chương khoảng 1.500 từ");
-        int before = claude.calls().size();
-        long wallStart = System.nanoTime();
-        ClaudeAgentModel model = new ClaudeAgentModel(claude,
-            "You are a reading assistant. Read each chapter with the tool, one at a time. Answer in Vietnamese.",
-            Map.of("read_chapter", "Return the full text of one chapter. Input: the chapter number, e.g. '1'."));
-        String summary = new Lesson01Solution().runAgent(
-            "Đọc chương 1, 2 và 3 rồi tóm tắt mỗi chương trong một câu.",
-            model, Map.of("read_chapter", Live::chapter), 6);
-        long wallMs = (System.nanoTime() - wallStart) / 1_000_000;
-        System.out.println(summary);
+        if (implemented(() -> api.totalInputTokens(0, List.of())) && implemented(() -> api.waitTimeMs(List.of()))) {
+            System.out.println("\n▶ Context cộng dồn: agent đọc 3 chương, mỗi chương khoảng 1.500 từ");
+            int before = claude.calls().size();
+            long wallStart = System.nanoTime();
+            ClaudeAgentModel model = new ClaudeAgentModel(claude,
+                "You are a reading assistant. Read each chapter with the tool, one at a time. Answer in Vietnamese.",
+                Map.of("read_chapter", "Return the full text of one chapter. Input: the chapter number, e.g. '1'."));
+            String summary = new Lesson01Solution().runAgent(
+                "Đọc chương 1, 2 và 3 rồi tóm tắt mỗi chương trong một câu.",
+                model, Map.of("read_chapter", Live::chapter), 6);
+            long wallMs = (System.nanoTime() - wallStart) / 1_000_000;
+            System.out.println(summary);
 
-        List<CallStats> turns = claude.calls().subList(before, claude.calls().size());
-        List<Long> inputs = turns.stream().map(CallStats::inputTokens).toList();
-        System.out.println("\n  Token vào thật ở từng vòng: " + inputs);
-        long actualTotal = inputs.stream().mapToLong(Long::longValue).sum();
+            List<CallStats> turns = claude.calls().subList(before, claude.calls().size());
+            List<Long> inputs = turns.stream().map(CallStats::inputTokens).toList();
+            System.out.println("\n  Token vào thật ở từng vòng: " + inputs);
+            long actualTotal = inputs.stream().mapToLong(Long::longValue).sum();
 
-        // Phần tăng thêm giữa hai vòng liên tiếp chính là tool output (cộng phần model vừa trả lời) được gửi lại.
-        List<Integer> growth = new ArrayList<>();
-        for (int i = 1; i < inputs.size(); i++) growth.add((int) (inputs.get(i) - inputs.get(i - 1)));
-        System.out.println("  Phần tăng thêm mỗi vòng:     " + growth);
-        System.out.println("  Tổng thật: " + actualTotal + " token. totalInputTokens() của bạn: "
-            + tryCall(() -> api.totalInputTokens(inputs.get(0).intValue(), growth)));
-        System.out.println("  So với một lần gọi duy nhất: " + inputs.get(0) + " token, tức vòng lặp tốn gấp "
-            + String.format("%.1f", (double) actualTotal / inputs.get(0)) + " lần.");
+            // Phần tăng thêm giữa hai vòng liên tiếp chính là tool output (cộng phần model vừa trả lời) được gửi lại.
+            List<Integer> growth = new ArrayList<>();
+            for (int i = 1; i < inputs.size(); i++) growth.add((int) (inputs.get(i) - inputs.get(i - 1)));
+            System.out.println("  Phần tăng thêm mỗi vòng:     " + growth);
+            System.out.println("  Tổng thật: " + actualTotal + " token. totalInputTokens() của bạn: "
+                + tryCall(() -> api.totalInputTokens(inputs.get(0).intValue(), growth)));
+            System.out.println("  So với một lần gọi duy nhất: " + inputs.get(0) + " token, tức vòng lặp tốn gấp "
+                + String.format("%.1f", (double) actualTotal / inputs.get(0)) + " lần.");
 
-        System.out.println("\n▶ Độ trễ cộng dồn");
-        List<Long> roundTrips = turns.stream().map(CallStats::millis).toList();
-        System.out.println("  Round trip thật (ms): " + roundTrips);
-        System.out.println("  waitTimeMs() của bạn: " + tryCall(() -> api.waitTimeMs(roundTrips))
-            + " ms, đồng hồ thật đo được: " + wallMs + " ms");
+            System.out.println("\n▶ Độ trễ cộng dồn");
+            List<Long> roundTrips = turns.stream().map(CallStats::millis).toList();
+            System.out.println("  Round trip thật (ms): " + roundTrips);
+            System.out.println("  waitTimeMs() của bạn: " + tryCall(() -> api.waitTimeMs(roundTrips))
+                + " ms, đồng hồ thật đo được: " + wallMs + " ms");
+        } else {
+            System.out.println("\n▶ Context cộng dồn và độ trễ\n  ⏳ chưa làm bài 1 hoặc bài 4: bỏ qua phần đo token thật (không gọi API)");
+        }
 
         System.out.println("\n▶ Lỗi dồn: nếu mỗi bước đúng 95%");
         for (int steps : List.of(1, 5, 10, 20)) {
@@ -93,6 +97,15 @@ public final class Live {
         };
         String sentence = "Chapter " + n + " explains " + topic + ". ";
         return sentence.repeat(100);
+    }
+
+    private static boolean implemented(Attempt<?> probe) {
+        try {
+            probe.get();
+            return true;
+        } catch (UnsupportedOperationException e) {
+            return false;
+        }
     }
 
     private interface Attempt<T> {

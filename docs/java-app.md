@@ -22,9 +22,13 @@ Dùng chung:
 - `common/Claude.java`: tạo client từ API key, gọi API, ghi lại token và thời gian mỗi lần gọi.
 - `common/Checker.java`, `common/LiveSection.java`: phần hiển thị kết quả.
 - `lesson01/ClaudeAgentModel.java`: bản cài đặt thật của `Model` trong bài 01, để Claude tự chọn tool trong vòng lặp agent bạn viết.
+- `lesson06/ClaudeQueryModel.java`: model thật cho `query()` thu nhỏ của bài 06 và 07.
+- `lesson09/ClaudeApi.java`: nối các kiểu Messages API thu gọn của bài 09 với API thật (dùng ở bài 09, 10, 12).
 - `Main.java`: điểm chạy chung.
 
-Bài 03 (Quick Check-In) không có nội dung chuyên môn nên không có bài tập.
+Các adapter này giữ nguyên câu trả lời gốc của Claude và chỉ nối thêm lượt mới vào hội thoại, nên code bài tập của bạn chỉ làm việc với các kiểu đơn giản.
+
+Bài 03 (Quick Check-In) không có nội dung chuyên môn nên không có bài tập. Các bài khác (01, 02, 04 tới 12) đều có.
 
 ## Chấm offline
 
@@ -65,6 +69,14 @@ Những gì mỗi bài làm với Claude:
 - **Bài 01:** prompt chaining (dàn ý rồi viết đoạn văn), routing (Claude phân loại ticket, code gửi cho handler), parallelization (dịch 3 câu của bài học cùng lúc), và vòng lặp agent của bạn với `ClaudeAgentModel` tự chọn tool `glossary` / `calculator`.
 - **Bài 02:** một agent đọc 3 chương dài; in số token vào thật ở từng vòng, độ trễ thật, rồi đối chiếu với `totalInputTokens()` và `waitTimeMs()` của bạn. Pipeline lai bắt lỗi API thật (gọi một model không tồn tại, không tốn token).
 - **Bài 04:** Claude làm manager, chia việc lúc chạy bằng structured output; mỗi subagent là một lần gọi Claude với handoff do `buildHandoff()` của bạn dựng; `orchestrate()` của bạn kiểm tra rồi tổng hợp.
+- **Bài 05:** subagent chỉ nhận những dòng do `subagentContext()` của bạn dựng: quên truyền mã dự án thì nó không biết, truyền vào thì biết; đo token manager nhận khi có và không có cô lập.
+- **Bài 06:** `query()` thu nhỏ của bạn (Agent SDK thật chỉ có Python/TypeScript) điều khiển vòng lặp với Claude bên trong; in luồng message init, assistant, user, result; phiên mới không nhớ phiên cũ.
+- **Bài 07:** cùng một việc chạy ba lần với ba kiểu giới hạn: chạm max turns, chạm ngân sách USD, và thành công; đọc kết quả an toàn theo subtype.
+- **Bài 08:** single message quên tên bạn, streaming input nhớ, resume nhớ lại; streaming output in chữ ngay khi Claude viết.
+- **Bài 09:** vòng lặp bạn tự viết nói chuyện trực tiếp với Messages API, in stop_reason của từng lần gọi.
+- **Bài 10:** `parseToolInput()` ghép các mảnh partial JSON thật từ stream; harness của bạn chặn lệnh xóa bảng, thử lại khi timeout, ghi nhật ký từng lượt.
+- **Bài 11:** Claude cầm một shell **giả lập** (không lệnh nào chạy thật trên máy bạn); chỉ có hook của bạn chặn `rm -rf /`, hỏi người duyệt cho force push, và ghi nhật ký kiểm toán.
+- **Bài 12:** Claude yêu cầu đọc nhiều file cùng lúc; `planBatches()` và `executeBatches()` của bạn chạy các lần đọc song song, các lần ghi tuần tự, và in thời gian tiết kiệm.
 
 Cấu hình:
 
