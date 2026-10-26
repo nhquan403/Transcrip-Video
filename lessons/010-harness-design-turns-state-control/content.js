@@ -1,72 +1,58 @@
 window.LESSON_CONTENT = {
   explanation: `
-<p class="key"><strong>Ý chính của cả bài:</strong> Một vòng lặp trần (gọi model, chạy tool) tự nó rất mong manh. <strong>Harness</strong> là mọi thứ bao quanh vòng lặp
-để nó chạy an toàn, gồm bốn việc: <strong>đếm lượt</strong>, <strong>theo dõi trạng thái</strong>, <strong>xử lý lỗi</strong>, và <strong>điều kiện dừng</strong>.
-Giới hạn lượt phải nằm trong <strong>runtime của bạn</strong>, không dựa vào thiện chí của model.</p>
+<p class="key"><strong>Nói ngắn gọn:</strong> Một vòng lặp trần (gọi AI, chạy tool) thì dễ hỏng. <strong>Harness</strong> là phần khung bao quanh để nó chạy an toàn:
+<strong>đếm lượt</strong>, <strong>giữ trạng thái</strong>, <strong>xử lý lỗi</strong>, và <strong>biết khi nào dừng</strong>.
+Giới hạn số lượt phải nằm trong code của bạn, đừng trông vào việc AI tự giác dừng.</p>
 
-<h3>1. Ba thuật ngữ</h3>
-<ul>
-  <li><strong>Harness:</strong> vòng lặp cộng toàn bộ hạ tầng xung quanh: code gom context, gửi request, chạy tool, đưa kết quả lại.</li>
-  <li><strong>Đếm lượt (turn accounting):</strong> đếm từng vòng khứ hồi tool_use, để chính runtime (không phải model) áp ngân sách.</li>
-  <li><strong>Điều kiện dừng (stop condition):</strong> một quy tắc rõ ràng kết thúc vòng lặp: việc đã xong, chạm trần lượt, hoặc một lỗi buộc phải thoát.</li>
+<h3>📌 Từ cần biết</h3>
+<ul class="terms">
+  <li><strong>Harness:</strong> toàn bộ phần code bao quanh vòng lặp: chuẩn bị dữ liệu, chạy tool, ghi log, đặt giới hạn.</li>
+  <li><strong>Lượt (turn):</strong> một vòng xin tool, chạy tool, nhận kết quả.</li>
+  <li><strong>Điều kiện dừng:</strong> quy tắc rõ ràng để kết thúc vòng lặp.</li>
+  <li><strong>Lỗi thoáng qua:</strong> lỗi tạm thời, thử lại có thể được, như mạng chập chờn.</li>
 </ul>
 
-<h3>2. Vòng lặp và harness khác nhau</h3>
-<p>Lời gọi model là <strong>vòng lặp</strong>. Harness là <strong>mọi thứ xung quanh</strong>: gom và định dạng context gửi vào, chạy tool và lấy output,
-ghi lại chuyện đã xảy ra để có log và vết kiểm toán khi có sự cố.</p>
-<p>Hình ảnh dễ nhớ: <strong>động cơ và chiếc xe</strong>. Vòng lặp là động cơ biến output của model thành hành động.
-Harness là chiếc xe xây quanh nó: khung, bộ điều khiển, các tính năng an toàn khiến nó lái được. Cần cả hai cùng hoạt động.</p>
+<h3>Vòng lặp và harness khác nhau thế nào?</h3>
+<div class="box">🚗 <strong>Hình dung thế này:</strong> Vòng lặp là <strong>động cơ</strong>. Harness là <strong>cả chiếc xe</strong> quanh động cơ:
+khung xe, vô lăng, phanh, dây an toàn. Có động cơ mà không có phanh thì không ai dám lái.</div>
 
-<h3>3. Bốn việc harness đảm nhận</h3>
+<h3>Bốn việc harness phải lo</h3>
 <ul>
-  <li><strong>Đếm lượt:</strong> đếm mọi vòng khứ hồi tool_use và dừng khi chạm ngân sách.</li>
-  <li><strong>Theo dõi trạng thái:</strong> giữ mảng messages đang lớn dần và mọi dữ liệu vòng lặp mang từ lượt này sang lượt sau.</li>
-  <li><strong>Xử lý lỗi:</strong> khi tool hỏng hoặc model lỗi, code của bạn quyết định <strong>thử lại, bỏ qua, hay hủy</strong>.</li>
-  <li><strong>Điều kiện dừng:</strong> định nghĩa chính xác khi nào vòng lặp kết thúc để nó không bao giờ chạy vô hạn.</li>
+  <li><strong>Đếm lượt:</strong> đếm từng vòng dùng tool, đủ số thì dừng.</li>
+  <li><strong>Giữ trạng thái:</strong> giữ cuộc trò chuyện đang dài dần và dữ liệu cần mang qua các lượt.</li>
+  <li><strong>Xử lý lỗi:</strong> tool hỏng thì quyết định <strong>thử lại</strong>, <strong>bỏ qua</strong>, hay <strong>dừng hẳn</strong>.</li>
+  <li><strong>Biết khi nào dừng:</strong> xong việc, chạm giới hạn, hoặc gặp lỗi không thể tiếp tục.</li>
 </ul>
-<p>Thiếu một trong bốn thì vòng lặp vẫn chạy, nhưng chạy <strong>không an toàn</strong>. Cùng nhau, chúng phân biệt bản demo với thứ đưa lên production được.</p>
+<p>Thiếu một trong bốn thì vòng lặp vẫn chạy, nhưng chạy <strong>không an toàn</strong>.</p>
 
-<h3>4. Rào chắn quan trọng nhất: ngân sách lượt</h3>
-<p>Vòng lặp agent cần một giới hạn cứng, và giới hạn đó phải nằm <strong>trong runtime của bạn</strong>. Bạn đếm lượt khi chúng diễn ra,
-và ngay khi số đếm chạm trần thì dừng vòng lặp và trả về những gì đang có.</p>
-<p>Điều không bao giờ làm: <strong>tin model tự giới hạn</strong>. Bảo nó dừng sau vài bước, nó có thể nghe hoặc không.
-Một vòng lặp không giới hạn không phải tính năng linh hoạt mà là <strong>một lỗi</strong>: cách đốt ngân sách và thời gian mà không được gì. Áp giới hạn bằng code.</p>
+<h3>Rào chắn quan trọng nhất: giới hạn số lượt</h3>
+<p>Dặn AI "làm tối đa 5 bước thôi nhé" là <strong>không đủ</strong>: nó có thể nghe, có thể không.
+Hãy đếm bằng code, đủ số là dừng và trả về những gì đang có. Một vòng lặp không giới hạn không phải là "linh hoạt", mà là <strong>lỗi</strong>.</p>
 
-<h3>5. Tự viết harness hay dùng harness của Agent SDK?</h3>
+<h3>Tự viết harness hay dùng của Agent SDK?</h3>
 <ul>
-  <li><strong>Tự viết:</strong> bạn viết đếm lượt, theo dõi trạng thái và logic dừng. Nhiều kiểm soát hơn, ít phụ thuộc hơn, nhưng bạn sở hữu từng dòng và bảo trì khi nhu cầu đổi.</li>
-  <li><strong>Harness của Agent SDK:</strong> vòng lặp, chạy tool, quản lý context và giới hạn lượt đều có sẵn. Viết ít code hơn nhiều; đổi lại bạn chấp nhận hình dạng và các bản cập nhật của framework.</li>
+  <li><strong>Tự viết:</strong> kiểm soát nhiều hơn, ít phụ thuộc hơn; nhưng bạn tự viết và bảo trì từng dòng.</li>
+  <li><strong>Dùng của Agent SDK:</strong> có sẵn hết, viết ít code; nhưng phải theo cách framework làm.</li>
 </ul>
-<p>Không có đáp án chung. Độ tin cậy của bạn càng phụ thuộc vào sự kiểm soát không thể thỏa hiệp, harness tự viết càng xứng với chi phí.</p>
+<p>Hệ thống càng cần chắc chắn tuyệt đối thì tự viết càng đáng công.</p>
 
-<h3>6. Chi tiết hay "cắn" người mới: input tool đến từng mảnh</h3>
-<p>Khi streaming, tham số của tool <strong>không đến một lần</strong> mà đến từng mảnh: các delta kiểu <code>input_json_delta</code>, mỗi cái mang một đoạn JSON dở dang.
-Harness gom các mảnh khi chúng đến, và <strong>chờ</strong>. Chỉ parse khi khối đã đóng, không sớm hơn, vì một mảnh đến nửa chừng chưa phải JSON hợp lệ.</p>
-<p>Điều đáng yên tâm: input cuối của tool luôn là một object hoàn chỉnh khi khối kết thúc. Quy tắc đơn giản: <strong>gom JSON dở dang, parse đúng một lần ở cuối</strong>.</p>
+<h3>Chi tiết hay làm người mới vấp: dữ liệu đến từng mẩu</h3>
+<p>Khi bật chế độ nhận dần, dữ liệu gửi cho tool không đến một lần mà đến <strong>từng mẩu nhỏ</strong>, ví dụ <code>{"cust</code> rồi <code>omer": "An"}</code>.
+Mẩu dở dang chưa đọc được. Cách làm đúng: <strong>gom đủ các mẩu, đợi xong hẳn rồi mới đọc một lần</strong>. Khi đã xong, dữ liệu luôn đầy đủ.</p>
 
-<h3>7. Ba điểm chèn chính sách khi bạn sở hữu vòng lặp</h3>
+<h3>Ba chỗ để bạn cài quy tắc riêng</h3>
 <ul>
-  <li><strong>Trước khi tool chạy:</strong> xem lời gọi, ghi log, hoặc chặn hẳn trước khi bất cứ thứ gì thực thi. Đây là nơi chính sách xác định sống.</li>
-  <li><strong>Bao quanh lúc chạy:</strong> bọc mỗi lời gọi tool bằng thử lại và timeout, để một lỗi thoáng qua không làm sập cả lần chạy.</li>
-  <li><strong>Sau khi có kết quả:</strong> ghi log output và ghi số lượt trước khi đưa kết quả cho model.</li>
+  <li><strong>Trước khi tool chạy:</strong> kiểm tra và <strong>chặn</strong> nếu nguy hiểm. Ví dụ: chặn mọi lệnh xóa cơ sở dữ liệu.</li>
+  <li><strong>Trong lúc tool chạy:</strong> thêm <strong>thử lại</strong> và <strong>giới hạn thời gian</strong>. Ví dụ: API mạng hay chập chờn thì thử lại 2 tới 3 lần.</li>
+  <li><strong>Sau khi có kết quả:</strong> <strong>ghi log</strong> và đếm lượt trước khi đưa kết quả cho AI.</li>
 </ul>
-<p>Ba điểm này chính là thứ bạn từ bỏ SDK để có được. Hãy dùng chúng có chủ đích.</p>
+<p>💡 Chỉ thử lại với <strong>lỗi thoáng qua</strong>. Lỗi kiểu "dữ liệu sai" thì thử lại bao nhiêu lần vẫn sai.</p>
 
-<h3>8. Phần thưởng: mọi đòn bẩy độ tin cậy nằm trong tay bạn</h3>
+<h3>✅ Nhớ 3 điều</h3>
 <ul>
-  <li>Áp chính sách xác định ở mỗi bước để hành vi không trôi theo "tâm trạng" của model.</li>
-  <li>Một lệnh phá hoại, như xóa cơ sở dữ liệu, bị chặn bằng code <strong>mọi lần</strong>.</li>
-  <li>Ghi log và kiểm toán mọi lời gọi tool theo định dạng nhóm bạn cần, ví dụ JSON lines đổ thẳng vào hệ thống giám sát.</li>
-  <li>Thêm thử lại <strong>đúng chỗ</strong> có điểm hỏng thật, ví dụ một API mạng chập chờn, không phải mặc định ở khắp nơi.</li>
-</ul>
-
-<h3>9. Tóm tắt</h3>
-<ul>
-  <li>Đếm lượt giới hạn vòng lặp từ runtime.</li>
-  <li>Theo dõi trạng thái giữ hội thoại đang lớn dần.</li>
-  <li>Xử lý lỗi quyết định thử lại, bỏ qua, hay hủy.</li>
-  <li>Điều kiện dừng kết thúc vòng lặp một cách xác định.</li>
-  <li>Phần thưởng là kiểm soát; cái giá là code bạn phải sở hữu và bảo trì.</li>
+  <li>Harness lo bốn việc: đếm lượt, giữ trạng thái, xử lý lỗi, biết khi nào dừng.</li>
+  <li>Giới hạn số lượt phải đếm bằng code, không dặn bằng lời.</li>
+  <li>Đổi lại sự kiểm soát, bạn phải tự viết và bảo trì code.</li>
 </ul>
 
 <h3>🇬🇧 Cụm từ tiếng Anh đáng nhớ trong bài</h3>

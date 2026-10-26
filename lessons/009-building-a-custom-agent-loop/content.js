@@ -1,78 +1,62 @@
 window.LESSON_CONTENT = {
   explanation: `
-<p class="key"><strong>Ý chính của cả bài:</strong> Khi cần tự định hình từng lượt, bạn có thể bỏ Agent SDK và tự viết vòng lặp trên <strong>Messages API</strong>:
-gửi mảng messages, đọc <code>stop_reason</code>, tự chạy tool, gửi <code>tool_result</code> khớp id, rồi gọi lại. Kiểm soát tối đa, nhưng bạn phải tự viết và bảo trì
-phần "đường ống". Nhớ kỹ: <code>stop_reason</code> là <em>tool_use</em> nghĩa là Claude <strong>tạm dừng chờ code của bạn</strong>, không phải Anthropic đã chạy gì.</p>
+<p class="key"><strong>Nói ngắn gọn:</strong> Thay vì để Agent SDK lo hết, bạn có thể <strong>tự viết vòng lặp</strong> bằng cách gọi thẳng API của Claude:
+gửi tin, xem Claude có xin dùng tool không, tự chạy tool, gửi kết quả lại, rồi lặp. Bạn kiểm soát mọi thứ, nhưng phải tự viết và tự bảo trì nhiều code hơn.</p>
 
-<h3>1. Ba tầng kiểm soát</h3>
-<ul>
-  <li><strong>Messages API</strong> (tầng dưới cùng): endpoint model gốc. Bạn gọi, đọc stop reason, tự chạy tool, gọi lại. Kiểm soát nhiều nhất, code nhiều nhất.</li>
-  <li><strong>Agent SDK</strong> (tầng giữa): Claude Code đóng gói thành thư viện. Nó chạy vòng lặp, thực thi tool, quản lý context; bạn cấu hình thay vì viết.</li>
-  <li><strong>Managed Agents</strong> (tầng trên): bộ khung được host hoàn toàn, Anthropic chạy vòng lặp, sandbox và các phiên.</li>
-</ul>
-<p>Bài này sống ở tầng dưới cùng.</p>
-
-<h3>2. Vì sao từ bỏ sự tiện lợi của SDK?</h3>
-<p>Vì đôi khi bạn cần <strong>sở hữu trọn vẹn từng lượt</strong>. Tự viết vòng lặp thì bạn nắm hoàn toàn việc chạy tool, thử lại và ghi log.
-Không có framework đứng giữa code và model, nên ít phụ thuộc phải theo dõi và ghim phiên bản. Mọi request đi và mọi response về đều đi qua code bạn viết,
-nên dễ áp đặt hành vi xác định. Đánh đổi là thật: bạn phải tự viết và bảo trì phần đường ống mà SDK cho không. Với nhiều ứng dụng, điều đó hoàn toàn đáng.</p>
-
-<h3>3. Client SDK và Agent SDK đặt cạnh nhau</h3>
-<ul>
-  <li><strong>Client SDK</strong> (Messages API gốc): bạn tự viết vòng lặp tool: gọi API, xem stop reason, chạy các khối tool_use, thêm tool_result, gọi lại.
-  Kiểm soát tối đa và code tối đa. Là lựa chọn đúng khi kiểm soát chi tiết chính là mục đích.</li>
-  <li><strong>Agent SDK</strong>: Claude lo vòng lặp; bạn cấu hình tool, model, giới hạn lượt thay vì tự viết chu kỳ suy luận, hành động, quan sát.
-  Ít kiểm soát hơn, ít code hơn rất nhiều.</li>
+<h3>📌 Từ cần biết</h3>
+<ul class="terms">
+  <li><strong>Messages API:</strong> cách gọi Claude "trần", không qua thư viện agent nào.</li>
+  <li><strong>tool_use:</strong> phần trong câu trả lời của Claude nói "tôi muốn dùng tool X với dữ liệu Y".</li>
+  <li><strong>tool_result:</strong> phần bạn gửi lại cho Claude, chứa kết quả của tool đó.</li>
+  <li><strong>stop_reason:</strong> nhãn cho biết vì sao Claude dừng lại ở lần trả lời này.</li>
 </ul>
 
-<h3>4. Chu kỳ mà mọi vòng lặp tự viết lặp lại</h3>
-<ul>
-  <li>Gửi mảng messages tới model.</li>
-  <li>Xem câu trả lời và tìm các khối tool_use trong đó.</li>
-  <li>Chạy từng tool mà code của bạn sở hữu, lấy kết quả.</li>
-  <li>Thêm kết quả dưới dạng khối tool_result rồi gọi lại model với hội thoại đã cập nhật.</li>
-</ul>
-<p>Lặp cho tới khi model trả lời mà không yêu cầu tool nào. Bước hay bị quên nhất là <strong>tool_result</strong>:
-bỏ qua nó hoặc sai id thì <strong>lần gọi kế tiếp sẽ lỗi</strong>. Làm đúng cái "bắt tay" này là toàn bộ công việc.</p>
+<h3>Ba mức tự làm</h3>
+<div class="box">🏠 <strong>Hình dung thế này:</strong> Có ba cách có một bữa ăn.
+<strong>Tự nấu từ đầu</strong> (Messages API): toàn quyền, nhưng nhiều việc nhất.
+<strong>Mua bộ nguyên liệu sơ chế sẵn</strong> (Agent SDK): chỉ cần chọn và lắp.
+<strong>Đặt nhà hàng</strong> (Managed Agents): Anthropic lo hết, kể cả chỗ chạy.</div>
+<p>Bài này nói về cách thứ nhất: tự nấu.</p>
 
-<h3>5. Ba khối là toàn bộ hợp đồng</h3>
+<h3>Vì sao lại muốn tự làm?</h3>
 <ul>
-  <li><strong>tool_use:</strong> khối trong câu trả lời của Claude, nêu tên tool và input để gọi. Là tín hiệu model muốn code của bạn hành động.</li>
-  <li><strong>tool_result:</strong> khối bạn thêm vào, mang output của tool, gắn về tool_use bằng <strong>id khớp nhau</strong>, trước khi gọi lại.</li>
-  <li><strong>stop_reason:</strong> trường bạn kiểm tra ở mọi câu trả lời. Giá trị <em>tool_use</em> nghĩa là Claude đã tạm dừng và chờ bạn chạy tool.</li>
+  <li>Bạn muốn <strong>nắm từng bước</strong>: tự quyết chạy tool thế nào, thử lại ra sao, ghi log kiểu gì.</li>
+  <li><strong>Ít phụ thuộc</strong> vào thư viện bên ngoài.</li>
+  <li>Muốn áp <strong>quy tắc cố định</strong> ở mỗi bước, vì mọi yêu cầu đều đi qua code của bạn.</li>
 </ul>
-<p>Thuộc ba thứ này thì phần còn lại chỉ là nối dây.</p>
+<p>Cái giá: bạn phải tự viết và bảo trì những thứ mà Agent SDK cho sẵn. Không phải ứng dụng nào cũng cần; hãy bắt đầu đơn giản trước.</p>
 
-<h3>6. Rẽ nhánh theo stop_reason ở mọi lượt</h3>
+<h3>Vòng lặp tự viết gồm 4 bước</h3>
+<ol>
+  <li>Gửi toàn bộ cuộc trò chuyện cho Claude.</li>
+  <li>Xem câu trả lời có phần <strong>tool_use</strong> nào không.</li>
+  <li>Nếu có, <strong>bạn tự chạy tool</strong> đó.</li>
+  <li>Gửi kết quả lại dưới dạng <strong>tool_result</strong>, rồi quay lại bước 1.</li>
+</ol>
+<p>Lặp cho tới khi Claude trả lời mà không xin tool nào nữa.</p>
+<p>⚠️ <strong>Bước hay quên nhất:</strong> gửi tool_result. Mỗi tool_use có một <strong>mã số (id)</strong>; kết quả gửi lại phải ghi đúng mã đó.
+Quên gửi, hoặc ghi sai mã, thì lần gọi tiếp theo sẽ <strong>báo lỗi</strong>.</p>
+
+<h3>Đọc nhãn stop_reason</h3>
 <ul>
-  <li><strong>tool_use:</strong> chạy tool được yêu cầu và tiếp tục hội thoại.</li>
-  <li><strong>end_turn:</strong> Claude đã xong, vòng lặp thoát và trả về câu trả lời.</li>
-  <li><strong>Giá trị khác:</strong> bạn chạm giới hạn hoặc gặp lỗi, và code của bạn quyết định làm gì tiếp.</li>
+  <li><strong>tool_use:</strong> Claude đang <strong>chờ bạn</strong> chạy tool. Chạy tool rồi gọi tiếp.</li>
+  <li><strong>end_turn:</strong> Claude đã xong. Thoát vòng lặp và trả lời.</li>
+  <li><strong>Nhãn khác</strong> (ví dụ hết chỗ viết): bạn tự quyết cách xử lý.</li>
 </ul>
-<p><strong>Cái bẫy:</strong> stop_reason là tool_use nghĩa là Claude <strong>tạm dừng và trao quyền cho bạn</strong>, không có nghĩa Anthropic đã chạy gì.
-Trong vòng lặp tự viết, không gì chạy cả trừ khi code của bạn chạy nó.</p>
+<div class="box">🚦 <strong>Hiểu nhầm hay gặp:</strong> thấy <code>tool_use</code> rồi tưởng tool đã chạy. <strong>Không.</strong>
+Đó chỉ là Claude dừng lại và nói "đến lượt bạn". Trong vòng lặp tự viết, <strong>không có gì tự chạy</strong> nếu code của bạn không chạy nó.</div>
 
-<h3>7. Client tool và server tool</h3>
+<h3>Tool phía bạn và tool phía Anthropic</h3>
 <ul>
-  <li><strong>Client tool</strong> chạy trong ứng dụng của bạn: Claude trả stop_reason tool_use, và bạn chịu trách nhiệm chạy tool rồi gửi tool_result.</li>
-  <li><strong>Server tool</strong> như web search hay code execution chạy trên hạ tầng của Anthropic: kết quả về thẳng cho bạn, <strong>không cần gửi tool_result</strong>.</li>
+  <li><strong>Tool phía bạn (client tool):</strong> chạy trong chương trình của bạn. Bạn phải tự chạy và gửi tool_result.</li>
+  <li><strong>Tool phía Anthropic (server tool)</strong>, như tìm kiếm web hay chạy code: Anthropic tự chạy và gửi kèm kết quả. Bạn <strong>không cần</strong> gửi tool_result cho loại này.</li>
 </ul>
-<p>Trong vòng lặp tự viết, việc của bạn là client tool. Biết tool nào chạy ở phía nào là biết chính xác code của bạn phải làm việc ở đâu.</p>
 
-<h3>8. Khi nào đây là lựa chọn đúng?</h3>
-<p>Không phải ứng dụng nào cũng cần vòng lặp tự viết, và mặc định chọn nó là sai lầm. Nhưng có những trường hợp thật sự hưởng lợi:</p>
+<h3>✅ Nhớ 3 điều</h3>
 <ul>
-  <li>Cần áp chính sách xác định ở <strong>mỗi bước</strong>: vòng lặp tự viết cho bạn chỗ để móc vào.</li>
-  <li>Tích hợp Claude vào một runtime sẵn có với quy ước riêng: sở hữu vòng lặp giúp bạn khớp vào.</li>
-  <li>Muốn <strong>ít phụ thuộc</strong> khi chạy production: ít bộ phận chuyển động là một ưu điểm.</li>
-</ul>
-<p>Hướng dẫn đơn giản: bắt đầu từ thứ đơn giản nhất chạy được, chỉ dùng vòng lặp tự viết khi sự kiểm soát thật sự đáng giá.</p>
-
-<h3>9. Tóm tắt</h3>
-<ul>
-  <li>Vòng lặp tự viết cho bạn model gốc phía sau Agent SDK.</li>
-  <li>Bạn kiểm soát mọi lượt, mọi lời gọi tool, mọi dòng log.</li>
-  <li>stop_reason tool_use là Claude tạm dừng để code của bạn hành động, không phải Anthropic chạy tool.</li>
+  <li>Tự viết vòng lặp: toàn quyền kiểm soát, đổi lại nhiều code hơn.</li>
+  <li>Mỗi tool_use phải có đúng một tool_result cùng mã số.</li>
+  <li><code>tool_use</code> nghĩa là Claude đang chờ bạn, không phải tool đã chạy.</li>
 </ul>
 
 <h3>🇬🇧 Cụm từ tiếng Anh đáng nhớ trong bài</h3>

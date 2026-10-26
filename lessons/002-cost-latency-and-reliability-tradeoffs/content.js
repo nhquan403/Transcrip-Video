@@ -1,80 +1,67 @@
 window.LESSON_CONTENT = {
   explanation: `
-<p class="key"><strong>Ý chính của cả bài:</strong> Agent đổi <strong>độ trễ và chi phí token</strong> lấy
-<strong>sự linh hoạt</strong>. Mỗi vòng lặp thêm tốn token, thêm thời gian chờ, và cho lỗi thêm một cơ hội dồn lại.
-Cuộc trao đổi này chỉ đáng giá với việc thật sự mở. Hãy làm và kiểm chứng phiên bản workflow trước.</p>
+<p class="key"><strong>Nói ngắn gọn:</strong> Agent linh hoạt hơn workflow, nhưng phải trả giá: <strong>tốn tiền hơn</strong>, <strong>chậm hơn</strong>
+và <strong>dễ sai dây chuyền hơn</strong>. Cái giá đó chỉ đáng khi việc thật sự mở. Nếu phân vân, hãy làm workflow trước.</p>
 
-<h3>1. Ba trục để cân nhắc</h3>
-<ul>
-  <li><strong>Độ trễ (latency):</strong> agent gọi model nhiều lần nối tiếp nhau, nên người dùng chờ lâu hơn một lần trả lời duy nhất.</li>
-  <li><strong>Chi phí token:</strong> mỗi vòng gửi lại toàn bộ context đang lớn dần, nên hóa đơn tăng theo từng bước.</li>
-  <li><strong>Hiệu quả công việc (task performance):</strong> đây là thứ bạn "mua" bằng hai thứ trên. Model thích nghi được,
-  xử lý được input lộn xộn, và đạt kết quả mà một script cứng không làm nổi.</li>
+<h3>📌 Từ cần biết</h3>
+<ul class="terms">
+  <li><strong>Token:</strong> đơn vị tính tiền khi dùng AI. Đại khái là các mẩu chữ; gửi càng nhiều chữ cho AI thì càng tốn token.</li>
+  <li><strong>Context:</strong> toàn bộ những gì AI "đang thấy" ở một lần gọi: hướng dẫn, câu hỏi, các kết quả trước đó.</li>
+  <li><strong>Độ trễ (latency):</strong> thời gian người dùng phải chờ.</li>
+  <li><strong>Lỗi dồn:</strong> một sai sót nhỏ ở bước đầu kéo theo sai ở các bước sau.</li>
 </ul>
-<p>Anthropic nói gọn: <em class="en">agentic systems trade latency and cost for better task performance</em>.
-Toàn bộ quyết định là xem cuộc trao đổi đó có đáng với việc trước mặt không.</p>
 
-<h3>2. So sánh thẳng</h3>
-<p><strong>Workflow cố định</strong> cho bạn sự dễ đoán và nhất quán: rẻ hơn, nhanh hơn, lần nào cũng chạy như nhau,
-nên dễ test và dễ tin. <strong>Agent</strong> cho bạn sự linh hoạt: làm được việc bạn không script hết được, và thích nghi khi input bất ngờ.
-Nhưng sự tự chủ đó tốn hơn, chậm hơn, và mở cửa cho những lỗi mà workflow không bao giờ mắc.</p>
-<p>Không cái nào tốt hơn một cách tuyệt đối. Workflow thắng khi việc được định nghĩa rõ.
-Agent thắng khi sự linh hoạt và việc ra quyết định lúc chạy thật sự quan trọng ở quy mô lớn.
-Việc của bạn là chọn hình dạng hợp với bài toán, không mặc định chọn cái "xịn" hơn.</p>
-
-<h3>3. Chi phí cụ thể đến từ đâu?</h3>
-<p>Gọi model một lần: trả tiền cho một prompt và một câu trả lời. Trong vòng lặp agent, context <strong>không reset</strong> giữa các vòng.
-Mọi thứ cộng dồn: hướng dẫn ban đầu, mọi lần gọi tool, mọi kết quả model đã thấy.
-Vòng 5 mang theo sức nặng của vòng 1 tới 4, và bạn trả tiền lại cho tất cả ở mỗi vòng.</p>
-<p>Ví dụ: prompt 1.000 token, vòng 1 tool trả về 500 token, vòng 2 tool trả về 2.000 token.
-Vòng 1 gửi 1.000, vòng 2 gửi 1.500, vòng 3 gửi 3.500. Tổng cộng 6.000 token input, gấp 6 lần một lần gọi.</p>
-<p><strong>Tool output lớn là thủ phạm lớn nhất.</strong> Nhét một tài liệu khổng lồ vào vòng lặp thì nó "đi nhờ" theo mọi vòng sau đó.</p>
-<p>Bốn nguồn chi phí cần gọi tên:</p>
+<h3>Agent đổi cái gì lấy cái gì?</h3>
+<p>Có ba thứ cần cân nhắc:</p>
 <ul>
-  <li><strong>Nhiều vòng hơn:</strong> vòng lặp cứ gọi model tới khi xong, mỗi lần gọi đều tính tiền.</li>
-  <li><strong>Context lớn hơn:</strong> mỗi vòng mang theo toàn bộ lịch sử, nên các vòng sau là đắt nhất.</li>
-  <li><strong>Lỗi dồn (compounding errors):</strong> một bước sai từ sớm trở thành đầu vào cho mọi bước sau.</li>
-  <li><strong>Phản hồi chậm hơn:</strong> các round trip nối tiếp cộng lại thành thời gian thật người dùng phải chờ.</li>
+  <li><strong>Thời gian chờ:</strong> agent hỏi AI nhiều lần nối tiếp nhau, nên người dùng phải chờ lâu hơn.</li>
+  <li><strong>Tiền:</strong> mỗi lần hỏi lại phải gửi kèm cả những gì đã có trước đó, nên hóa đơn tăng dần.</li>
+  <li><strong>Hiệu quả công việc:</strong> đây là thứ bạn "mua" được: AI xử lý được những việc lộn xộn mà quy trình cứng không làm nổi.</li>
 </ul>
-<p>Không cái nào là lý do để bỏ cuộc, chúng chỉ là "giá vé vào cửa" (<em class="en">the price of admission</em>).
-Bạn cần biết mình đang trả giá đó trước khi chọn vòng lặp.</p>
+<p>Tóm lại: <strong>agent bỏ tiền và thời gian ra để mua sự linh hoạt.</strong> Câu hỏi luôn là: việc này có đáng để mua không?</p>
 
-<h3>4. Lỗi dồn: chi phí khó thấy nhất</h3>
-<p>Trong workflow, một bước hỏng thì hỏng ở chỗ bạn nhìn thấy được, và code của bạn bắt được.
-Trong agent, một lỗi nhỏ lúc đầu trở thành input cho quyết định tiếp theo. Model coi output sai của chính nó là sự thật và suy luận tiếp từ đó.
-Vài vòng sau, nó có thể đi rất xa khỏi hướng đúng mà vẫn rất tự tin, và không có điểm hỏng rõ ràng nào.</p>
-<p>Ví dụ: mỗi bước đúng 95%. Qua 10 bước liên tiếp, xác suất tất cả đều đúng chỉ còn khoảng 0,95<sup>10</sup> ≈ 60%.
-Vì vậy chạy tự động càng dài thì càng rủi ro. Cách kiểm soát: <strong>giới hạn vòng lặp</strong> và <strong>kiểm tra kết quả</strong> ở các checkpoint.</p>
-
-<h3>5. Ba lợi ích "thầm lặng" của workflow</h3>
+<h3>Vì sao agent tốn tiền nhanh vậy?</h3>
+<div class="box">📦 <strong>Hình dung thế này:</strong> Mỗi lần hỏi AI, bạn phải gửi lại <strong>cả chồng giấy</strong> từ đầu tới giờ, cộng thêm tờ mới.
+Lần 1 gửi 1 tờ, lần 2 gửi 2 tờ, lần 3 gửi 3 tờ... Bạn trả tiền cho <strong>mọi tờ, ở mọi lần gửi</strong>.</div>
+<p>Ví dụ: câu hỏi ban đầu dài 1.000 token. Lần 1 AI đọc một kết quả dài 500 token, lần 2 đọc thêm 2.000 token.</p>
 <ul>
-  <li><strong>Predictability (dễ đoán):</strong> đường đi cố định cho cùng một hành vi mỗi lần chạy, bạn biết trước điều gì sẽ xảy ra.</li>
-  <li><strong>Auditability (truy vết được):</strong> biết chính xác bước nào chạy, theo thứ tự nào, vì sao. Vô giá khi có sự cố hoặc khi sếp hỏi chuyện gì đã xảy ra.</li>
-  <li><strong>Consistency (nhất quán):</strong> không có ứng biến lúc chạy nên không bị trôi lệch giữa các lần gọi.</li>
+  <li>Lần gọi 1 gửi 1.000 token.</li>
+  <li>Lần gọi 2 gửi 1.000 + 500 = 1.500 token.</li>
+  <li>Lần gọi 3 gửi 1.500 + 2.000 = 3.500 token.</li>
 </ul>
-<p>Những ưu điểm này không nổi bật trong demo, nhưng quyết định hệ thống có đáng tin ở quy mô lớn hay không.
-Khi độ tin cậy là ưu tiên, thiết kế cố định không phải lựa chọn nhàm chán, mà là lựa chọn đúng.</p>
+<p>Tổng cộng 6.000 token, <strong>gấp 6 lần</strong> so với hỏi một lần. Và nếu có một tài liệu thật dài lọt vào, nó sẽ bị gửi đi gửi lại ở mọi lần sau.
+Đó là lý do <strong>kết quả tool dài là thủ phạm tốn tiền lớn nhất</strong>.</p>
 
-<h3>6. Thói quen: làm workflow trước</h3>
-<p>Khi một bài toán có thể làm theo cả hai cách, hãy <strong>xây và kiểm chứng phiên bản workflow trước</strong>.
-Nó dựng nhanh hơn, dễ test hơn, và cho bạn một mốc so sánh (baseline) mà bạn hiểu rõ.
-Chạy nó với input thật. Thường thì nó đủ tốt, và bạn tiết kiệm được một agent không cần thiết.
-Nếu nó không đủ, bạn biết chính xác chỗ nào và vì sao, tức là biết phần nào cần sự linh hoạt của model.
-Như thế mạnh hơn nhiều so với bắt đầu bằng một agent mở rồi cố "ghìm cương" nó sau
-(<em class="en">rein it in later</em>).</p>
+<h3>Lỗi dồn: cái giá khó thấy nhất</h3>
+<p>Trong workflow, một bước hỏng thì hỏng ngay tại chỗ, dễ thấy, dễ bắt. Trong agent, AI có thể <strong>tin vào chính cái sai của mình</strong>
+rồi tiếp tục suy luận từ đó. Vài bước sau, nó đã đi rất xa mà vẫn rất tự tin.</p>
+<div class="box">🎯 <strong>Một con số dễ nhớ:</strong> nếu mỗi bước đúng 95%, thì sau 10 bước liên tiếp, khả năng tất cả đều đúng chỉ còn khoảng <strong>60%</strong>.</div>
+<p>Cách giữ an toàn: <strong>giới hạn số bước</strong> và <strong>kiểm tra kết quả giữa chừng</strong>.</p>
 
-<h3>7. Thiết kế lai: agent nằm trong một bước của workflow</h3>
-<p>Hãy hình dung một pipeline cố định gồm ba bước: kiểm tra input, làm việc, định dạng output.
-Bước giữa có thể thật sự mở, nên bạn đặt một agent có phạm vi hẹp vào đúng bước đó.
-Workflow bao quanh lo thứ tự, kiểm tra và xử lý lỗi. Agent chỉ được tự do ở chỗ sự linh hoạt đáng với chi phí của nó.
-Kết quả: dễ đoán ở hai đầu, linh hoạt ở lõi. Đừng coi đây là một lựa chọn cho cả hệ thống,
-hãy chọn <strong>theo từng bước</strong> xem ai sở hữu quyết định.</p>
-
-<h3>8. Tóm tắt</h3>
+<h3>Workflow có gì hay?</h3>
 <ul>
-  <li>Agent đổi độ trễ và chi phí token lấy sự linh hoạt lúc chạy.</li>
-  <li>Cuộc trao đổi đó chỉ đáng với việc mở (open-ended).</li>
-  <li>Kiểm chứng workflow trước, chỉ dùng vòng lặp khi workflow không tự xoay xở được.</li>
+  <li><strong>Dễ đoán:</strong> lần nào cũng chạy giống nhau, nên biết trước điều gì sẽ xảy ra.</li>
+  <li><strong>Truy vết được:</strong> biết rõ bước nào chạy, theo thứ tự nào, vì sao. Rất quý khi có sự cố hoặc khi sếp hỏi "chuyện gì đã xảy ra?".</li>
+  <li><strong>Nhất quán:</strong> không có chuyện hôm nay làm kiểu này, mai làm kiểu khác.</li>
+</ul>
+<p>Những ưu điểm này không hào nhoáng khi demo, nhưng quyết định hệ thống có đáng tin khi chạy thật hay không.</p>
+
+<h3>Thói quen nên có: làm workflow trước</h3>
+<p>Khi một việc có thể làm theo cả hai cách, hãy làm workflow trước và chạy thử với dữ liệu thật.</p>
+<ul>
+  <li>Nếu nó đủ tốt: bạn vừa tiết kiệm được một agent không cần thiết.</li>
+  <li>Nếu chưa đủ: bạn biết <strong>chính xác chỗ nào</strong> cần sự linh hoạt của AI, rồi chỉ thêm agent vào đúng chỗ đó.</li>
+</ul>
+
+<h3>Kết hợp: agent nằm gọn trong một bước</h3>
+<p>Ví dụ một quy trình 3 bước: <strong>kiểm tra đầu vào, làm việc, trình bày kết quả</strong>. Nếu chỉ bước giữa là thật sự mở,
+hãy đặt một agent nhỏ vào riêng bước đó. Hai đầu vẫn chắc chắn, còn phần lõi thì linh hoạt.</p>
+
+<h3>✅ Nhớ 3 điều</h3>
+<ul>
+  <li>Agent tốn tiền hơn, chậm hơn, dễ sai dây chuyền hơn; đổi lại nó linh hoạt.</li>
+  <li>Mỗi lần gọi đều gửi lại cả lịch sử, nên chi phí tăng dần theo từng bước.</li>
+  <li>Làm workflow trước; chỉ thêm agent vào đúng chỗ workflow không làm nổi.</li>
 </ul>
 
 <h3>🇬🇧 Cụm từ tiếng Anh đáng nhớ trong bài</h3>

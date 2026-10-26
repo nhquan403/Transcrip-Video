@@ -1,75 +1,68 @@
 window.LESSON_CONTENT = {
   explanation: `
-<p class="key"><strong>Ý chính của cả bài:</strong> Agent SDK đóng gói đúng vòng lặp agent đang chạy bên trong Claude Code thành một thư viện.
-Hàm <code>query()</code> là cửa vào chính: gọi nó là có một agent chạy ngay trong chương trình của bạn.
-Ba đặc điểm cần nhớ: <strong>độc lập</strong> (không cần cài Claude Code CLI), <strong>dạng luồng</strong> (message chảy ra dần),
-và <strong>gắn với phiên</strong> (mỗi lần gọi là một phiên mới).</p>
+<p class="key"><strong>Nói ngắn gọn:</strong> <strong>Agent SDK</strong> là một thư viện giúp bạn chạy một agent ngay trong chương trình của mình.
+Hàm chính là <code>query()</code>: đưa vào một yêu cầu, nó tự chạy agent và gửi lại từng bước cho bạn xem.
+Mỗi lần gọi là <strong>một phiên mới</strong>, không nhớ lần trước.</p>
 
-<h3>1. Các mảnh ghép</h3>
-<ul>
-  <li><strong>Agent SDK</strong> là một thư viện, đóng gói cùng bộ tool, vòng lặp agent và cách quản lý context của Claude Code. Có cho Python và TypeScript.</li>
-  <li><strong>query()</strong> là cửa vào chính của thư viện: bạn gọi nó, nó chạy vòng lặp agent cho bạn.</li>
-  <li>Điều nhiều người bỏ lỡ: SDK <strong>độc lập</strong>. Bạn không cần cài công cụ dòng lệnh Claude Code ở đâu cả. Import gói, gọi query, thế là có agent.</li>
-  <li>Mặc định, <strong>mỗi lần gọi query là một phiên mới</strong>, không nhớ gì về lần gọi trước. Đây là điều bạn phải thiết kế xoay quanh.</li>
+<h3>📌 Từ cần biết</h3>
+<ul class="terms">
+  <li><strong>Agent SDK:</strong> bộ thư viện chứa đúng "bộ máy" đang chạy bên trong Claude Code, dùng được từ Python hoặc TypeScript.</li>
+  <li><strong>query():</strong> hàm chính để chạy agent.</li>
+  <li><strong>Phiên (session):</strong> một cuộc làm việc từ lúc bắt đầu tới lúc xong.</li>
+  <li><strong>Luồng message:</strong> các mẩu tin agent gửi ra lần lượt trong lúc làm việc.</li>
 </ul>
 
-<h3>2. Cài đặt và xác thực</h3>
+<h3>Agent SDK là gì?</h3>
+<div class="box">📦 <strong>Hình dung thế này:</strong> Claude Code là một chiếc xe hoàn chỉnh. Agent SDK là <strong>động cơ của chiếc xe đó</strong>,
+được tháo ra đóng hộp để bạn lắp vào sản phẩm của mình.</div>
 <ul>
-  <li>Python: cài gói <code>claude-agent-sdk</code> bằng pip, cần Python 3.10 trở lên.</li>
-  <li>TypeScript: cài gói <code>@anthropic-ai/claude-agent-sdk</code> từ npm.</li>
-  <li>Xác thực chỉ là một biến môi trường: đặt <code>ANTHROPIC_API_KEY</code> là xong.</li>
-  <li>Nếu công ty chạy Claude qua nhà cung cấp đám mây, bạn bật một cờ môi trường thay thế: có cờ cho Amazon Bedrock và Google Vertex.</li>
-</ul>
-<p>Để ý điều bạn <em>không</em> làm: không cài thêm công cụ dòng lệnh nào. Một import, một thông tin xác thực, và cả vòng lặp agent đã sẵn sàng.</p>
-
-<h3>3. query() và ClaudeSDKClient không phải hai thiết kế đối nghịch</h3>
-<p>Bạn sẽ nghe SDK có hai cửa vào: <code>query()</code> và <code>ClaudeSDKClient</code>. Chúng <strong>không phải hai vòng lặp khác nhau</strong>,
-mà là hai cách đi vào cùng một vòng lặp.</p>
-<ul>
-  <li><strong>query():</strong> hàm dùng nhiều nhất. Chạy một việc, mỗi lần gọi là một phiên mới.</li>
-  <li><strong>ClaudeSDKClient:</strong> một đối tượng giữ một phiên mở qua nhiều lần gọi, và cho phép ngắt một lần chạy đang diễn ra.</li>
-</ul>
-<p>Khác biệt thật nằm ở <strong>vòng đời phiên và khả năng ngắt</strong>, không phải động cơ bên dưới.
-Dùng query trước, chỉ chuyển sang client khi cần phiên lâu dài hoặc ngắt trực tiếp.</p>
-
-<h3>4. Điều khiển agent bằng options</h3>
-<ul>
-  <li><strong>System prompt:</strong> vai trò và chỉ dẫn agent tuân theo ở mọi lượt.</li>
-  <li><strong>Danh sách tool:</strong> quyết định model được phép làm những hành động nào, từ đọc file tới gọi hàm của bạn.</li>
-  <li><strong>Model:</strong> chọn model Claude nào chạy vòng lặp.</li>
-  <li><strong>Max turns:</strong> giới hạn số lượt dùng tool trước khi vòng lặp dừng.</li>
-</ul>
-<p>Giới hạn cuối quan trọng hơn vẻ ngoài: không có giới hạn, agent có thể lặp lâu hơn nhiều so với ý bạn.
-Cùng một hàm query, cấu hình khác nhau, cho ra những agent rất khác nhau.</p>
-
-<h3>5. Kết quả trả về là một luồng</h3>
-<p>Gọi query, thứ trả về <strong>không phải một chuỗi hoàn chỉnh</strong> mà là một <strong>async iterator</strong>.
-Bạn lặp qua nó, đọc từng message ngay khi agent tạo ra: suy luận, lời gọi tool, rồi câu trả lời cuối.
-Chính dạng luồng này làm SDK có cảm giác "sống": bạn xem lần chạy diễn ra thay vì chờ một khối trả lời lớn.</p>
-<p>Các message có kiểu và đến theo đúng thứ tự:</p>
-<ul>
-  <li><strong>init:</strong> mở đầu lần chạy, báo cấu hình đã chốt (model, tool, system prompt).</li>
-  <li><strong>assistant:</strong> suy luận của model và các lời gọi tool, tiếp theo là kết quả tool trả về. Cứ qua lại như vậy khi agent làm việc.</li>
-  <li><strong>result:</strong> đóng lần chạy, mang tổng chi phí, lượng token dùng, và trạng thái thành công hay chạm giới hạn.</li>
+  <li>Không cần cài thêm Claude Code. Chỉ cần cài thư viện là chạy được.</li>
+  <li>Python cần bản 3.10 trở lên; TypeScript cài từ npm.</li>
+  <li>Đăng nhập chỉ bằng một biến môi trường: <code>ANTHROPIC_API_KEY</code>. Nếu công ty dùng Claude qua Amazon Bedrock hay Google Vertex thì bật cờ tương ứng.</li>
 </ul>
 
-<h3>6. Phiên mới mỗi lần gọi</h3>
-<p>Mỗi lần gọi mở một phiên mới, không nhớ lần gọi trước. Muốn agent nhớ cuộc hội thoại cũ, đó là thứ bạn <strong>chủ động bật</strong>,
-không phải thứ được cho không. Cả lần chạy diễn ra ngay trong tiến trình của bạn, không có công cụ dòng lệnh nào chạy phía sau.</p>
-
-<h3>7. Lộ trình bắt đầu</h3>
+<h3>query() và ClaudeSDKClient: chọn cái nào?</h3>
+<p>Nhiều người tưởng đây là hai bộ máy khác nhau. <strong>Không phải.</strong> Chúng là hai cánh cửa đi vào <strong>cùng một bộ máy</strong>.</p>
 <ul>
-  <li>Lần gọi đầu có thể rất nhỏ: một prompt, options mặc định, lặp qua các message để xem vòng lặp chạy từ đầu tới cuối.</li>
-  <li>Chạy được rồi thì thêm tool để agent làm hành động thật thay vì chỉ trả lời bằng chữ.</li>
-  <li>Trước khi giao việc dài hoặc tốn kém, thêm giới hạn max turns để một lần chạy bị kẹt không quay mãi.</li>
+  <li><strong>query():</strong> mỗi lần gọi là một việc riêng, phiên mới. Dùng cái này trước tiên.</li>
+  <li><strong>ClaudeSDKClient:</strong> giữ một phiên mở qua nhiều lần hỏi, và cho phép <strong>bấm dừng</strong> giữa chừng.</li>
 </ul>
-<p>Bạn không đổi cửa vào lần nào: cùng một query chạy ví dụ hai dòng cũng là query chạy agent dùng tool. Nó lớn lên cùng bạn.</p>
+<p>💡 Chỉ chuyển sang client khi bạn cần nhớ hội thoại liên tục hoặc cần ngắt giữa chừng.</p>
 
-<h3>8. Tóm tắt</h3>
+<h3>Điều khiển agent bằng các tùy chọn</h3>
 <ul>
-  <li>query() chạy vòng lặp agent của Agent SDK ngay trong code của bạn.</li>
-  <li>Một hàm, cấu hình bằng prompt, tool và giới hạn lượt, đưa bạn từ lần gọi đầu tới một agent thật.</li>
-  <li>query và client dùng chung một vòng lặp, không phải hai.</li>
+  <li><strong>System prompt:</strong> vai trò và lời dặn mà agent luôn làm theo.</li>
+  <li><strong>Danh sách tool:</strong> những việc agent <em>được phép</em> làm. Đây mới là thứ thật sự giới hạn hành động.</li>
+  <li><strong>Model:</strong> chọn phiên bản Claude nào chạy.</li>
+  <li><strong>Max turns:</strong> số lượt dùng tool tối đa. Không đặt thì agent có thể chạy lâu hơn bạn tưởng rất nhiều.</li>
+</ul>
+
+<h3>Kết quả trả về không phải một câu trả lời, mà là một luồng</h3>
+<p>Gọi <code>query()</code>, bạn không đợi một cục kết quả cuối, mà nhận từng mẩu tin ngay khi agent làm tới đâu. Nhờ vậy bạn thấy agent đang làm gì.</p>
+<ul>
+  <li><strong>init:</strong> mẩu đầu tiên, báo cấu hình (model nào, tool nào).</li>
+  <li><strong>assistant:</strong> AI nói gì, muốn dùng tool nào.</li>
+  <li><strong>kết quả tool:</strong> tool chạy xong trả về gì. Hai loại này qua lại nhiều lần.</li>
+  <li><strong>result:</strong> mẩu cuối, cho biết thành công hay chạm giới hạn, tốn bao nhiêu tiền và token.</li>
+</ul>
+
+<h3>Mỗi lần gọi là một phiên mới</h3>
+<p>Gọi <code>query("Tên tôi là An")</code> rồi gọi <code>query("Tên tôi là gì?")</code>: lần hai sẽ <strong>không biết</strong>.
+Muốn agent nhớ hội thoại cũ, bạn phải <strong>chủ động bật</strong> tính năng nối phiên.</p>
+
+<h3>Bắt đầu thế nào?</h3>
+<ul>
+  <li><strong>Bước 1:</strong> gọi thử thật đơn giản, chỉ một câu hỏi, rồi in từng mẩu tin ra để xem agent chạy.</li>
+  <li><strong>Bước 2:</strong> thêm tool để agent làm được việc thật.</li>
+  <li><strong>Bước 3:</strong> trước khi giao việc dài hoặc tốn tiền, đặt <strong>max turns</strong> để agent không chạy mãi.</li>
+</ul>
+<p>Suốt quá trình, bạn vẫn dùng đúng một hàm <code>query()</code>.</p>
+
+<h3>✅ Nhớ 3 điều</h3>
+<ul>
+  <li><code>query()</code> chạy agent ngay trong chương trình của bạn, không cần cài Claude Code.</li>
+  <li>Kết quả đến dần từng mẩu; mẩu cuối (result) cho biết thành công hay không.</li>
+  <li>Mỗi lần gọi là phiên mới; <code>query()</code> và client dùng chung một bộ máy.</li>
 </ul>
 
 <h3>🇬🇧 Cụm từ tiếng Anh đáng nhớ trong bài</h3>

@@ -1,72 +1,62 @@
 window.LESSON_CONTENT = {
   explanation: `
-<p class="key"><strong>Ý chính của cả bài:</strong> Đưa cho agent một shell thì sớm muộn nó sẽ với tới một lệnh bạn không muốn chạy.
-<strong>Dặn trong prompt không phải là kiểm soát.</strong> Hàng rào thật là một <strong>hook PreToolUse</strong> trả về <em>deny</em> (chặn) hoặc <em>ask</em> (hỏi người)
-<strong>trước khi</strong> tool chạy. Hook nằm trong code, ngoài tầm với của model, nên không thể bị "nói khéo" để vượt qua.</p>
+<p class="key"><strong>Nói ngắn gọn:</strong> Dặn agent "đừng chạy lệnh nguy hiểm" thì chưa đủ, vì nó vẫn có thể làm. Cách chắc chắn là gắn một
+<strong>hook</strong>: một đoạn code tự động kiểm tra mỗi lệnh <strong>trước khi</strong> lệnh chạy, và chặn lại nếu nguy hiểm.</p>
 
-<h3>1. Ba ý tưởng khung</h3>
-<ul>
-  <li><strong>Hàng rào (guardrail):</strong> một cơ chế chặn hoặc kiểm soát hành động nguy hiểm <strong>trước khi</strong> nó chạy. Chữ quan trọng là "trước".
-  Một hàng rào chỉ phát hiện sau đó không phải hàng rào, mà là một bản báo cáo.</li>
-  <li><strong>Quyết định deny ở PreToolUse:</strong> nước đi cụ thể của hook để chặn hẳn một lời gọi tool đang chờ, nên hành động không bao giờ xảy ra. Đây là "răng" của hàng rào.</li>
-  <li><strong>Quyền tối thiểu:</strong> chỉ cho agent những tool và quyền truy cập nó thật sự cần. Quyền tối thiểu thu nhỏ thiệt hại có thể xảy ra, hàng rào bắt các trường hợp nguy hiểm trong phần còn lại.
-  Thu hẹp bề mặt trước, rồi canh gác phần còn lại.</li>
+<h3>📌 Từ cần biết</h3>
+<ul class="terms">
+  <li><strong>Hook:</strong> đoạn code tự động chạy vào một thời điểm nhất định, ví dụ ngay trước khi agent dùng một tool.</li>
+  <li><strong>PreToolUse:</strong> thời điểm <strong>trước</strong> khi tool chạy. Chỉ ở đây mới chặn được.</li>
+  <li><strong>PostToolUse:</strong> thời điểm <strong>sau</strong> khi tool đã chạy. Chỉ ghi nhận được, không chặn được.</li>
+  <li><strong>deny / ask / allow:</strong> chặn hẳn / hỏi người duyệt / cho chạy.</li>
+  <li><strong>Matcher:</strong> bộ lọc chọn hook này canh tool nào (ví dụ chỉ canh lệnh shell).</li>
 </ul>
 
-<h3>2. Hình dạng của một hàng rào: ba phần</h3>
+<h3>Vì sao dặn bằng lời là chưa đủ?</h3>
+<div class="box">🛡️ <strong>Hình dung thế này:</strong> Dặn nhân viên "đừng vào phòng máy chủ" là <strong>lời dặn</strong>.
+Lắp <strong>khóa cửa</strong> phòng máy chủ là <strong>hàng rào thật</strong>. Lời dặn có thể bị quên hay bị lách; khóa cửa thì không.</div>
+<p>Lời dặn trong prompt nằm ngay trong những gì AI đọc, nên một câu hỏi khéo léo (hoặc chỉ là diễn đạt xui xẻo) có thể khiến AI bỏ qua nó.
+Hook thì nằm trong code của bạn, AI <strong>không thấy và không "nói khéo" được</strong>. Nó chạy giống hệt nhau ở mọi lần.</p>
+
+<h3>Một hàng rào gồm 3 phần</h3>
+<ol>
+  <li><strong>Chọn tool cần canh</strong> (matcher), ví dụ chỉ các lệnh shell.</li>
+  <li><strong>Xem lệnh sắp chạy</strong>, ví dụ có phải lệnh xóa toàn bộ ổ đĩa không.</li>
+  <li><strong>Trả về deny</strong> nếu nguy hiểm: lệnh sẽ không bao giờ chạy.</li>
+</ol>
+
+<h3>Chặn trước hay ghi nhận sau?</h3>
 <ul>
-  <li><strong>Matcher:</strong> chọn những lời gọi tool mà hook để ý, ví dụ lệnh shell hoặc thao tác ghi, để hook tập trung thay vì chạy với mọi thứ.</li>
-  <li><strong>Xem input đang chờ:</strong> tìm đúng thứ bạn muốn chặn, ví dụ một lệnh xóa đệ quy ở gốc hệ thống file.</li>
-  <li><strong>Trả về deny:</strong> khi tìm thấy, lời gọi không bao giờ được thực thi.</li>
+  <li><strong>PreToolUse:</strong> lệnh nguy hiểm bị chặn <strong>trước khi chạy</strong>. Đây là phòng ngừa thật.</li>
+  <li><strong>PostToolUse:</strong> chỉ thấy kết quả <strong>sau khi đã chạy</strong>. Có ích để ghi log, nhưng <strong>không cứu được gì</strong>.</li>
 </ul>
-<p>Khớp tool nguy hiểm, xem lời gọi, chặn cái nguy hiểm. Vì tất cả diễn ra trước khi thực thi, hành động xấu bị <strong>ngăn</strong>, không chỉ bị <strong>phát hiện</strong>.</p>
+<p>⚠️ <strong>Lỗi hay gặp:</strong> viết hook kiểm tra lệnh xóa nhưng gắn vào PostToolUse. Hook vẫn chạy, nhưng chạy <strong>sau khi</strong> file đã bị xóa.
+Lúc đó nó chỉ còn là một bản báo cáo sự cố.</p>
+<p>🧪 Câu hỏi để chọn đúng: <strong>"Ở thời điểm này mình muốn ngăn, hay chỉ muốn ghi lại?"</strong> Muốn ngăn thì phải dùng PreToolUse.</p>
 
-<h3>3. Chặn trước hay phát hiện sau</h3>
-<p>Với <strong>PreToolUse deny</strong>, bạn chặn hành động khi lời gọi còn đang chờ. Lệnh nguy hiểm không bao giờ chạm vào hệ thống vì nó không bao giờ chạy. Đó là phòng ngừa thật.</p>
-<p>Ngược lại, hook <strong>PostToolUse</strong> chỉ thấy kết quả <strong>sau khi</strong> tool đã chạy. Nó có thể cảnh báo hoặc ghi log (rất có ích cho vết kiểm toán),
-nhưng <strong>không thể hoàn tác</strong> những gì đã xảy ra. Nếu mục đích là ngăn tác hại, phát hiện sau là sai công cụ, dù log có tốt tới đâu.
-Quy tắc tự hiện ra: <strong>phòng ngừa sống trước khi thực thi, tức là sống trong PreToolUse.</strong></p>
-
-<h3>4. Chọn đúng sự kiện vòng đời</h3>
-<p>Chỉ cần một câu hỏi: <em>ở thời điểm này mình thật sự cần làm gì?</em> Cần <strong>ngăn</strong> thì sự kiện phải là PreToolUse, vì đó là sự kiện duy nhất chạy trước hành động.
-Chỉ cần <strong>quan sát hoặc dọn dẹp</strong> sau đó thì PostToolUse hoặc Stop là đúng.</p>
-<p>Kiểu lỗi đáng nhấn mạnh: đặt kiểm tra lệnh phá hoại trong một hook PostToolUse. Nó đăng ký gọn gàng, thậm chí còn chạy.
-Nhưng nó chạy <strong>sau khi</strong> lệnh xóa đã chạy, nên "hàng rào" của bạn thật ra chỉ là một bản báo cáo sự cố lịch sự.</p>
-
-<h3>5. Ba cách dùng xác định</h3>
+<h3>Ba cách dùng hook</h3>
 <ul>
-  <li><strong>Chặn (block):</strong> deny hẳn một lệnh phá hoại (xóa đệ quy, drop bảng production) trước khi nó chạy.</li>
-  <li><strong>Kiểm duyệt (gate):</strong> thay vì chặn cứng, dùng <em>ask</em> để chuyển hành động rủi ro cao cho người duyệt. Agent tạm dừng, người quyết định, rồi mới tiếp.</li>
-  <li><strong>Kiểm toán (audit):</strong> ghi log mọi lời gọi tool một cách xác định, để bản ghi những gì agent đã làm không phụ thuộc vào việc model có tự báo hay không.</li>
+  <li><strong>Chặn (deny):</strong> với lệnh phá hoại rõ ràng, như xóa toàn bộ ổ đĩa hay xóa bảng dữ liệu thật.</li>
+  <li><strong>Hỏi người (ask):</strong> với lệnh rủi ro nhưng đôi khi hợp lệ, như ép đẩy code lên nhánh chính. Agent tạm dừng, chờ người quyết định.</li>
+  <li><strong>Ghi lại (audit):</strong> ghi log mọi lệnh, để luôn biết agent đã làm gì mà không cần agent tự khai.</li>
 </ul>
-<p>Cùng một cơ chế, ba việc khác nhau.</p>
 
-<h3>6. Vì sao hook không thể bị "nói khéo" vượt qua?</h3>
-<p>Phần kiểm tra nằm trong code của bạn, hoàn toàn ngoài tầm với của model. Model thậm chí không thấy nó, nên không có gì để một input khéo léo lách qua.
-So với một quy tắc viết trong prompt kiểu "không bao giờ chạy lệnh phá hoại": chỉ dẫn đó nằm ngay trong context, và một input tấn công phù hợp
-(hoặc đơn giản là một cách diễn đạt xui xẻo) có thể khiến model bước qua nó. Hook không có điểm yếu đó: nó chạy giống nhau ở mọi lần, không nhớ các lượt trước, không có "tâm trạng".
-Đó là lý do hàng rào nghiêm túc sống trong hook, không phải trong prompt.</p>
-
-<h3>7. Gắn hook thế nào?</h3>
+<h3>Gắn hook ở đâu?</h3>
 <ul>
-  <li>Trong SDK, đường chính là <strong>code</strong>: gắn callback vào <code>options.hooks</code> trong options của agent.</li>
-  <li>Bề mặt thứ hai là <strong>settings.json</strong>, nơi các hook dạng lệnh shell sống, được nạp khi bạn bật nguồn cấu hình (setting sources).</li>
-  <li>Cả hai cách đều phải nêu <strong>sự kiện vòng đời</strong> (ví dụ PreToolUse) và một <strong>matcher</strong>: tên tool chính xác, một mẫu khớp cả họ tool, hoặc để trống nghĩa là khớp tất cả.</li>
-  <li>Hook dạng lệnh còn có thể trả về <strong>mã thoát (exit code)</strong>: đó là tín hiệu xác định để chặn hành động ở cấp shell.</li>
+  <li>Trong code: thêm vào <code>options.hooks</code> khi cấu hình agent.</li>
+  <li>Hoặc trong file <code>settings.json</code> với hook dạng lệnh shell. Loại này có thể chặn bằng <strong>mã thoát</strong> (exit code).</li>
+  <li>Sau khi gắn, hãy <strong>thử đúng lệnh bạn muốn chặn</strong> để chắc nó hoạt động.</li>
 </ul>
-<p>Đăng ký, trỏ matcher đúng lời gọi, rồi <strong>kiểm thử</strong> bằng cách thử chính hành động bạn muốn chặn.</p>
 
-<h3>8. Hook là một lớp, không phải tất cả</h3>
-<p>Nền móng là <strong>quyền tối thiểu</strong>: chỉ cho agent tool và quyền nó thật sự cần, thu nhỏ bề mặt rủi ro trước khi hook nào chạy.
-Nếu agent không chạm được tới production, bạn không cần hàng rào cho production. Hook nằm phía trên, canh gác các hành động nguy hiểm bên trong những tool agent được phép có.
-Hình dung như một chồng lớp: quyền hạn đặt mức nền những gì có thể xảy ra, hook thêm kiểm soát xác định cho từng trường hợp rủi ro còn lại.
-Xếp lớp như vậy thì một chỉ dẫn bị bỏ sót trong prompt không biến thành sự cố thật, vì các kiểm soát xác định bên dưới vẫn đứng vững.</p>
+<h3>Hook chỉ là một lớp bảo vệ</h3>
+<p>Lớp nền là <strong>quyền tối thiểu</strong>: chỉ cho agent đúng những gì nó cần. Ví dụ agent dọn file tạm thì đừng cho nó quyền vào cơ sở dữ liệu thật.
+Không có quyền thì cũng không cần hàng rào. Hook nằm phía trên, canh những lệnh nguy hiểm còn lại trong phạm vi agent được phép.</p>
 
-<h3>9. Tóm tắt</h3>
+<h3>✅ Nhớ 3 điều</h3>
 <ul>
-  <li>Xây hàng rào là kiểm tra một hành động đang chờ trước khi nó chạy.</li>
-  <li>Thứ cần dùng: PreToolUse với deny hoặc ask.</li>
-  <li>Cái bẫy: dùng hook PostToolUse và đặt kiểm tra sau sự việc, khi thiệt hại đã xảy ra.</li>
+  <li>Lời dặn trong prompt không phải là hàng rào; hook trong code mới là hàng rào.</li>
+  <li>Muốn chặn thì dùng PreToolUse; PostToolUse chỉ để ghi lại.</li>
+  <li>Thu hẹp quyền trước, rồi dùng hook canh phần còn lại.</li>
 </ul>
 
 <h3>🇬🇧 Cụm từ tiếng Anh đáng nhớ trong bài</h3>

@@ -43,6 +43,9 @@ video::cue { font-size: var(--sub-size); background: rgba(0, 0, 0, .6); }
 .explain .key { border-left: 4px solid var(--accent); background: #16202e; padding: 10px 14px; border-radius: 6px; }
 .explain em.en { color: #9ecbff; font-style: normal; }
 .explain code { overflow-wrap: anywhere; }
+.explain .box { background: #1f1a12; border-left: 4px solid #e3b341; padding: 10px 14px; border-radius: 6px; margin: 12px 0; }
+.explain .terms { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 6px 14px 6px 30px; }
+.explain .terms li { margin: 6px 0; }
 
 /* Quiz */
 .score { position: sticky; top: 52px; z-index: 1; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }

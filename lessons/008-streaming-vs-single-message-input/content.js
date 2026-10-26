@@ -1,66 +1,64 @@
 window.LESSON_CONTENT = {
   explanation: `
-<p class="key"><strong>Ý chính của cả bài:</strong> Agent SDK nhận đầu vào theo hai cách. <strong>Streaming input</strong> (mặc định, được khuyên dùng):
-agent chạy như một tiến trình sống lâu, bạn đưa tin nhắn vào dần. <strong>Single message input</strong>: một chuỗi vào, một câu trả lời ra, xong.
-Cả hai đi vào <strong>cùng một vòng lặp</strong>; khác nhau ở khả năng chúng mở ra. Và đừng nhầm streaming <em>input</em> với streaming <em>output</em>.</p>
+<p class="key"><strong>Nói ngắn gọn:</strong> Có hai cách đưa câu hỏi vào agent. <strong>Trò chuyện liên tục</strong> (streaming input, mặc định):
+agent sống lâu, bạn nhắn thêm bao nhiêu cũng được. <strong>Hỏi một lần</strong> (single message): gửi một câu, nhận một câu trả lời, xong.
+Ngoài ra, đừng nhầm "gửi vào liên tục" với "chữ hiện ra dần".</p>
 
-<h3>1. Hai chế độ đặt cạnh nhau</h3>
-<ul>
-  <li><strong>Streaming input:</strong> prompt không phải một chuỗi mà là một chuỗi tin nhắn bất đồng bộ; agent chạy như tiến trình sống lâu mà bạn "nuôi" theo thời gian. Đây là mặc định và được khuyên dùng.</li>
-  <li><strong>Single message input:</strong> prompt chỉ là một chuỗi, agent trả lời một lần, lần chạy kết thúc. Hợp với yêu cầu một lần hoặc môi trường không trạng thái, ví dụ hàm serverless khởi động mới cho mỗi lần gọi.</li>
-</ul>
-<p>Vòng lặp bên dưới giống nhau; khác ở cách prompt đi vào và những gì điều đó mở ra.</p>
-
-<h3>2. Vì sao streaming input là mặc định được khuyên dùng?</h3>
-<p>Chạy agent như một tiến trình sống mở ra những thứ mà một chuỗi gửi một lần không làm được:</p>
-<ul>
-  <li><strong>Đính kèm ảnh</strong> trực tiếp trong tin nhắn, nên dùng được khả năng nhìn ảnh.</li>
-  <li><strong>Xếp hàng tin nhắn mới</strong> trong khi một lượt còn đang chạy, đưa thêm thông tin cho agent khi nó đang làm.</li>
-  <li><strong>Ngắt một lần chạy</strong> theo thời gian thực qua đối tượng client, thay vì chờ nó xong.</li>
-  <li><strong>Ngữ cảnh nhiều lượt tự nhiên:</strong> hội thoại tự được giữ lại mà bạn không phải tự ghép.</li>
+<h3>📌 Từ cần biết</h3>
+<ul class="terms">
+  <li><strong>Streaming input:</strong> đưa câu hỏi vào agent theo kiểu nhắn tin liên tục.</li>
+  <li><strong>Single message input:</strong> gửi đúng một câu, nhận đúng một câu trả lời.</li>
+  <li><strong>Streaming output:</strong> câu trả lời hiện ra từng chữ khi AI đang viết, thay vì hiện một lần.</li>
+  <li><strong>Serverless:</strong> kiểu chạy mà mỗi yêu cầu bật lên một chương trình nhỏ, trả lời xong là tắt.</li>
 </ul>
 
-<h3>3. Công bằng với single message input</h3>
-<p>Hình dạng của nó là một chuỗi gửi một lần: đưa prompt, nhận một câu trả lời, không có phiên nào mở lại sau đó.
-Đó chính là điều bạn muốn trong môi trường không trạng thái: hàm serverless hoặc job xử lý hàng loạt khởi động, trả lời rồi tắt cho mỗi yêu cầu.
-Không có tiến trình lâu dài phải quản lý nên triển khai đơn giản.</p>
-<p>Vậy là không bao giờ có trí nhớ? Không hẳn. Vẫn có hành vi nhiều lượt, nhưng chỉ bằng cách dùng tùy chọn <strong>continue</strong> hoặc <strong>resume session</strong>
-để nối lại một lần chạy trước. Việc này chủ động hơn so với sự tự nhiên của streaming, nhưng với việc một lần thì đó thường là đánh đổi đúng.</p>
-
-<h3>4. Chọn thế nào?</h3>
+<h3>Hai cách đưa câu hỏi vào</h3>
+<div class="box">📞 <strong>Hình dung thế này:</strong> Streaming input giống <strong>một cuộc gọi điện</strong>: máy luôn mở, bạn nói tiếp được, ngắt lời được, gửi cả hình.
+Single message giống <strong>gửi một tin nhắn</strong>: gửi đi, nhận trả lời, hết.</div>
+<p><strong>Trò chuyện liên tục (streaming input)</strong> cho bạn:</p>
 <ul>
-  <li>Xây thứ gì đó <strong>tương tác, dùng nhiều tool, nhiều lượt</strong>: dùng streaming input.</li>
-  <li>Chỉ cần <strong>một câu trả lời</strong>, hoặc triển khai vào hàm không trạng thái thức dậy theo từng request: single message gọn hơn.</li>
-  <li>Phép thử nhanh: cần <strong>đính kèm ảnh</strong> hoặc <strong>ngắt lần chạy</strong> khi đang chạy? Cả hai đều chỉ thẳng tới streaming.</li>
-  <li>Thật sự phân vân: dựa vào mặc định. Streaming input được khuyên dùng nên bắt đầu ở đó hiếm khi sai.</li>
+  <li>Gửi kèm <strong>ảnh</strong>.</li>
+  <li><strong>Nhắn thêm</strong> khi agent đang làm dở.</li>
+  <li><strong>Bấm dừng</strong> giữa chừng (cần dùng đối tượng client).</li>
+  <li>Agent <strong>tự nhớ</strong> cả cuộc trò chuyện.</li>
+</ul>
+<p><strong>Hỏi một lần (single message)</strong> hợp với:</p>
+<ul>
+  <li>Việc chỉ cần một câu trả lời.</li>
+  <li>Chạy kiểu serverless hay job hàng loạt: bật lên, trả lời, tắt. Không có gì phải duy trì nên triển khai đơn giản.</li>
+  <li>Nếu vẫn muốn nhớ lần trước, phải <strong>chủ động nối lại phiên</strong> (continue, resume).</li>
 </ul>
 
-<h3>5. Bốn điều hay bị nhầm</h3>
+<h3>Chọn cách nào?</h3>
 <ul>
-  <li>Streaming và single message là <strong>chế độ nhập</strong> vào một vòng lặp dùng chung, không phải hai động cơ riêng.</li>
-  <li>Streaming input <strong>không bắt buộc</strong> dùng đối tượng client: bản thân query nhận được prompt bất đồng bộ. Ngoại lệ duy nhất là <strong>ngắt</strong>: vẫn cần ClaudeSDKClient, kể cả ở chế độ streaming.</li>
-  <li>Tách bạch streaming <strong>đầu vào của SDK</strong> với streaming <strong>đầu ra của API</strong>: cờ <code>stream: true</code> khi gọi model trực tiếp là một cơ chế hoàn toàn khác.</li>
-  <li>Muốn xem output trực tiếp khi model đang viết, bật <code>include_partial_messages</code>: bạn nhận các stream event theo từng token.</li>
+  <li>Có trò chuyện qua lại, dùng nhiều tool, nhiều lượt: <strong>streaming input</strong>.</li>
+  <li>Chỉ cần một câu trả lời, chạy kiểu serverless: <strong>single message</strong>.</li>
+  <li>Cần gửi ảnh hoặc cần bấm dừng: chắc chắn là <strong>streaming input</strong>.</li>
+  <li>Còn phân vân: dùng mặc định là <strong>streaming input</strong>.</li>
 </ul>
 
-<h3>6. Hai chiều của chữ "streaming"</h3>
-<p><strong>Streaming input là về gửi:</strong> cách đưa prompt vào vòng lặp dưới dạng chuỗi tin nhắn bất đồng bộ.
-<strong>Streaming output là về nhận:</strong> xem token của model đến dần khi được tạo ra thay vì chờ câu trả lời hoàn chỉnh.</p>
-<p>Hai lựa chọn này <strong>độc lập</strong> và kết hợp tùy ý: có thể stream input mà không stream output, và có thể stream output trong một lần chạy single message.
-Hình dung một giao diện chat: streaming input đưa tin nhắn của người dùng vào, streaming output "vẽ" câu trả lời lên màn hình từng token.</p>
-
-<h3>7. Chốt từ vựng: một chữ, ba việc</h3>
+<h3>Ba chữ "streaming" dễ nhầm</h3>
+<div class="box">🔀 Cùng một chữ "streaming" nhưng là <strong>ba thứ khác nhau</strong>:</div>
 <ul>
-  <li><strong>Streaming input:</strong> đưa vào vòng lặp một chuỗi tin nhắn bất đồng bộ. Chế độ nhập mặc định và được khuyên dùng.</li>
-  <li><strong>include_partial_messages:</strong> cờ Python bật output trực tiếp qua SDK, đưa token cho bạn dưới dạng stream event khi model đang viết.</li>
-  <li><strong>stream: true:</strong> cờ ở cấp API trên một lời gọi model trực tiếp, không liên quan tới chế độ nhập của SDK.</li>
+  <li><strong>Streaming input:</strong> nói về cách <strong>gửi câu hỏi vào</strong> agent.</li>
+  <li><strong>include_partial_messages:</strong> tùy chọn để <strong>xem chữ hiện ra dần</strong> qua Agent SDK.</li>
+  <li><strong>stream: true:</strong> tùy chọn khi gọi thẳng API của Claude, <strong>không liên quan</strong> gì tới hai thứ trên.</li>
 </ul>
-<p>Một cái về cách prompt đi vào, một cái về xem output đi ra qua SDK, một cái thuộc về API gốc.</p>
+<p>Gửi vào liên tục và chữ hiện ra dần là <strong>hai lựa chọn độc lập</strong>, kết hợp sao cũng được. Ví dụ trong một ứng dụng chat:
+streaming input đưa tin nhắn của người dùng vào, còn streaming output làm câu trả lời hiện ra từng chữ trên màn hình.</p>
 
-<h3>8. Mặc định nên dùng</h3>
-<p>Với phần lớn agent: bắt đầu bằng <strong>streaming input</strong>, giữ nguyên hộp đồ nghề (ảnh, ngắt, xếp hàng tin nhắn, nhiều lượt tự nhiên).
-Chỉ chuyển xuống single message khi có lý do thật, thường là việc một lần không trạng thái, nơi một tiến trình lâu dài chỉ là gánh nặng.
-Bật thêm streaming output khi có người đang xem câu trả lời hiện ra. Chế độ nhập nên là <strong>một quyết định</strong>, không phải một sự tình cờ.</p>
+<h3>Vài điều hay bị hiểu sai</h3>
+<ul>
+  <li>Hai cách đưa câu hỏi vào <strong>dùng chung một bộ máy</strong>; bạn chọn khả năng, không chọn bộ máy khác.</li>
+  <li>Streaming input <strong>không bắt buộc</strong> dùng client. Chỉ khi muốn <strong>bấm dừng</strong> mới cần client.</li>
+</ul>
+
+<h3>✅ Nhớ 3 điều</h3>
+<ul>
+  <li>Mặc định là trò chuyện liên tục: có ảnh, có ngắt, có nhớ.</li>
+  <li>Hỏi một lần hợp với việc một lần và môi trường serverless.</li>
+  <li>"Gửi vào liên tục" và "chữ hiện ra dần" là hai chuyện khác nhau.</li>
+</ul>
 
 <h3>🇬🇧 Cụm từ tiếng Anh đáng nhớ trong bài</h3>
 <ul>

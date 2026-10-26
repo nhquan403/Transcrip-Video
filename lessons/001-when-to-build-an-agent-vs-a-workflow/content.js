@@ -1,85 +1,75 @@
 window.LESSON_CONTENT = {
   explanation: `
-<p class="key"><strong>Ý chính của cả bài:</strong> Workflow và agent khác nhau ở đúng một điểm:
-<strong>ai quyết định bước tiếp theo</strong>. Code của bạn quyết định thì đó là workflow, model tự quyết định
-lúc đang chạy thì đó là agent. Lời khuyên xuyên suốt: luôn bắt đầu bằng cách đơn giản nhất, chỉ dùng agent khi bài toán thật sự cần.</p>
+<p class="key"><strong>Nói ngắn gọn:</strong> Có hai cách để dùng AI làm việc. <strong>Workflow</strong>: bạn viết sẵn các bước, AI chỉ làm từng bước.
+<strong>Agent</strong>: bạn giao mục tiêu, AI tự quyết định làm gì tiếp theo. Hãy luôn thử cách đơn giản trước, chỉ dùng agent khi thật sự cần.</p>
 
-<h3>1. Workflow và agent khác nhau thế nào?</h3>
-<p><strong>Workflow</strong> giống một công thức nấu ăn in sẵn: bước 1, bước 2, bước 3 theo đúng thứ tự bạn đã viết trong code.
-Model chỉ làm phần việc bên trong từng bước (<em class="en">the model just fills in each step</em>).</p>
-<p><strong>Agent</strong> giống một đầu bếp được giao "nấu bữa tối": họ tự mở tủ lạnh xem có gì, quyết định món, nếm thử,
-rồi điều chỉnh. Model tự suy luận, gọi tool, xem kết quả, rồi chọn hành động tiếp theo, cứ lặp như vậy cho tới khi xong việc.</p>
-<p><strong>Hiểu nhầm phổ biến:</strong> "Có dùng tool thì là agent". Sai, vì cả hai đều dùng tool.
-Dấu hiệu thật sự (<em class="en">the tell</em>) là ai sở hữu quyết định tiếp theo (<em class="en">who owns the next decision</em>).</p>
-
-<h3>2. Viên gạch chung: augmented language model</h3>
-<p>Cả workflow lẫn agent đều được xây trên cùng một khối cơ bản mà Anthropic gọi là <strong>augmented language model</strong>,
-tức model được tăng cường thêm ba khả năng:</p>
-<ul>
-  <li><strong>Retrieval:</strong> lấy thông tin liên quan đưa vào cho model, để model trả lời dựa trên dữ liệu thật thay vì đoán.</li>
-  <li><strong>Tools:</strong> cho model làm hành động, ví dụ truy vấn database hay gọi một service.</li>
-  <li><strong>Memory:</strong> giúp model nhớ trạng thái trong suốt một nhiệm vụ.</li>
+<h3>📌 Từ cần biết</h3>
+<ul class="terms">
+  <li><strong>Model:</strong> chính là AI (ví dụ Claude), thứ đọc chữ và viết chữ.</li>
+  <li><strong>Tool:</strong> một "công cụ" bạn cho AI dùng, như tra cơ sở dữ liệu, đọc file, gửi email.</li>
+  <li><strong>Workflow:</strong> quy trình mà <em>bạn</em> viết sẵn thứ tự các bước.</li>
+  <li><strong>Agent:</strong> AI được tự quyết định bước tiếp theo, cứ làm, xem kết quả, rồi làm tiếp cho tới khi xong.</li>
 </ul>
-<p>Rất nhiều bài toán chỉ cần <strong>một lần gọi model</strong> với retrieval tốt và vài ví dụ mẫu là giải xong. Hãy bắt đầu từ đó.</p>
 
-<h3>3. Trục kiểm soát (control axis)</h3>
-<p>Hãy hình dung một đường thẳng. Một đầu là <strong>code quyết định</strong> thứ tự các bước: bạn đọc source từ trên xuống dưới là thấy hết đường đi.
-Đầu kia là <strong>model quyết định</strong> thứ tự lúc chạy, dựa trên những gì nó nhìn thấy.</p>
+<h3>Workflow và agent khác nhau chỗ nào?</h3>
+<div class="box">🍳 <strong>Hình dung thế này:</strong> Workflow giống <strong>công thức nấu ăn</strong> in sẵn: bước 1 rửa rau, bước 2 xào, bước 3 nêm. Đầu bếp (AI) chỉ làm theo.
+Agent giống bạn nói với đầu bếp: <strong>"nấu giúp tôi bữa tối"</strong>. Đầu bếp tự mở tủ lạnh, tự chọn món, nếm thử rồi điều chỉnh.</div>
+<p>Chỉ có <strong>một câu hỏi</strong> để phân biệt: <strong>ai quyết định bước tiếp theo?</strong></p>
 <ul>
-  <li>Đường đi cố định thì <strong>dễ đoán, dễ test</strong>, vì lần nào cũng chạy giống nhau.</li>
-  <li>Đường đi do model điều khiển thì <strong>linh hoạt</strong>, xử lý được cả những input bạn không lường trước.</li>
+  <li>Code của bạn quyết định: đó là <strong>workflow</strong>.</li>
+  <li>AI tự quyết định trong lúc chạy: đó là <strong>agent</strong>.</li>
 </ul>
-<p>Khi phác thảo thiết kế, hãy tự hỏi: hệ thống của mình nên nằm ở đâu trên đường thẳng này, và tại sao?</p>
+<p>⚠️ <strong>Hiểu nhầm hay gặp:</strong> "Có dùng tool thì là agent". <strong>Sai.</strong> Workflow cũng dùng tool được. Dùng tool hay không không quan trọng; quan trọng là ai cầm lái.</p>
 
-<h3>4. Đơn giản là một tính năng</h3>
-<p>Anthropic khuyên rất thẳng: <em class="en">find the simplest solution that works</em>, nghĩa là tìm giải pháp đơn giản nhất mà vẫn chạy được,
-và chỉ thêm độ phức tạp khi nó <strong>rõ ràng</strong> làm kết quả tốt hơn. Lý do là agent là lựa chọn đắt:
-mỗi vòng lặp thêm tốn token và thêm độ trễ (latency).</p>
-<p>Quy trình đúng: làm thiết kế đơn giản nhất, <strong>đo kết quả</strong>, rồi mới leo lên "nấc thang độ phức tạp"
-(<em class="en">complexity ladder</em>) khi kết quả đòi hỏi. <em class="en">Simple is a feature, not a compromise</em>:
-đơn giản là ưu điểm, không phải sự thỏa hiệp.</p>
-
-<h3>5. Ba tín hiệu cho thấy nên dùng agent</h3>
+<h3>Nền móng chung: AI được "gắn thêm đồ"</h3>
+<p>Cả workflow lẫn agent đều dựa trên một AI được gắn thêm ba thứ (bài học gọi là <em>augmented language model</em>):</p>
 <ul>
-  <li><strong>Không gian mở</strong> (<em class="en">open-ended space</em>): nhiệm vụ có thể rẽ theo rất nhiều hướng mà bạn không liệt kê trước được.</li>
-  <li><strong>Không biết trước số bước</strong> (<em class="en">unknown steps</em>): không đoán được việc này cần bao nhiêu hành động.</li>
-  <li><strong>Model tự chọn tool</strong> (<em class="en">model chooses tools</em>): giá trị nằm ở chỗ để model tự quyết dùng tool nào và lúc nào.</li>
+  <li><strong>Tra cứu (retrieval):</strong> đưa tài liệu thật cho AI đọc, để nó trả lời dựa trên dữ liệu chứ không đoán.</li>
+  <li><strong>Công cụ (tools):</strong> cho AI làm việc thật, như tra đơn hàng hay tạo ticket.</li>
+  <li><strong>Trí nhớ (memory):</strong> giúp AI nhớ mình đang làm tới đâu trong một việc dài.</li>
 </ul>
-<p>Thường bạn cần <strong>từ hai tín hiệu trở lên</strong> mới nên quyết định làm agent. Nếu đường đi có giới hạn và biết trước được thì workflow tốt hơn.</p>
+<p>💡 Rất nhiều việc chỉ cần <strong>hỏi AI một lần</strong>, kèm tài liệu và vài ví dụ mẫu, là xong. Đừng vội làm phức tạp.</p>
 
-<h3>6. Bài test rẻ trước khi làm agent</h3>
-<p>Khi nhận một yêu cầu tính năng, hãy hỏi hai câu:</p>
+<h3>Một thanh trượt: ai cầm lái?</h3>
+<p>Hãy tưởng tượng một thanh trượt. Đầu trái: <strong>code cầm lái hoàn toàn</strong>. Đầu phải: <strong>AI cầm lái hoàn toàn</strong>.</p>
 <ul>
-  <li>Mình có viết được các bước ra theo thứ tự không?</li>
-  <li>Cùng một input có luôn đi cùng một đường không?</li>
+  <li>Càng về phía code: <strong>dễ đoán, dễ kiểm tra</strong>, vì lần nào cũng chạy y như nhau.</li>
+  <li>Càng về phía AI: <strong>linh hoạt</strong>, xử lý được cả những tình huống bạn không lường trước.</li>
 </ul>
-<p>Nếu cả hai đều "có" thì gần như chắc chắn workflow là đủ, và bạn được tính dễ đoán miễn phí.
-Rất nhiều việc trông có vẻ cần agent thực ra chỉ là một chuỗi lời gọi model cố định cộng thêm chút code nối (<em class="en">glue code</em>).
-Hãy chứng minh workflow không làm được rồi mới trả tiền cho agent.</p>
+<p>Mỗi khi thiết kế, hãy hỏi: hệ thống của mình nên nằm ở đâu trên thanh trượt này?</p>
 
-<h3>7. Ba hình dạng workflow kinh điển</h3>
+<h3>Vì sao nên bắt đầu đơn giản?</h3>
+<p>Vì agent <strong>đắt</strong>: mỗi lần AI "nghĩ thêm một bước" là tốn thêm tiền và thêm thời gian chờ.
+Cách làm đúng: làm phiên bản đơn giản nhất, <strong>đo xem nó tốt tới đâu</strong>, rồi chỉ thêm độ phức tạp khi kết quả cho thấy thật sự cần.
+Đơn giản không phải là làm ẩu; đơn giản là một <strong>ưu điểm</strong>.</p>
+
+<h3>Khi nào thì nên dùng agent?</h3>
+<p>Có <strong>3 dấu hiệu</strong>. Thường cần thấy <strong>từ 2 dấu hiệu trở lên</strong>:</p>
 <ul>
-  <li><strong>Prompt chaining:</strong> chia việc thành chuỗi bước cố định, mỗi lần gọi model xử lý output của bước trước.
-  Có thể chèn một bước kiểm tra (gate) giữa các bước để bắt lỗi sớm. Ví dụ: viết dàn ý, kiểm tra dàn ý, rồi viết bài.</li>
-  <li><strong>Routing:</strong> phân loại request đầu vào rồi chuyển cho bộ xử lý chuyên trách. Ví dụ: phân loại ticket hỗ trợ theo loại.</li>
-  <li><strong>Parallelization:</strong> chạy các phần độc lập cùng lúc. Có hai kiểu: chia việc thành nhiều phần (sectioning),
-  hoặc chạy cùng một việc vài lần rồi so sánh kết quả (voting).</li>
+  <li><strong>Việc mở:</strong> có thể rẽ theo nhiều hướng, bạn không liệt kê trước được.</li>
+  <li><strong>Không biết trước cần mấy bước.</strong></li>
+  <li><strong>Cần AI tự chọn công cụ</strong> nào và lúc nào.</li>
 </ul>
-<p>Trong cả ba, <strong>bạn định nghĩa cấu trúc</strong>, model chỉ lo phần suy luận. Code vẫn nắm đường đi, nên chúng dễ đoán.</p>
+<p>🧪 <strong>Phép thử nhanh:</strong> Bạn có viết được các bước ra giấy theo thứ tự không? Cùng một đầu vào có luôn đi cùng một đường không?
+Nếu cả hai đều "có" thì workflow là đủ.</p>
 
-<h3>8. Thói quen ra quyết định</h3>
-<p>Viết nhiệm vụ ra thành chuỗi bước. Nếu viết được và đường đi ổn định thì làm workflow và dừng ở đó.
-Nếu không liệt kê được các bước, hoặc request cứ rẽ nhánh theo kiểu không script nổi, thì đó là lúc agent đáng đồng tiền
-(<em class="en">earns its keep</em>).</p>
-<p>Bạn cũng không phải chọn một kiểu cho cả hệ thống. Một thiết kế phổ biến và mạnh là
-<strong>đặt một agent nhỏ bên trong một bước của workflow</strong>: phần cố định vẫn cố định, model chỉ cầm lái ở chỗ thật sự cần linh hoạt.
-Hãy thiết kế theo bài toán trước mặt, không theo kiến trúc mình mơ ước.</p>
-
-<h3>9. Tóm tắt</h3>
+<h3>Ba kiểu workflow hay dùng</h3>
 <ul>
-  <li>Workflow chạy theo đường cố định do bạn viết trong code.</li>
-  <li>Agent để model tự chọn bước tiếp theo lúc chạy.</li>
-  <li>Dùng tool không làm một hệ thống trở thành agent. Điều quyết định là ai sở hữu quyết định tiếp theo.</li>
+  <li><strong>Nối chuỗi (prompt chaining):</strong> bước sau dùng kết quả bước trước. Ví dụ: viết dàn ý, kiểm tra dàn ý, rồi viết bài. Có thể chèn một bước kiểm tra ở giữa để bắt lỗi sớm.</li>
+  <li><strong>Phân loại rồi chuyển (routing):</strong> như lễ tân: đọc yêu cầu, xếp loại, rồi chuyển cho đúng bộ phận.</li>
+  <li><strong>Làm song song (parallelization):</strong> chia việc thành nhiều phần làm cùng lúc, hoặc làm cùng một việc vài lần rồi so kết quả.</li>
+</ul>
+<p>Cả ba vẫn là workflow, vì <strong>code nắm đường đi</strong>; AI chỉ lo phần suy nghĩ ở mỗi bước.</p>
+
+<h3>Không cần chọn một kiểu cho cả hệ thống</h3>
+<p>Cách hay nhất thường là <strong>kết hợp</strong>: phần lớn hệ thống là workflow cố định, chỉ riêng một bước thật sự mở thì đặt một agent nhỏ vào đó.
+Phần cần chắc chắn thì vẫn chắc chắn, chỉ phần cần linh hoạt mới để AI tự quyết.</p>
+
+<h3>✅ Nhớ 3 điều</h3>
+<ul>
+  <li>Workflow: code quyết định thứ tự. Agent: AI tự quyết định bước tiếp theo.</li>
+  <li>Dùng tool không có nghĩa là agent.</li>
+  <li>Bắt đầu đơn giản; chỉ dùng agent khi có từ 2 dấu hiệu trở lên.</li>
 </ul>
 
 <h3>🇬🇧 Cụm từ tiếng Anh đáng nhớ trong bài</h3>

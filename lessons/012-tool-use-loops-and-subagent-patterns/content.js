@@ -1,72 +1,63 @@
 window.LESSON_CONTENT = {
   explanation: `
-<p class="key"><strong>Ý chính của cả bài:</strong> Mọi agent có năng lực đều dựa trên hai pattern. <strong>Vòng lặp tool</strong>: model hành động,
-nhìn kết quả, rồi phản ứng. <strong>Subagent</strong>: giữ phần việc tập trung khỏi làm chật context chính. Agent tốt nhất không chọn một trong hai
-mà <strong>xếp lớp</strong> cả hai.</p>
+<p class="key"><strong>Nói ngắn gọn:</strong> Mọi agent tốt đều dùng hai cách làm. <strong>Vòng lặp tool</strong>: AI làm một việc, xem kết quả, rồi làm tiếp.
+<strong>Agent phụ (subagent)</strong>: tách phần việc rườm rà ra cho agent khác làm, để agent chính gọn gàng. Agent giỏi dùng <strong>cả hai cùng lúc</strong>.</p>
 
-<h3>1. Ba ý tưởng neo giữ</h3>
-<ul>
-  <li><strong>Vòng lặp tool:</strong> không có tool, model chỉ tạo được chữ. Có tool, nó hành động được: yêu cầu tool, runtime chạy, kết quả quay về, model quyết định bước tiếp.</li>
-  <li><strong>Model tăng cường (augmented model):</strong> khối xây dựng thật bên dưới mọi agent, là model được nối với retrieval, tool và memory để làm được nhiều hơn tạo chữ.</li>
-  <li><strong>Subagent:</strong> một agent riêng do agent chính tạo ra để lo một phần việc tập trung, chạy trong không gian riêng và chỉ báo lại câu trả lời của nó.</li>
+<h3>📌 Từ cần biết</h3>
+<ul class="terms">
+  <li><strong>Vòng lặp tool:</strong> AI xin dùng tool, tool chạy, AI xem kết quả, rồi quyết định tiếp.</li>
+  <li><strong>Tool chỉ đọc:</strong> tool chỉ xem, không thay đổi gì (đọc file, tìm kiếm).</li>
+  <li><strong>Tool có ghi:</strong> tool làm thay đổi một thứ gì đó (ghi file, sửa code, chạy lệnh).</li>
+  <li><strong>Subagent:</strong> agent phụ được giao một phần việc, làm riêng và chỉ báo lại kết quả cuối.</li>
 </ul>
 
-<h3>2. Vòng lặp tool: động cơ của mọi agent</h3>
-<p>Mỗi vòng, model nhìn nhiệm vụ và quyết định có cần tool không. Nếu cần, nó nêu tên tool và input. Runtime chạy lời gọi đó (đọc file hay gọi API) và đưa kết quả về.
-Giờ model có một quan sát mới và quyết định lần nữa: gọi tool khác, hay đã đủ để trả lời. Lặp lại cho tới khi model trả lời bằng chữ thường, không gọi tool.
-Câu trả lời chỉ có chữ đó là tín hiệu vòng lặp xong. Không có gì thần bí: <strong>yêu cầu, thực thi, quan sát, lặp lại</strong>.</p>
+<h3>Vòng lặp tool: động cơ của mọi agent</h3>
+<p>Không có tool, AI chỉ viết được chữ. Có tool, AI làm được việc thật. Mỗi vòng: AI xem việc, xin dùng một tool, chương trình chạy tool rồi đưa kết quả lại,
+AI xem kết quả và quyết định tiếp. Khi AI <strong>trả lời bằng chữ mà không xin tool nữa</strong> là xong.</p>
 
-<h3>3. Không phải tool call nào cũng chạy giống nhau</h3>
+<h3>Tool nào chạy cùng lúc được?</h3>
+<div class="box">📚 <strong>Hình dung thế này:</strong> Ba người cùng <strong>đọc</strong> ba cuốn sách thì không ai vướng ai, làm cùng lúc được.
+Nhưng ba người cùng <strong>sửa</strong> một tài liệu thì phải lần lượt, nếu không sẽ ghi đè lên nhau.</div>
 <ul>
-  <li><strong>Tool chỉ đọc</strong> (đọc file, tìm kiếm, chạy truy vấn) không có tác dụng phụ. Vì chúng không giẫm lên nhau, runtime được phép chạy <strong>nhiều cái cùng lúc</strong>, tiết kiệm thời gian thực.</li>
-  <li><strong>Tool thay đổi trạng thái</strong> (ghi file, sửa code, chạy lệnh shell) làm thay đổi thế giới, nên runtime chạy <strong>từng cái một, theo thứ tự</strong> để tránh xung đột.</li>
-  <li>Lưu ý với tool tự viết: chúng <strong>mặc định chạy tuần tự</strong>. Nếu tool của bạn chỉ đọc, hãy <strong>đánh dấu chỉ đọc</strong> để nó được vào nhóm chạy song song.</li>
+  <li><strong>Tool chỉ đọc:</strong> chạy <strong>cùng lúc</strong> được, tiết kiệm thời gian.</li>
+  <li><strong>Tool có ghi:</strong> chạy <strong>lần lượt từng cái</strong> để tránh xung đột.</li>
+  <li>⚠️ Tool bạn tự viết mặc định được coi là tool có ghi (chạy lần lượt). Nếu nó chỉ đọc, hãy <strong>đánh dấu chỉ đọc</strong> để nó được chạy cùng lúc.</li>
 </ul>
-<p>Ví dụ: ba lần đọc file mỗi lần 500ms chạy song song mất khoảng 500ms thay vì 1.500ms; còn ba lần ghi vẫn mất 1.500ms vì phải chạy lần lượt.</p>
+<p>Ví dụ: ba lần đọc file, mỗi lần 500ms, chạy cùng lúc thì mất khoảng 500ms. Ba lần ghi file thì phải mất 1.500ms.</p>
 
-<h3>4. Subagent và lý do quan trọng nhất: cô lập context</h3>
-<p>Khi giao một việc con cho subagent, nó chạy trong một cuộc hội thoại riêng. Mọi bước ở giữa đầy "nhiễu" (các lần gọi tool thăm dò, ngõ cụt, output tool dài)
-nằm lại trong context của subagent. Agent chính không bao giờ thấy chúng. Thứ quay về chỉ là <strong>câu trả lời cuối</strong>, một bản tóm tắt gọn của kết quả.
-Vì vậy context của agent cha chỉ tăng thêm đúng một bản tóm tắt, thay vì cả transcript.
-Nếu nhớ một điều về subagent, hãy nhớ điều này: giá trị của chúng không chỉ là song song, mà là <strong>giữ rác ra khỏi cửa sổ chính</strong>.</p>
+<h3>Subagent: giữ cho agent chính gọn gàng</h3>
+<p>Khi giao một phần việc cho subagent, mọi thứ lộn xộn ở giữa (các lần thử, ngõ cụt, kết quả dài dòng) <strong>ở lại bên subagent</strong>.
+Agent chính chỉ nhận <strong>một bản tóm tắt</strong>. Nếu chỉ nhớ một điều về subagent, hãy nhớ: nó giúp <strong>giữ rác ra khỏi đầu agent chính</strong>.</p>
 
-<h3>5. Bốn lý do dùng subagent (chúng cộng dồn)</h3>
+<h3>Bốn lý do dùng subagent</h3>
 <ul>
-  <li><strong>Cô lập context:</strong> output tool ở giữa không vào context của agent cha.</li>
-  <li><strong>Song song:</strong> các subagent độc lập chạy cùng lúc, nên một loạt việc con xong trong thời gian của <strong>cái chậm nhất</strong>, không phải tổng tất cả.</li>
-  <li><strong>Giới hạn tool:</strong> mỗi subagent chỉ có tool việc của nó cần, thu nhỏ bề mặt sai sót và giữ nó đúng việc.</li>
-  <li><strong>Prompt chuyên biệt:</strong> mỗi subagent có system prompt và chỉ dẫn riêng, tinh chỉnh cho một việc nó làm tốt.</li>
-</ul>
-
-<h3>6. Giao việc cụ thể ra sao</h3>
-<p>Agent chính (manager) đang làm một mục tiêu lớn và gặp một phần việc đứng độc lập, ví dụ nghiên cứu một file trong khi việc khác vẫn tiếp tục.
-Nó giao phần đó cho subagent như một việc có phạm vi. Điều không được bỏ qua: <strong>subagent bắt đầu hoàn toàn mới</strong>, không thừa hưởng hội thoại hay lịch sử của manager,
-chỉ thấy prompt được trao. Mọi thứ nó cần (việc phải làm, ngữ cảnh liên quan, ràng buộc) đều phải truyền vào rõ ràng.
-Subagent làm việc trong cô lập và trả về kết quả cuối; manager lấy câu trả lời đó ghép vào việc lớn.</p>
-
-<h3>7. Ba ý tưởng khóa chặt cách cô lập hoạt động</h3>
-<ul>
-  <li><strong>Manager (orchestrator):</strong> agent dẫn dắt, chia mục tiêu thành việc con có phạm vi, phát việc, rồi ghép câu trả lời.</li>
-  <li><strong>Không có context dùng chung:</strong> hai worker song song nghiên cứu hai phần khác nhau của codebase không thấy kết quả của nhau.
-  Nếu worker hai cần kết quả của worker một, <strong>manager phải mang sang</strong> trong lần giao việc kế tiếp. Trạng thái không tự rò giữa các subagent.</li>
-  <li><strong>Số token tăng có giới hạn:</strong> vì mỗi subagent chỉ trả về bản tóm tắt, context của agent cha tăng chậm ngay cả khi bắn ra nhiều việc con.
-  Chính giới hạn đó cho phép agent mở rộng tới những việc lớn nhiều bước mà cửa sổ không phình to.</li>
+  <li><strong>Gọn gàng:</strong> phần việc rườm rà không lọt vào agent chính.</li>
+  <li><strong>Nhanh hơn:</strong> nhiều subagent độc lập chạy cùng lúc; cả nhóm xong khi người <strong>chậm nhất</strong> xong.</li>
+  <li><strong>Ít quyền hơn:</strong> mỗi subagent chỉ có đúng tool nó cần, nên khó làm sai.</li>
+  <li><strong>Chuyên môn hơn:</strong> mỗi subagent có lời dặn riêng cho đúng một việc.</li>
 </ul>
 
-<h3>8. Chọn pattern nào?</h3>
+<h3>Giao việc cho subagent cần nhớ gì?</h3>
 <ul>
-  <li>Model cần hành động, xem chuyện gì xảy ra, rồi hành động tiếp: đó là vòng lặp tool đang làm đúng việc của nó.</li>
-  <li>Một phần việc sẽ sinh ra cả núi token trung gian bạn không muốn ở cửa sổ chính: giao cho subagent.</li>
-  <li>Có nhiều việc con độc lập: chạy chúng thành các subagent song song để gom thời gian thực lại.</li>
-  <li>Bên dưới tất cả: giữ tool của mỗi agent trong đúng phạm vi việc của nó.</li>
+  <li>Subagent <strong>bắt đầu từ con số 0</strong>, không biết gì về chuyện của agent chính. Cần gì phải nói rõ khi giao.</li>
+  <li>Hai subagent chạy song song <strong>không thấy kết quả của nhau</strong>. Nếu người thứ hai cần kết quả của người thứ nhất,
+  agent chính phải <strong>tự chuyển</strong> kết quả đó sang.</li>
+  <li>Vì mỗi subagent chỉ gửi về bản tóm tắt, agent chính có thể giao nhiều việc mà không bị ngợp.</li>
 </ul>
-<p>Agent tốt nhất không chọn một pattern, mà xếp lớp tất cả.</p>
 
-<h3>9. Tóm tắt</h3>
+<h3>Khi nào dùng cách nào?</h3>
 <ul>
-  <li>Vòng lặp tool cho model hành động, quan sát và lặp cho tới khi trả lời.</li>
-  <li>Subagent cô lập việc con, chỉ câu trả lời cuối quay về, mang lại song song, giới hạn tool, context cha sạch và sự tập trung chuyên biệt.</li>
-  <li>Hãy xếp lớp chúng, đừng chọn một bỏ một.</li>
+  <li>Cần làm, xem kết quả, rồi làm tiếp: <strong>vòng lặp tool</strong>.</li>
+  <li>Một phần việc sẽ tạo ra cả núi thông tin trung gian: giao cho <strong>subagent</strong>.</li>
+  <li>Có nhiều việc độc lập: chạy nhiều <strong>subagent cùng lúc</strong>.</li>
+  <li>Ở đâu cũng vậy: chỉ cho mỗi agent đúng những tool nó cần.</li>
+</ul>
+
+<h3>✅ Nhớ 3 điều</h3>
+<ul>
+  <li>Tool chỉ đọc chạy cùng lúc; tool có ghi chạy lần lượt.</li>
+  <li>Subagent giúp agent chính gọn gàng; chạy nhanh hơn chỉ là lợi ích thêm.</li>
+  <li>Đừng chọn một trong hai cách: hãy dùng cả hai.</li>
 </ul>
 
 <h3>🇬🇧 Cụm từ tiếng Anh đáng nhớ trong bài</h3>

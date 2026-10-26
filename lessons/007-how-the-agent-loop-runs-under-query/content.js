@@ -1,71 +1,68 @@
 window.LESSON_CONTENT = {
   explanation: `
-<p class="key"><strong>Ý chính của cả bài:</strong> Gọi <code>query()</code> thì Claude không trả lời một lần mà chạy một <strong>vòng lặp</strong>:
-suy luận, gọi tool, đọc kết quả, rồi lặp lại, cho tới khi trả lời mà <strong>không gọi tool nào</strong>. Mặc định vòng lặp
-<strong>không có giới hạn</strong>, nên đặt max turns (và ngân sách) là việc của bạn. Khi đọc kết quả, luôn <strong>kiểm tra subtype trước</strong>.</p>
+<p class="key"><strong>Nói ngắn gọn:</strong> Bên dưới <code>query()</code>, Claude làm việc theo vòng: <strong>nghĩ, dùng tool, xem kết quả, lặp lại</strong>,
+cho tới khi trả lời mà không cần tool nữa. Mặc định vòng này <strong>không có giới hạn</strong>, nên bạn phải tự đặt.
+Khi đọc kết quả, <strong>luôn xem nó thành công hay thất bại trước</strong>.</p>
 
-<h3>1. Đi qua vòng lặp một lượt</h3>
-<ul>
-  <li>Claude nhận prompt của bạn, cùng system prompt, định nghĩa các tool và lịch sử (nếu có). SDK phát ra message init, đánh dấu lần chạy đã mở.</li>
-  <li>Claude trả lời: đôi khi là chữ thường, nhưng thường là yêu cầu gọi tool.</li>
-  <li>SDK chạy các tool đó và đưa kết quả lại cho Claude.</li>
-  <li>Chu kỳ lặp lại: Claude đọc kết quả, suy luận tiếp, có thể gọi thêm tool.</li>
-  <li>Vòng lặp tiếp tục cho tới khi Claude trả lời <strong>không kèm lời gọi tool nào</strong>. Câu trả lời không có tool đó là tín hiệu kết thúc.</li>
+<h3>📌 Từ cần biết</h3>
+<ul class="terms">
+  <li><strong>Lượt (turn):</strong> một vòng Claude xin dùng tool, tool chạy, rồi kết quả quay về.</li>
+  <li><strong>Max turns:</strong> số lượt tối đa được phép.</li>
+  <li><strong>Max budget USD:</strong> số tiền tối đa một lần chạy được tiêu.</li>
+  <li><strong>Subtype:</strong> nhãn trong mẩu tin cuối, cho biết lần chạy thành công (<code>success</code>) hay dừng vì chạm giới hạn.</li>
 </ul>
 
-<h3>2. "Lượt" (turn) nghĩa là gì?</h3>
-<p>Một lượt là <strong>một vòng khứ hồi</strong>: Claude yêu cầu một số tool, SDK chạy chúng, kết quả quay về, tất cả mà không trả quyền điều khiển cho code của bạn ở giữa.
-Lượt kết thúc khi kết quả tool quay về. Nếu Claude nhìn kết quả rồi gọi thêm tool, đó là lượt tiếp theo bắt đầu.
-Các lượt cứ chồng lên nhau chừng nào Claude còn với lấy tool. Vòng lặp chỉ kết thúc khi Claude trả lời không gọi tool nào.</p>
+<h3>Vòng lặp chạy thế nào?</h3>
+<div class="box">🔁 <strong>Hình dung thế này:</strong> Bạn nhờ một trợ lý tìm thông tin. Trợ lý tra một chỗ, đọc kết quả, thấy chưa đủ thì tra tiếp chỗ khác...
+Khi đã đủ để trả lời, trợ lý <strong>trả lời mà không tra gì thêm</strong>. Đó chính là tín hiệu xong việc.</div>
+<p>Mỗi vòng "xin tool, chạy tool, nhận kết quả" là <strong>một lượt</strong>. Trong một lượt, Claude có thể xin một hoặc nhiều tool cùng lúc; vẫn chỉ tính là một lượt.</p>
 
-<h3>3. Năm loại message có kiểu</h3>
+<h3>Năm loại mẩu tin bạn sẽ thấy</h3>
 <ul>
-  <li><strong>System</strong> mở đầu lần chạy, với subtype <em>init</em> là thứ đầu tiên bạn thấy.</li>
-  <li><strong>Assistant</strong> mang output của Claude: chữ và các lời gọi tool.</li>
-  <li><strong>User</strong> đưa kết quả tool trở lại vòng lặp, khép lại vòng khứ hồi.</li>
-  <li><strong>Stream event</strong> chỉ xuất hiện khi bạn bật streaming từng phần, cho các mảnh nhỏ theo từng token.</li>
-  <li><strong>Result</strong> đóng lần chạy, mang tổng chi phí, lượng token và trạng thái cuối.</li>
+  <li><strong>system (init):</strong> mẩu đầu tiên, mở lần chạy.</li>
+  <li><strong>assistant:</strong> Claude nói gì và muốn dùng tool nào.</li>
+  <li><strong>user:</strong> kết quả tool được đưa lại cho Claude.</li>
+  <li><strong>stream event:</strong> chỉ có khi bạn bật chế độ hiện chữ từng chút một.</li>
+  <li><strong>result:</strong> mẩu cuối, kèm chi phí, số token và trạng thái.</li>
 </ul>
-<p>Nắm năm loại này thì luồng message không còn là "nhiễu" mà đọc như một bản ghi chép của vòng lặp.</p>
 
-<h3>4. Hai giới hạn và mặc định "không giới hạn"</h3>
+<h3>Giới hạn: tự đặt, không ai đặt hộ</h3>
+<p>⚠️ Mặc định <strong>không có giới hạn nào</strong>. Nếu Claude cứ muốn dùng tool, vòng lặp cứ chạy. Bạn có hai cách chặn:</p>
 <ul>
-  <li><strong>Max turns:</strong> giới hạn số lượt dùng tool.</li>
-  <li><strong>Max budget USD:</strong> giới hạn số đô la một lần chạy được tiêu. Ngân sách được kiểm tra <strong>giữa các lần gọi</strong>,
-  nên chi phí thật có thể vượt trần tối đa bằng chi phí của <strong>một lần gọi</strong>.</li>
+  <li><strong>Max turns:</strong> tối đa bao nhiêu lượt.</li>
+  <li><strong>Max budget USD:</strong> tối đa bao nhiêu tiền.</li>
 </ul>
-<p>Vượt một trong hai, vòng lặp dừng và trả về một kết quả lỗi cho biết bạn chạm giới hạn nào.</p>
-<p><strong>Điều gây bất ngờ:</strong> mặc định không có giới hạn nào cả. Để trống thì một lần chạy có thể lặp mãi chừng nào Claude còn gọi tool.
-Đặt giới hạn là việc của bạn. Với việc tự động hoặc tốn kém, một max turns hợp lý là khác biệt giữa agent được kiểm soát và agent chạy mất kiểm soát.</p>
+<div class="box">💸 <strong>Lưu ý về ngân sách:</strong> tiền chỉ được kiểm tra <strong>giữa các lần gọi</strong>, nên có thể vượt quá một chút (tối đa bằng tiền của một lần gọi).
+Ví dụ đặt 0,05 USD, mỗi lần gọi tốn 0,02 USD: sau 2 lần mới tốn 0,04 nên vẫn gọi lần 3, và dừng ở 0,06 USD.</div>
 
-<h3>5. Đọc message result</h3>
-<p>Mỗi result có một <strong>subtype</strong>: <em>success</em> nghĩa là kết thúc gọn gàng; các subtype lỗi cho biết giới hạn nào đã dừng nó
-(<em>error_max_turns</em> hoặc <em>error_max_budget_usd</em>). Đi kèm là phần kế toán: tổng chi phí USD, usage (token), num turns (số lượt), và session ID nếu muốn nối lại sau.</p>
-<p><strong>Điều cần thuộc lòng:</strong> chỉ subtype success mới mang text kết quả. Với subtype lỗi, trường result <strong>rỗng</strong>.
-Đọc result mà không kiểm tra subtype trước thì bạn có thể âm thầm nhận về chuỗi rỗng mà không hề hay biết.</p>
-<p>Tuy vậy, kết quả lỗi <strong>vẫn có đầy đủ chi phí và usage</strong>: một lần chạy chạm trần lượt vẫn cho bạn biết nó đã tiêu bao nhiêu.
-Bài học đơn giản: <strong>rẽ nhánh theo subtype trước</strong>, chỉ đọc text khi biết chắc là success.</p>
-
-<h3>6. Single-shot và streaming input xử lý giới hạn khác nhau</h3>
-<p>Khi một lần query dạng single-shot (một chuỗi đầu vào) chạm trần lượt: nó phát ra message result lỗi trước, <strong>rồi ném một exception</strong>
-với nội dung kiểu "đã đạt số lượt tối đa". Điều này là cố ý, nhưng nếu không chuẩn bị, exception sẽ dừng chương trình đột ngột.
-Vì vậy hãy bọc lần chạy single-shot trong try/except khi muốn bắt giới hạn và chạy tiếp.</p>
-<p>Phiên streaming input thì khác: nó <strong>không ném lỗi mà vẫn sống</strong>, nên bạn có thể xem result rồi gửi tin nhắn khác.
-Cùng một vòng lặp bên dưới, nhưng chế độ nhập quyết định giới hạn đến với code của bạn theo cách nào.</p>
-
-<h3>7. Ba trường giúp hiểu chuyện gì đã xảy ra</h3>
+<h3>Đọc kết quả cho đúng</h3>
+<p>Mẩu tin cuối luôn có một nhãn:</p>
 <ul>
-  <li><strong>Stop reason:</strong> vì sao model kết thúc một lượt: <em>end_turn</em> là kết thúc bình thường, <em>max_tokens</em> là hết chỗ, hoặc <em>refusal</em> là từ chối.</li>
-  <li><strong>Num turns:</strong> số lượt thật sự đã chạy. Một lần chạy cứ tiến sát tới trần là dấu hiệu agent đang "quay vòng" không hiệu quả.</li>
-  <li><strong>Session ID:</strong> định danh cả lần chạy, để nối lại sau hoặc truy vết khi debug.</li>
+  <li><strong>success:</strong> xong việc, có câu trả lời.</li>
+  <li><strong>error_max_turns</strong> hoặc <strong>error_max_budget_usd:</strong> dừng vì chạm giới hạn, <strong>không có câu trả lời</strong> (ô kết quả rỗng).</li>
 </ul>
-<p>Ba trường này biến một lần chạy đã xong từ "hộp đen" thành thứ bạn đọc được, kiểm toán được, và tiếp tục được.</p>
+<p>⚠️ Nếu bạn lấy luôn câu trả lời mà không xem nhãn trước, có thể bạn đang lấy về <strong>một chuỗi rỗng mà không hề biết</strong>.
+Kể cả khi thất bại, mẩu tin cuối vẫn cho biết <strong>đã tiêu bao nhiêu tiền</strong>.</p>
 
-<h3>8. Tóm tắt</h3>
+<h3>Khi chạm giới hạn, chương trình phản ứng ra sao?</h3>
 <ul>
-  <li>Vòng lặp agent là một chu kỳ: suy luận, gọi tool, đọc kết quả, lặp lại, rồi trả lời.</li>
-  <li>Mỗi phần báo cáo qua một message có kiểu, và mỗi lượt là một vòng khứ hồi tool.</li>
-  <li>Vòng lặp không có trần trừ khi bạn đặt: max turns là lưới an toàn của bạn.</li>
+  <li><strong>Gửi một câu hỏi duy nhất (single-shot):</strong> SDK gửi mẩu tin lỗi trước, <strong>rồi báo lỗi (exception)</strong>.
+  Nếu không bắt lỗi bằng <code>try/except</code>, chương trình sẽ dừng đột ngột.</li>
+  <li><strong>Phiên trò chuyện liên tục (streaming input):</strong> không báo lỗi; phiên vẫn mở để bạn xem kết quả và gửi tiếp.</li>
+</ul>
+
+<h3>Ba thông tin giúp bạn hiểu chuyện gì đã xảy ra</h3>
+<ul>
+  <li><strong>stop_reason:</strong> vì sao Claude dừng ở một lượt (xong bình thường, hết chỗ viết, hay từ chối).</li>
+  <li><strong>num_turns:</strong> đã chạy bao nhiêu lượt. Nếu lần nào cũng sát trần, có thể agent đang loay hoay.</li>
+  <li><strong>session_id:</strong> mã của lần chạy, để tiếp tục sau hoặc tra lỗi.</li>
+</ul>
+
+<h3>✅ Nhớ 3 điều</h3>
+<ul>
+  <li>Vòng lặp kết thúc khi Claude trả lời mà không cần tool nữa.</li>
+  <li>Mặc định không có giới hạn: hãy tự đặt max turns.</li>
+  <li>Luôn xem nhãn thành công hay thất bại trước khi đọc câu trả lời.</li>
 </ul>
 
 <h3>🇬🇧 Cụm từ tiếng Anh đáng nhớ trong bài</h3>

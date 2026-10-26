@@ -1,94 +1,72 @@
 window.LESSON_CONTENT = {
   explanation: `
-<p class="key"><strong>Ý chính của cả bài:</strong> Khi một agent phải ôm cả một việc lớn và lộn xộn từ đầu tới cuối,
-context của nó phình ra và câu trả lời kém đi. Giải pháp là một <strong>manager</strong> chia việc thành các phần nhỏ có phạm vi rõ,
-giao cho các <strong>subagent</strong>, rồi tổng hợp kết quả. Điểm khác với parallelization:
-manager <strong>quyết định cách chia việc lúc chạy</strong>, dựa trên input cụ thể.</p>
+<p class="key"><strong>Nói ngắn gọn:</strong> Khi một việc quá lớn cho một agent, hãy để một <strong>agent quản lý</strong> chia việc ra,
+giao từng phần cho các <strong>agent phụ</strong>, rồi gom kết quả lại. Người quản lý chỉ điều phối, không tự làm.</p>
 
-<h3>1. Ba vai trò</h3>
-<ul>
-  <li><strong>Manager (orchestrator):</strong> sở hữu mục tiêu, chia nhỏ, giao từng phần, rồi ghép các câu trả lời lại.</li>
-  <li><strong>Subagent:</strong> một agent riêng biệt do manager tạo ra để làm một việc con tập trung, rồi trả về một kết quả duy nhất.</li>
-  <li><strong>Delegation (giao việc):</strong> hành động bàn giao việc con đó. Trong Agent SDK, việc này đi qua <strong>agent tool</strong>.
-  Model tự quyết định khi nào đáng tạo subagent, dựa trên cách bạn mô tả từng subagent.</li>
+<h3>📌 Từ cần biết</h3>
+<ul class="terms">
+  <li><strong>Manager (agent quản lý):</strong> agent nắm mục tiêu chung, chia việc và ghép kết quả.</li>
+  <li><strong>Subagent (agent phụ):</strong> một agent riêng, được giao đúng một phần việc nhỏ, làm xong thì báo lại một kết quả.</li>
+  <li><strong>Giao việc (delegation):</strong> hành động manager trao một phần việc cho subagent.</li>
+  <li><strong>Handoff (gói bàn giao):</strong> nội dung manager gửi kèm khi giao việc: việc cần làm, thông tin cần biết, kết quả mong muốn.</li>
 </ul>
 
-<h3>2. Manager làm gì?</h3>
-<p>Manager chạy cùng một vòng ba bước cho mọi việc:</p>
-<ul>
-  <li><strong>Decompose:</strong> chia một yêu cầu lớn thành các việc con độc lập, mỗi việc tự xử lý được.</li>
-  <li><strong>Delegate:</strong> giao mỗi việc con cho subagent phù hợp.</li>
-  <li><strong>Synthesize:</strong> gom các kết quả trả về thành một câu trả lời mạch lạc cho người dùng.</li>
-</ul>
-<p>Điều quan trọng: <strong>manager không tự làm việc con</strong>. Việc của nó là điều phối: quyết định tách gì, ai nhận gì,
-và ghép các mảnh lại ra sao. Sự phân công đó chính là cốt lõi của pattern.</p>
-<p>Ví dụ đời thường: trưởng nhóm nhận yêu cầu "làm báo cáo thị trường". Họ chia ra: một người tìm số liệu, một người đọc báo cáo đối thủ,
-một người vẽ biểu đồ. Trưởng nhóm không tự đi tìm số liệu, họ kiểm tra từng phần rồi ghép thành báo cáo cuối.</p>
+<h3>Vì sao cần chia việc?</h3>
+<p>Khi một agent phải ôm cả một việc lớn và lộn xộn, "trí nhớ làm việc" của nó (context) bị nhồi đầy, và câu trả lời kém đi.</p>
+<div class="box">👩‍💼 <strong>Hình dung thế này:</strong> Trưởng nhóm nhận việc "làm báo cáo thị trường". Họ không tự làm hết, mà giao:
+một người tìm số liệu, một người đọc báo cáo đối thủ, một người vẽ biểu đồ. Trưởng nhóm kiểm tra từng phần rồi ghép thành báo cáo cuối.</div>
 
-<h3>3. Orchestrator-workers khác parallelization ở đâu?</h3>
-<p>Trên sơ đồ, hai cái trông gần như giống hệt: một điều phối viên chia việc ra nhiều agent.
-Khác biệt nằm ở <strong>ai quyết định các việc con</strong>:</p>
+<h3>Manager làm gì?</h3>
+<p>Lần nào cũng ba bước:</p>
 <ul>
-  <li><strong>Parallelization:</strong> bạn định nghĩa các việc con trong code từ trước. Bạn đã biết các phần độc lập, chỉ việc chia và chạy cùng lúc.</li>
-  <li><strong>Orchestrator-workers:</strong> các việc con không có sẵn. Manager nhìn input cụ thể rồi quyết định lúc chạy cách chia việc.</li>
+  <li><strong>Chia nhỏ:</strong> tách việc lớn thành các việc con độc lập.</li>
+  <li><strong>Giao việc:</strong> chọn subagent phù hợp cho từng việc con.</li>
+  <li><strong>Tổng hợp:</strong> gom các kết quả thành một câu trả lời hoàn chỉnh.</li>
 </ul>
-<p>Sự linh hoạt lúc chạy đó là lý do duy nhất để dùng orchestration. Nếu cách chia lúc nào cũng giống nhau,
-bạn không cần manager. Code song song bình thường đơn giản và rẻ hơn (đúng tinh thần bài 1 và bài 2).</p>
+<p>⚠️ Manager <strong>không tự làm</strong> việc con. Việc của nó là điều phối.</p>
 
-<h3>4. Delegation trong Agent SDK hoạt động thế nào?</h3>
+<h3>Khác gì "làm song song" ở bài 1?</h3>
+<p>Nhìn trên sơ đồ thì hai cái giống hệt nhau: một người chia việc cho nhiều người. Khác nhau ở <strong>ai quyết định cách chia</strong>:</p>
 <ul>
-  <li>Manager gọi một tool có sẵn tên là <strong>agent</strong>, tool này tạo ra subagent.</li>
-  <li>Mỗi subagent bạn định nghĩa có một <strong>description</strong>: một câu ngắn nói nó giỏi việc gì.
-  Khi gặp việc con, Claude so description với việc đó và chọn subagent khớp nhất.</li>
-  <li>Bạn không bắt buộc phải để model chọn: có thể <strong>gọi tên subagent trực tiếp trong prompt</strong> khi muốn dùng đúng một subagent.</li>
-  <li>Mẹo thực tế: thêm agent tool vào danh sách <strong>allowed tools</strong> để việc giao việc được tự động duyệt,
-  không bị dừng lại hỏi quyền mỗi lần.</li>
-  <li>Lưu ý: điều đó chỉ duyệt <em>hành động giao việc</em>. Các tool mà subagent dùng vẫn đi qua kiểm tra quyền riêng,
-  nên cần duyệt trước bằng permission rules hoặc một <strong>PreToolUse hook</strong>.</li>
+  <li><strong>Làm song song:</strong> bạn đã biết trước cách chia và viết sẵn trong code. Ví dụ: lúc nào cũng dịch 3 phần mở bài, thân bài, kết luận.</li>
+  <li><strong>Manager và subagent:</strong> manager <strong>nhìn từng yêu cầu cụ thể rồi mới quyết định</strong> chia thế nào. Ví dụ: mỗi bug report cần kiểm tra những thứ khác nhau.</li>
+</ul>
+<p>💡 Nếu cách chia lúc nào cũng giống nhau thì <strong>không cần manager</strong>; chia sẵn bằng code là đơn giản và rẻ hơn.</p>
+
+<h3>Giao việc trong Agent SDK diễn ra thế nào?</h3>
+<ul>
+  <li>Manager gọi một tool có sẵn tên là <code>agent</code> để tạo subagent.</li>
+  <li>Mỗi subagent có một <strong>mô tả ngắn</strong> về việc nó giỏi. Claude đọc mô tả này để chọn đúng người cho đúng việc. Bạn cũng có thể gọi đích danh một subagent.</li>
+  <li>Nên cho phép sẵn tool <code>agent</code> để việc giao không bị dừng lại hỏi quyền mỗi lần.</li>
+  <li>Lưu ý: cho phép giao việc <strong>không có nghĩa</strong> là cho phép luôn các tool mà subagent dùng. Những tool đó vẫn được kiểm tra quyền riêng.</li>
 </ul>
 
-<h3>5. Vì sao phải tách subagent?</h3>
-<p>Ba lợi ích:</p>
+<h3>Giao việc thế nào cho tốt?</h3>
 <ul>
-  <li><strong>Context isolation (cô lập ngữ cảnh):</strong> mọi thứ subagent làm bên trong không lọt vào cửa sổ context của manager.
-  Đây là lợi ích sâu nhất, bài sau sẽ nói riêng.</li>
-  <li><strong>Parallelization:</strong> các subagent có thể chạy cùng lúc.</li>
-  <li><strong>Tool restriction (giới hạn tool):</strong> mỗi subagent chỉ có đúng bộ tool nó cần.</li>
-</ul>
-<p>Vì subagent chạy tách khỏi manager, <strong>handoff (gói bàn giao) phải mang đủ mọi thứ việc con cần</strong>,
-và danh sách tool bạn gắn cho nó chính là "làn đường" của nó. Làm tốt hai thứ này thì cả ba lợi ích đều tự đến.</p>
-
-<h3>6. Giao việc cho tốt</h3>
-<ul>
-  <li><strong>Phạm vi rõ:</strong> mỗi subagent một việc rõ ràng, không phải "một vùng mơ hồ" của bài toán. Việc có ranh giới mờ thì trả về kết quả mờ.</li>
-  <li><strong>Nói rõ định dạng output:</strong> tóm tắt ngắn, danh sách, hay dữ liệu có cấu trúc. Subagent chỉ khớp được hình dạng mà bạn đã gọi tên.</li>
-  <li><strong>Kiểm tra trước khi tổng hợp:</strong> manager thu mọi kết quả và validate trước khi ghép. Subagent có thể hỏng hoặc trôi lệch,
-  và manager là nơi duy nhất bắt được trước khi tới tay người dùng.</li>
+  <li><strong>Việc phải rõ ràng:</strong> giao một việc cụ thể, không phải "tìm hiểu chung chung về hệ thống". Giao mơ hồ thì nhận về kết quả mơ hồ.</li>
+  <li><strong>Nói rõ muốn nhận về cái gì:</strong> một đoạn tóm tắt, một danh sách, hay dữ liệu có cấu trúc.</li>
+  <li><strong>Kiểm tra trước khi ghép:</strong> subagent có thể trả về thứ nghe rất hợp lý nhưng sai. Manager là chốt chặn cuối.</li>
 </ul>
 
-<h3>7. Ba hàng rào an toàn (guardrails)</h3>
+<h3>Ba hàng rào an toàn</h3>
 <ul>
-  <li><strong>Least privilege (quyền tối thiểu):</strong> mỗi subagent chỉ có tool và quyền nó thật sự cần, nên không thể vươn ra ngoài làn của mình kể cả khi có gì đó trục trặc.</li>
-  <li><strong>Side effect boundary (ranh giới tác dụng phụ):</strong> subagent không được ghi hay hành động gì ngoài việc được giao.
-  Nếu một subagent tóm tắt bắt đầu xóa file, phạm vi đã bị đặt sai.</li>
-  <li><strong>Result validation (kiểm tra kết quả):</strong> manager kiểm tra từng kết quả trước khi đưa vào câu trả lời cuối,
-  vì subagent có thể trả về thứ nghe hợp lý nhưng sai.</li>
-</ul>
-<p>Cả ba đều là việc của manager. Subagent cố ý được giữ hẹp, còn manager giữ quyền và lần kiểm tra cuối cùng.</p>
-
-<h3>8. Ba lỗi hay gặp (anti-patterns)</h3>
-<ul>
-  <li><strong>Phạm vi quá rộng:</strong> giao cho subagent một việc thực ra là năm việc. Nó đi lang thang, đốt token và trả về thứ lờ mờ.</li>
-  <li><strong>Thiếu ngữ cảnh:</strong> subagent bắt đầu từ con số 0, chỉ biết những gì bạn đưa cho nó. Đưa quá ít thì nó thất bại cả ở việc lẽ ra làm dễ dàng.</li>
-  <li><strong>Coi subagent chỉ là worker chạy song song:</strong> tốc độ chỉ là phần thưởng thêm. Lợi ích sâu hơn là cô lập ngữ cảnh,
-  giữ cửa sổ của manager sạch sẽ. Bỏ qua điều đó thì một pattern mạnh thành ra kém tin cậy.</li>
+  <li><strong>Quyền tối thiểu:</strong> chỉ cho subagent đúng những công cụ nó cần.</li>
+  <li><strong>Không làm ngoài phần việc:</strong> agent tóm tắt mà đi xóa file là đã giao sai phạm vi.</li>
+  <li><strong>Kiểm tra kết quả:</strong> manager xem lại từng kết quả trước khi đưa vào câu trả lời cuối.</li>
 </ul>
 
-<h3>9. Tóm tắt</h3>
+<h3>Ba lỗi hay gặp</h3>
 <ul>
-  <li>Manager chia mục tiêu thành các việc con có phạm vi rõ, giao cho subagent, rồi tổng hợp kết quả.</li>
-  <li>Pattern này giúp một agent không bị "chết đuối" trong một việc quá lớn.</li>
-  <li>Orchestrator-workers quyết định cách chia việc lúc chạy, đó là điều phân biệt nó với code song song cố định.</li>
+  <li><strong>Giao quá nhiều việc một lúc:</strong> giao "một việc" mà thực ra là năm việc, subagent sẽ lan man và tốn token.</li>
+  <li><strong>Thiếu thông tin:</strong> subagent bắt đầu từ con số 0, chỉ biết những gì bạn đưa cho nó.</li>
+  <li><strong>Chỉ coi subagent là cách chạy nhanh:</strong> lợi ích lớn hơn là giữ cho manager gọn gàng (bài 5 nói kỹ).</li>
+</ul>
+
+<h3>✅ Nhớ 3 điều</h3>
+<ul>
+  <li>Manager chia việc, giao việc, tổng hợp; không tự làm việc con.</li>
+  <li>Manager quyết định cách chia <strong>lúc đang chạy</strong>; đó là điểm khác với làm song song cố định.</li>
+  <li>Giao việc rõ ràng, đủ thông tin, ít quyền, và luôn kiểm tra kết quả.</li>
 </ul>
 
 <h3>🇬🇧 Cụm từ tiếng Anh đáng nhớ trong bài</h3>

@@ -1,76 +1,61 @@
 window.LESSON_CONTENT = {
   explanation: `
-<p class="key"><strong>Ý chính của cả bài:</strong> Mỗi subagent bắt đầu với một cuộc hội thoại <strong>hoàn toàn mới</strong>.
-Nó không thừa hưởng gì từ manager, và chỉ <strong>câu trả lời cuối</strong> của nó quay về. Vì vậy mọi thứ nó cần đều phải được
-truyền vào một cách rõ ràng. Sự cô lập này là <strong>tính năng</strong>, không phải lỗi: nó giữ context của manager gọn gàng
-và giới hạn quyền hạn.</p>
+<p class="key"><strong>Nói ngắn gọn:</strong> Subagent <strong>bắt đầu từ con số 0</strong>: nó không biết gì về những chuyện manager đã làm.
+Muốn nó biết gì, bạn phải nói rõ khi giao việc. Đổi lại, khi làm xong nó chỉ gửi về <strong>một bản tóm tắt</strong>, nên manager luôn gọn gàng.</p>
 
-<h3>1. Ba điều cơ bản định nghĩa sự cô lập</h3>
-<ul>
-  <li><strong>Cuộc hội thoại mới:</strong> context window của subagent tách biệt hoàn toàn với manager, là một tờ giấy trắng chứ không phải bản sao.</li>
-  <li><strong>Không thừa hưởng lịch sử:</strong> hội thoại của manager, các kết quả tool trước đó, và system prompt của manager đều không được mang sang.
-  Subagent chỉ có prompt riêng của nó và những gì bạn truyền vào.</li>
-  <li><strong>Chỉ câu trả lời cuối quay về:</strong> mọi suy luận và lời gọi tool ở giữa nằm lại trong subagent.
-  Manager chỉ nhận kết quả cuối, dưới dạng output của tool.</li>
+<h3>📌 Từ cần biết</h3>
+<ul class="terms">
+  <li><strong>Context (ngữ cảnh):</strong> mọi thứ một agent đang "thấy": hướng dẫn, cuộc trò chuyện, kết quả tool.</li>
+  <li><strong>Cô lập (isolation):</strong> mỗi subagent có ngữ cảnh riêng, tách hẳn khỏi manager.</li>
+  <li><strong>CLAUDE.md:</strong> file ghi quy ước chung của dự án; mọi agent đều đọc được.</li>
+  <li><strong>Quyền tối thiểu:</strong> chỉ cho đúng những quyền cần dùng, không hơn.</li>
 </ul>
 
-<h3>2. Vì sao phải "xây tường" quanh subagent?</h3>
-<p>Thử tưởng tượng không có cô lập: toàn bộ transcript của mọi subagent đổ ngược về manager. Context của manager sẽ phình to với chi tiết nó không cần
-và đầy rất nhanh. Cô lập mang lại ba thứ:</p>
+<h3>Subagent biết gì và không biết gì?</h3>
+<div class="box">🧑‍💻 <strong>Hình dung thế này:</strong> Bạn thuê một <strong>người làm tự do</strong> cho một việc nhỏ. Người đó không ngồi trong các cuộc họp của công ty bạn,
+không đọc email nội bộ. Họ chỉ biết những gì <strong>bạn ghi trong tờ giao việc</strong>.</div>
+<p><strong>Subagent có:</strong></p>
 <ul>
-  <li><strong>Context của manager sạch và tập trung</strong> vào mục tiêu.</li>
-  <li><strong>Số token tăng có giới hạn:</strong> thêm việc con thứ năm hay thứ mười, manager chỉ trả tiền cho mỗi bản tóm tắt ngắn quay về.</li>
-  <li><strong>Subagent tập trung:</strong> chỉ thấy phần việc của mình nên không bị phân tâm bởi những thứ khác đang diễn ra.</li>
+  <li>Hướng dẫn riêng của nó (system prompt).</li>
+  <li>File CLAUDE.md của dự án.</li>
+  <li>Các tool được cấp.</li>
+  <li>Những gì bạn ghi rõ trong việc giao.</li>
+</ul>
+<p><strong>Subagent không có:</strong> cuộc trò chuyện của manager, các kết quả tool manager đã nhận, và hướng dẫn riêng của manager.</p>
+<p>⚠️ <strong>Lỗi hay gặp:</strong> nghĩ rằng subagent "chắc đã biết". Ví dụ: mã dự án chỉ được nhắc trong cuộc trò chuyện của manager,
+giao việc mà không ghi mã đó vào thì subagent sẽ không biết.</p>
+
+<h3>Khi làm xong, subagent gửi về cái gì?</h3>
+<p>Chỉ <strong>câu trả lời cuối</strong>. Mọi suy nghĩ, mọi lần thử, mọi kết quả dài dòng ở giữa đều ở lại bên trong subagent.</p>
+<div class="box">📊 <strong>Ví dụ con số:</strong> ba subagent, mỗi cái đọc rất nhiều (40.000, 25.000 và 60.000 token) nhưng chỉ gửi về bản tóm tắt
+khoảng 300, 200 và 250 token. Manager chỉ nhận <strong>750 token</strong>. Nếu không tách riêng, manager sẽ phải nhận <strong>125.000 token</strong>.</div>
+<p>Nhờ vậy, thêm bao nhiêu việc con thì ngữ cảnh của manager cũng chỉ tăng chậm, mỗi lần thêm một bản tóm tắt nhỏ.</p>
+
+<h3>Tờ giao việc cần có 4 thứ</h3>
+<ul>
+  <li><strong>Việc cần làm:</strong> nói rõ làm gì, và thế nào là xong.</li>
+  <li><strong>Thông tin cần thiết:</strong> các dữ kiện, file, giá trị mà việc này cần, vì subagent không tự lấy được từ manager.</li>
+  <li><strong>Hình dạng kết quả:</strong> muốn nhận một đoạn tóm tắt, một danh sách, hay dữ liệu có cấu trúc.</li>
+  <li><strong>Công cụ vừa đủ:</strong> chỉ những tool việc này cần.</li>
+</ul>
+<p>🧪 Trước khi giao, tự hỏi: <strong>"Trong tờ giao việc đã có đủ mọi thứ nó cần chưa?"</strong></p>
+
+<h3>Cô lập cả quyền hạn</h3>
+<ul>
+  <li><strong>Quyền tối thiểu:</strong> chỉ đọc hoặc ghi đúng thứ cần.</li>
+  <li><strong>Không làm ngoài phần việc:</strong> agent tóm tắt mà gửi được email là đã cho quá nhiều quyền.</li>
+  <li><strong>Hỏng thì hỏng gọn:</strong> nếu một subagent làm sai, phạm vi nhỏ giúp thiệt hại nhỏ và dễ tìm nguyên nhân.</li>
 </ul>
 
-<h3>3. Subagent thật sự có gì trong tay?</h3>
-<p><strong>Có:</strong> system prompt riêng của nó, file CLAUDE.md của dự án, định nghĩa các tool bạn cấp, và mọi thứ bạn truyền rõ ràng trong việc giao
-(dữ liệu và hướng dẫn cụ thể cho phần việc này).</p>
-<p><strong>Không bao giờ có:</strong> lịch sử hội thoại của manager, kết quả tool trước đó của manager, system prompt của manager.</p>
-<p>Quy tắc thực tế: <strong>nếu subagent cần một dữ kiện để làm việc, bạn phải đưa dữ kiện đó cho nó.</strong>
-Giả định rằng nó "đã biết" chính là lỗi cô lập cần đề phòng.</p>
+<h3>Đừng chỉ coi subagent là cách chạy nhanh</h3>
+<p>Chạy song song cho nhanh là có thật, nhưng chỉ là <strong>lợi ích phụ</strong>. Lợi ích chính là <strong>giữ cho manager gọn gàng</strong>.
+Vì vậy, kể cả khi chỉ có <strong>một</strong> việc con, chạy lần lượt, việc tách ra một subagent vẫn đáng, nếu việc đó phải đọc rất nhiều thứ.</p>
 
-<h3>4. Bốn thứ phải có trong việc giao</h3>
-<p>Vì context bị cô lập, việc giao là <strong>kênh duy nhất</strong> để chuẩn bị cho subagent thành công:</p>
+<h3>✅ Nhớ 3 điều</h3>
 <ul>
-  <li><strong>Hướng dẫn công việc:</strong> nói chính xác cần làm gì và kết quả hoàn chỉnh trông thế nào.</li>
-  <li><strong>Dữ liệu liên quan:</strong> các dữ kiện, file, giá trị mà việc con phụ thuộc vào, vì subagent không tự lấy được từ manager.</li>
-  <li><strong>Định dạng output:</strong> tóm tắt, danh sách hay dữ liệu có cấu trúc.</li>
-  <li><strong>Bộ tool có phạm vi hẹp:</strong> chỉ những tool việc này cần, không gì mở rộng tầm với của nó.</li>
-</ul>
-<p>Làm đúng bốn thứ này, subagent có đủ mọi thứ ngay từ lần đầu.</p>
-
-<h3>5. Giả định sai và hành vi thật</h3>
-<p><strong>Giả định sai:</strong> subagent dùng chung toàn bộ context của manager, thấy mọi thứ manager đã thấy và đã làm.
-Lập trình viên tạo subagent rồi viết việc giao ngầm dựa vào "kiến thức chung" đó.</p>
-<p><strong>Hành vi thật:</strong> subagent chỉ thấy prompt của nó và những gì bạn truyền vào. Context dùng chung là ngoại lệ bạn <strong>cố ý tạo ra</strong>
-bằng cách truyền vào, không phải mặc định được cho không.</p>
-<p>Mỗi lần giao việc, hãy tự hỏi: <em>subagent này đã có trong input của nó mọi thứ nó cần chưa?</em> Nếu chưa, thì giả định đang làm việc thay bạn, và nó sẽ hỏng.</p>
-
-<h3>6. Góc nhìn chi phí</h3>
-<p>Khi subagent xong việc, thứ duy nhất rơi vào context của manager là bản tóm tắt cuối. Suy luận dài, output tool ồn ào, các lần thử lại đều nằm lại bên trong.
-Khi thêm việc con, context của manager tăng <strong>đều đặn, có thể đoán trước</strong> (mỗi lần một bản tóm tắt nhỏ) thay vì bùng nổ.
-Một subagent có thể "nhai" một tài liệu khổng lồ hoặc một vòng lặp tool rối rắm mà manager gần như không cảm thấy gì.</p>
-<p>Ví dụ: ba subagent, mỗi cái tốn 40.000, 25.000 và 60.000 token bên trong nhưng chỉ trả về 300, 200 và 250 token tóm tắt.
-Có cô lập, manager nhận 750 token. Không cô lập, manager nhận 125.000 token.</p>
-
-<h3>7. Cô lập cả quyền hạn: ba ranh giới</h3>
-<ul>
-  <li><strong>Quyền tối thiểu:</strong> subagent chỉ giữ quyền mà việc của nó cần, đọc hoặc ghi đúng thứ cần và không gì khác.</li>
-  <li><strong>Hạn chế tác dụng phụ:</strong> không ghi, không hành động gì ngoài việc được giao. Nếu subagent tóm tắt mà gửi được email, phạm vi đã quá rộng.</li>
-  <li><strong>Giới hạn vùng thiệt hại (blast radius):</strong> khi một subagent làm sai (sớm muộn sẽ có), phạm vi hẹp và bộ tool nhỏ giữ thiệt hại ở cục bộ, dễ truy vết.</li>
-</ul>
-<p>Thiết kế quyền hạn giống như thiết kế context: <strong>trao tối thiểu, không hơn.</strong></p>
-
-<h3>8. Cái bẫy: coi subagent chỉ là mẹo tăng tốc</h3>
-<p>Chạy song song là lợi ích thật, nhưng là lợi ích <strong>nhỏ hơn nhiều</strong>. Lý do sâu xa để giao việc là cô lập context.
-Dấu hiệu rõ nhất: dùng subagent vẫn đáng ngay cả khi bạn chỉ tạo <strong>một</strong> subagent, chạy tuần tự, chỉ để giữ context của việc con đó ra ngoài manager.
-Chỉ nghĩ tới tốc độ thì bạn sẽ bỏ lỡ một nửa giá trị, và bỏ qua subagent đúng lúc nó giúp nhiều nhất.</p>
-
-<h3>9. Tóm tắt</h3>
-<ul>
-  <li>Mỗi subagent bắt đầu mới, nên mọi thứ nó cần phải được truyền vào.</li>
-  <li>Cô lập là lý do để giao việc, không phải hạn chế: nó giới hạn số token tăng thêm và giới hạn quyền hạn.</li>
+  <li>Subagent bắt đầu từ con số 0: cần gì phải ghi rõ khi giao việc.</li>
+  <li>Chỉ bản tóm tắt cuối cùng quay về, nên manager không bị ngợp.</li>
+  <li>Cô lập cả thông tin lẫn quyền hạn: đưa vừa đủ, không hơn.</li>
 </ul>
 
 <h3>🇬🇧 Cụm từ tiếng Anh đáng nhớ trong bài</h3>
