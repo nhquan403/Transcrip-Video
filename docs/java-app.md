@@ -100,6 +100,11 @@ Những gì mỗi bài làm với Claude:
 - **Bài 13:** một Message Batch thật gồm 4 ticket được gửi, chờ tối đa 3 phút, tải kết quả JSONL; `writeBack()` của bạn ghép theo custom_id (batch chưa xong thì in id để xem sau).
 - **Bài 14:** chỉ có bộ chấm offline (phần chạy thật cần tài khoản AWS có quyền Bedrock).
 - **Bài 15:** cùng một POST được gửi với header đầy đủ, thiếu key, thiếu version, key sai và body hỏng; `triage()` của bạn đọc từng status thật.
+- **Bài 16:** tự dựng body JSON có một ảnh Base64, xem kích thước body, phát hiện thiếu max_tokens trước khi gửi, rồi `extractAnswer()` của bạn đọc câu trả lời từ JSON thô.
+- **Bài 17:** 5 câu hỏi độc lập được hỏi tuần tự rồi đồng thời (`runConcurrent()` với `CompletableFuture`), so thời gian thực.
+- **Bài 18:** 8 lời gọi fan out với trần 3 cùng lúc qua `gatherBounded()` của bạn (in đỉnh đồng thời đo được), một nhánh lỗi thật được `gatherSettled()` cô lập, và một câu trả lời stream được nối từ delta.
+- **Bài 19:** `diff()` của bạn tạo diff giữa hai phiên bản system prompt, rồi Claude review như một pull request.
+- **Bài 20:** chỉ có bộ chấm offline.
 
 Cấu hình:
 

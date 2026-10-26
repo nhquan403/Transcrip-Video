@@ -76,7 +76,7 @@ public final class Live {
     }
 
     /** Vẽ n hình tròn đỏ trên nền trắng, trả về PNG. */
-    static byte[] drawCircles(int n) {
+    public static byte[] drawCircles(int n) {
         BufferedImage img = new BufferedImage(600, 400, BufferedImage.TYPE_INT_RGB);
         Graphics2D g = img.createGraphics();
         g.setColor(Color.WHITE);

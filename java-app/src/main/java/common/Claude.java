@@ -43,7 +43,8 @@ public final class Claude {
     public record CallStats(long inputTokens, long outputTokens, long millis) {}
 
     private final AnthropicClient client;
-    private final List<CallStats> calls = new ArrayList<>();
+    // Synchronized because the concurrency lessons record calls from many threads at once.
+    private final List<CallStats> calls = java.util.Collections.synchronizedList(new ArrayList<>());
 
     private Claude(AnthropicClient client) {
         this.client = client;
@@ -155,10 +156,13 @@ public final class Claude {
     }
 
     public List<CallStats> calls() {
-        return List.copyOf(calls);
+        synchronized (calls) {
+            return List.copyOf(calls);
+        }
     }
 
     public String usageSummary() {
+        List<CallStats> calls = calls();
         long in = calls.stream().mapToLong(CallStats::inputTokens).sum();
         long out = calls.stream().mapToLong(CallStats::outputTokens).sum();
         double usd = (in * price()[0] + out * price()[1]) / 1_000_000;
