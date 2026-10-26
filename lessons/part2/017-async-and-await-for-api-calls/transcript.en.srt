@@ -1,0 +1,248 @@
+1
+00:00:00,000 --> 00:00:04,000
+Here's a problem you hit the first time you call Claude in a loop. Each request waits on the
+
+2
+00:00:04,000 --> 00:00:10,000
+network and if your code blocks on each it sits doing nothing while the response travels. Async
+
+3
+00:00:10,000 --> 00:00:17,000
+and await fix that. This lesson covers non-blocking calls, the event loop, and how await frees the
+
+4
+00:00:17,000 --> 00:00:24,000
+caller. Let's put blocking and non-blocking side by side. A blocking call is the default in most
+
+5
+00:00:24,000 --> 00:00:30,000
+code. You call Claude and your program stops right there waiting for the full response before the
+
+6
+00:00:30,000 --> 00:00:35,000
+next line runs. That's fine for one request but one slow call freezes everything behind it and
+
+7
+00:00:35,000 --> 00:00:41,000
+if you have 50 to make they run strictly one after another. A non-blocking call is different.
+
+8
+00:00:41,000 --> 00:00:46,000
+You issue the request and await it which tells the runtime to go do other useful work
+
+9
+00:00:46,000 --> 00:00:52,000
+while the response is still in flight. The caller never sits idle. That single shift from waiting
+
+10
+00:00:52,000 --> 00:00:58,000
+to yielding is what the rest of this lesson builds on. Three building blocks make async work
+
+11
+00:00:58,000 --> 00:01:04,000
+so let's define them. First, the coroutine. That's a function you write with async and it can pause
+
+12
+00:01:04,000 --> 00:01:10,000
+part way through, hand control back, and resume later right where it stopped. Second, the event
+
+13
+00:01:10,000 --> 00:01:16,000
+loop. Think of it as a scheduler. It runs your coroutines and the instant one of them is waiting
+
+14
+00:01:16,000 --> 00:01:22,000
+on the network it advances another that's ready to go. Third, await. That's the keyword that
+
+15
+00:01:22,000 --> 00:01:28,000
+actually suspends a coroutine until the thing it's waiting on is ready and crucially it does that
+
+16
+00:01:28,000 --> 00:01:35,000
+without blocking the whole thread. Coroutine, event loop, await. Once those three click everything
+
+17
+00:01:35,000 --> 00:01:42,000
+else is just applying them. So why is a Claude call such a good fit for async in particular?
+
+18
+00:01:42,000 --> 00:01:48,000
+It comes down to where the time goes. A request to the API is IO bound which means it spends almost
+
+19
+00:01:48,000 --> 00:01:56,000
+all of its time waiting on the network not burning CPU on your machine. Picture the timeline. A tiny
+
+20
+00:01:56,000 --> 00:02:02,000
+sliver is your code preparing the request then a long stretch of just waiting for bytes to come
+
+21
+00:02:02,000 --> 00:02:08,000
+back over the wire. That waiting stretch is dead time in blocking code. Async hands it to other
+
+22
+00:02:08,000 --> 00:02:14,000
+work instead and it does that without spinning up extra threads. So the more calls you have in flight
+
+23
+00:02:14,000 --> 00:02:21,000
+the more of that idle time you reclaim and the bigger the payoff. Let's trace what await actually
+
+24
+00:02:21,000 --> 00:02:27,000
+does the moment you call it. You write await in front of a Claude call and right there your coroutine
+
+25
+00:02:27,000 --> 00:02:33,000
+pauses. Control returns to the event loop. The loop finds another coroutine that's ready to make
+
+26
+00:02:33,000 --> 00:02:40,000
+progress and runs that one instead. Your paused coroutine sits there costing nothing waiting for
+
+27
+00:02:40,000 --> 00:02:47,000
+its response. Then the instant the result lands the loop wakes your coroutine back up and it resumes
+
+28
+00:02:47,000 --> 00:02:52,000
+right after the await with the result in hand. Notice what's missing. Nothing is spinning in a
+
+29
+00:02:52,000 --> 00:02:58,000
+busy loop and nothing is polling to check if it's done. The loop wakes you when it's time not a
+
+30
+00:02:58,000 --> 00:03:05,000
+moment before. Two misconceptions trip people up early so let's clear both. The first is that async
+
+31
+00:03:05,000 --> 00:03:12,000
+means parallel. It doesn't. On a single thread async interleaves your tasks. It rapidly switches
+
+32
+00:03:12,000 --> 00:03:18,000
+between them at the await points but only one is ever actually running at a given instant.
+
+33
+00:03:18,000 --> 00:03:22,000
+The work overlaps in time but it isn't happening simultaneously on different cores.
+
+34
+00:03:22,000 --> 00:03:28,000
+The second misconception is that awaiting something blocks. It's actually the reverse. The
+
+35
+00:03:28,000 --> 00:03:33,000
+await point is precisely where your code yields. Where it steps aside so the loop can run something
+
+36
+00:03:33,000 --> 00:03:40,000
+else. A function with no awaits in it never gives the loop a chance to switch. So await isn't the
+
+37
+00:03:40,000 --> 00:03:47,000
+thing that blocks you. It's the thing that lets you not block. Let's walk through a single async call
+
+38
+00:03:47,000 --> 00:03:54,000
+end-to-end so the shape is concrete. Step one. You call the async version of the client method.
+
+39
+00:03:54,000 --> 00:03:59,000
+Instead of the finished response you immediately get back a coroutine. A promise of work to be done.
+
+40
+00:04:00,000 --> 00:04:06,000
+Step two. You await that coroutine. At that point the event loop parks your task and goes off to run
+
+41
+00:04:06,000 --> 00:04:12,000
+whatever else is ready. Step three. The response comes back over the network. The loop wakes your
+
+42
+00:04:12,000 --> 00:04:19,000
+task and your code resumes with the actual result. That's the entire cycle. One call and at no point
+
+43
+00:04:19,000 --> 00:04:25,000
+is a thread frozen solid or stuck in a busy wait. It just steps aside politely and picks back up when
+
+44
+00:04:25,000 --> 00:04:32,000
+the answer is ready. Let's separate three words people use interchangeably because the distinction
+
+45
+00:04:32,000 --> 00:04:38,000
+matters. Concurrency is about structure. It means you've arranged your work so many tasks are in
+
+46
+00:04:38,000 --> 00:04:45,000
+progress at once taking turns even if only one thread is doing the work. Parallelism is stronger.
+
+47
+00:04:45,000 --> 00:04:52,000
+It means tasks literally execute at the same instant which requires multiple cores or machines
+
+48
+00:04:52,000 --> 00:04:58,000
+actually running side by side. Async is one specific way to get concurrency. It uses an event
+
+49
+00:04:58,000 --> 00:05:04,000
+loop and a weight to interleave tasks on a single thread rather than spinning up a thread per task.
+
+50
+00:05:05,000 --> 00:05:11,000
+So async gives you concurrency but not necessarily parallelism. Keeping those straight explains a lot
+
+51
+00:05:11,000 --> 00:05:18,000
+of confusing performance behavior. Async is powerful but it's easy to accidentally undo it.
+
+52
+00:05:18,000 --> 00:05:24,000
+So let me flag the classic traps. The first is calling a blocking library from inside a coroutine.
+
+53
+00:05:24,000 --> 00:05:31,000
+If that call doesn't yield it stalls the entire event loop and every other task freezes along with
+
+54
+00:05:31,000 --> 00:05:37,000
+it. The second is forgetting to await. If you call an async function but never await the coroutine
+
+55
+00:05:37,000 --> 00:05:45,000
+it returns that work just quietly never runs. No error, no result. It simply sits there. The third
+
+56
+00:05:45,000 --> 00:05:51,000
+is doing heavy CPU work on the loop. A long computation with no awaits blocks everything
+
+57
+00:05:51,000 --> 00:05:58,000
+because the loop can't switch away mid-calculation. The theme across all three is the same. Keep the
+
+58
+00:05:58,000 --> 00:06:04,000
+event loop free to do the one thing it's great at, waiting on the network. Let's hit the bottom
+
+59
+00:06:04,000 --> 00:06:11,000
+line. Async lets a network-bound app issue a clog call and keep working instead of freezing on it.
+
+60
+00:06:11,000 --> 00:06:17,000
+It matters because most of a request is just waiting and that idle time is yours to reclaim.
+
+61
+00:06:18,000 --> 00:06:25,000
+Keep in mind async buys you concurrency on one thread not true parallelism. That covers async
+
+62
+00:06:25,000 --> 00:06:28,000
+and await for API calls. I'll see you in the next one.
+

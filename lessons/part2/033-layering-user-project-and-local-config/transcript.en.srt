@@ -1,0 +1,244 @@
+1
+00:00:00,000 --> 00:00:06,000
+Welcome back. User, project, and local settings are three distinct layers, and knowing which wins
+
+2
+00:00:06,000 --> 00:00:12,000
+is a real skill. This lesson maps the layers, what's committed versus personal, and how to
+
+3
+00:00:12,000 --> 00:00:18,000
+trace where a setting comes from. Let's start by naming the four layers your config can come from,
+
+4
+00:00:18,000 --> 00:00:25,000
+broadest to most locked down. User settings live at your home .clod folder and apply across all
+
+5
+00:00:25,000 --> 00:00:31,000
+your projects. Project settings live in the repos .clod folder, and they're committed, so the whole
+
+6
+00:00:31,000 --> 00:00:39,000
+team shares them. Local settings also live in the repo, but in a settings.local.json file.
+
+7
+00:00:39,000 --> 00:00:44,000
+That's git ignored, so they're personal to you. And managed settings are policy files deployed by
+
+8
+00:00:44,000 --> 00:00:53,000
+IT, applied machine-wide, and impossible for you to override. Four layers, user, project, local,
+
+9
+00:00:53,000 --> 00:00:58,000
+and managed. Each one answers a different question about who a setting applies to.
+
+10
+00:00:59,000 --> 00:01:03,000
+Let's pin down exactly where these files sit, because the paths tell you a lot.
+
+11
+00:01:03,000 --> 00:01:10,000
+User settings are the file at your home .clod settings.json. It's personal to you,
+
+12
+00:01:10,000 --> 00:01:16,000
+and follows you into every project on the machine. Project settings are the .clod settings.json
+
+13
+00:01:16,000 --> 00:01:22,000
+inside the repo itself. This one is committed to git, so when a teammate clones the repo,
+
+14
+00:01:22,000 --> 00:01:28,000
+they inherit the same configuration you have. And local settings are the .clod settings.local.json
+
+15
+00:01:28,000 --> 00:01:35,000
+file, again inside the repo, but this one is auto git ignored. So your personal overrides stay on
+
+16
+00:01:35,000 --> 00:01:40,000
+your machine and never get shared. Same folder for the last two, but very different sharing behavior.
+
+17
+00:01:41,000 --> 00:01:46,000
+Here's the part that trips people up. When the same setting is defined in more than one layer,
+
+18
+00:01:46,000 --> 00:01:53,000
+precedence decides which value actually applies. At the very top sits managed policy. It wins over
+
+19
+00:01:53,000 --> 00:01:59,000
+everything and can't be overridden, which is exactly what an IT team wants. Command line
+
+20
+00:01:59,000 --> 00:02:06,000
+arguments come next, according to the docs. Then, in order, local overrides project and project
+
+21
+00:02:06,000 --> 00:02:12,000
+overrides user. So the pattern is intuitive once you see it. The more specific and higher priority
+
+22
+00:02:12,000 --> 00:02:18,000
+the layer, the more it takes precedence over the broader ones underneath it. Managed at the top,
+
+23
+00:02:18,000 --> 00:02:24,000
+user at the bottom, and everything else stacked in between. This next distinction is the one worth
+
+24
+00:02:24,000 --> 00:02:31,000
+tattooing on your brain. Project settings, the .clod settings.json file, are committed to git.
+
+25
+00:02:31,000 --> 00:02:38,000
+That means they travel with the repo and every teammate who pulls it inherits the same permissions,
+
+26
+00:02:38,000 --> 00:02:46,000
+hooks, and configuration. It's how a team stays consistent. Local settings, the settings.local.json
+
+27
+00:02:46,000 --> 00:02:53,000
+file, are the opposite. They're auto git ignored, so they stay on your machine and never land in the
+
+28
+00:02:53,000 --> 00:02:59,000
+shared repo. That makes local the right home for personal overrides and anything you don't want
+
+29
+00:02:59,000 --> 00:03:05,000
+teammates to inherit. Committed means shared with everyone. Git inured means yours alone.
+
+30
+00:03:06,000 --> 00:03:13,000
+Get that pairing right and most config confusion disappears. Why does committed versus personal
+
+31
+00:03:13,000 --> 00:03:20,000
+matter so much? It's not just tidiness. It actually changes how trust and sharing work.
+
+32
+00:03:20,000 --> 00:03:28,000
+Shared project rules travel to the whole team, so Cloud Code treats them as needing workspace trust
+
+33
+00:03:28,000 --> 00:03:34,000
+before their allow rules take effect. Personal local rules are yours alone, so they need no
+
+34
+00:03:34,000 --> 00:03:41,000
+trust prompt because you own the file that defines them. There's also a safety angle. Secrets,
+
+35
+00:03:41,000 --> 00:03:47,000
+tokens, and machine-specific values belong in your local file, not in the committed one because
+
+36
+00:03:47,000 --> 00:03:54,000
+anything committed is visible to everyone with the repo. So the habit is simple. Shared conventions
+
+37
+00:03:54,000 --> 00:04:01,000
+go in project settings and anything personal or sensitive stays in local. Let's turn this into a
+
+38
+00:04:01,000 --> 00:04:06,000
+debugging routine because sooner or later a setting won't behave and you'll need to find out
+
+39
+00:04:06,000 --> 00:04:12,000
+why. Start by checking every layer. List where the setting is actually defined, from user all the way
+
+40
+00:04:12,000 --> 00:04:18,000
+up to managed policy, so you can see the full picture. Then apply precedence. The highest
+
+41
+00:04:18,000 --> 00:04:25,000
+priority layer wins, so remember that a local value beats a project value, which beats a user value.
+
+42
+00:04:25,000 --> 00:04:31,000
+And here's the tip that saves the most time. If a value simply won't change, no matter what you
+
+43
+00:04:31,000 --> 00:04:37,000
+edit, suspect a managed policy first because that's the one layer you can't override from your own
+
+44
+00:04:37,000 --> 00:04:43,000
+settings. Let's make precedence concrete with a quick mental model. Picture the same permission
+
+45
+00:04:43,000 --> 00:04:49,000
+defined in more than one layer and watch how the winner gets decided. A value set in your local
+
+46
+00:04:49,000 --> 00:04:57,000
+file overrides the same value in the committed project file. A value in project in turn overrides
+
+47
+00:04:57,000 --> 00:05:04,000
+the same value in your user settings, and a managed policy overrides all of them every single time
+
+48
+00:05:04,000 --> 00:05:10,000
+with no exceptions. So when the effective setting surprises you, don't guess. Walk the layers from
+
+49
+00:05:10,000 --> 00:05:16,000
+the top down and the conflict almost always explains itself. Usually a value you didn't
+
+50
+00:05:16,000 --> 00:05:23,000
+expect is just a higher layer quietly doing its job. Let's boil the whole layering story down into
+
+51
+00:05:23,000 --> 00:05:29,000
+three habits you can actually follow. First, commit your shared config. Put team-wide permissions and
+
+52
+00:05:29,000 --> 00:05:35,000
+hooks in the projects.cloud settings.json so everyone on the team works from the exact same
+
+53
+00:05:35,000 --> 00:05:44,000
+rules. Second, git ignore the local file. Leave .cloud settings.local.json out of the repo,
+
+54
+00:05:44,000 --> 00:05:50,000
+and since it's auto git ignored by default, your personal overrides stay yours without any effort.
+
+55
+00:05:50,000 --> 00:05:55,000
+And third, keep secrets out of git entirely. Store machine-specific values and anything
+
+56
+00:05:55,000 --> 00:06:01,000
+sensitive in the local file, never in the committed one. Follow those three and your
+
+57
+00:06:01,000 --> 00:06:07,000
+config is both shared where it should be and private where it needs to be. Here's the bottom
+
+58
+00:06:07,000 --> 00:06:15,000
+line. Config resolves through layered scopes, user, project, local, and managed. The rule that
+
+59
+00:06:15,000 --> 00:06:22,000
+governs them is simple. Managed wins overall, and more specific layers beat broader ones. One thing
+
+60
+00:06:22,000 --> 00:06:28,000
+to watch, project settings are committed while local settings are git ignored. That wraps up
+
+61
+00:06:28,000 --> 00:06:32,000
+layering user, project, and local config. I'll see you in the next one.
+

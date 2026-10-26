@@ -1,0 +1,252 @@
+1
+00:00:00,000 --> 00:00:03,000
+Newer models handle reasoning differently than the ones before them,
+
+2
+00:00:03,000 --> 00:00:09,000
+and the change trips up developers sometimes. Adaptive thinking is the current path,
+
+3
+00:00:09,000 --> 00:00:13,000
+effort has moved, and the old budget tokens knob is on the way out.
+
+4
+00:00:13,000 --> 00:00:19,000
+This lesson walks through all three, and why each one is tied to a named model. Let's dig in.
+
+5
+00:00:20,000 --> 00:00:25,000
+Let's start with three ideas you'll keep running into. First, adaptive thinking,
+
+6
+00:00:25,000 --> 00:00:30,000
+the current form of what the docs call extended thinking. It's how you let Claude reason before
+
+7
+00:00:30,000 --> 00:00:37,000
+it answers. You set thinking type to adaptive, you don't hand it a token budget, and Claude decides
+
+8
+00:00:37,000 --> 00:00:43,000
+when to think and how much. Second, effort. That's a separate dial for how hard the model works on a
+
+9
+00:00:43,000 --> 00:00:51,000
+response, and it lives at output config.effort, not at the top of your request. Third, the legacy
+
+10
+00:00:51,000 --> 00:00:56,000
+budget tokens mode. That's the older approach, and it's mid-deprecation, rejected outright on
+
+11
+00:00:56,000 --> 00:01:02,000
+the newest models, adaptive, effort, and the fading budget tokens. Keep those three straight,
+
+12
+00:01:02,000 --> 00:01:08,000
+and the rest of this lesson clicks into place. Here's the part that surprises people. The default
+
+13
+00:01:08,000 --> 00:01:16,000
+depends on the model, so learn the roster. On Opus 4.8 and Opus 4.7, adaptive is the only thinking
+
+14
+00:01:16,000 --> 00:01:22,000
+mode, and it's off unless you explicitly turn it on. Leave the thinking field out of your request,
+
+15
+00:01:22,000 --> 00:01:29,000
+and those two answer without any extended reasoning at all. To get it, you set thinking type
+
+16
+00:01:29,000 --> 00:01:34,000
+to adaptive, and from there Claude interleaves its thinking between tool calls on its own.
+
+17
+00:01:35,000 --> 00:01:41,000
+Sonnet 5 flips that default, omit the thinking field there, and it runs adaptive on its own,
+
+18
+00:01:41,000 --> 00:01:48,000
+so if you don't want thinking, you pass thinking type disabled explicitly. And Fable 5 is always on
+
+19
+00:01:48,000 --> 00:01:53,000
+with no way to switch it off, so the default behavior depends entirely on which model you're
+
+20
+00:01:53,000 --> 00:02:00,000
+calling, which is exactly why you always name the model. Now the effort control, which is separate
+
+21
+00:02:00,000 --> 00:02:06,000
+from turning thinking on. Effort decides how much work the model puts into a response, and the single
+
+22
+00:02:06,000 --> 00:02:13,000
+most common mistake is putting it in the wrong place. It's nested at output.config.effort, not
+
+23
+00:02:13,000 --> 00:02:20,000
+at the root of your request. Key it at the top level, and it simply won't take. The values run
+
+24
+00:02:20,000 --> 00:02:27,000
+from low to medium to high, which is the default, and then up to x high and max. That x high setting
+
+25
+00:02:27,000 --> 00:02:36,000
+is available on Fable 5, Opus 4.8, Opus 4.7, and Sonnet 5. So think of effort as a dial you
+
+26
+00:02:36,000 --> 00:02:43,000
+retune per root, and always reach for it under output.config. Let's put adaptive and the legacy
+
+27
+00:02:43,000 --> 00:02:49,000
+mode side by side, because the contrast is the whole point. Adaptive is thinking type adaptive
+
+28
+00:02:49,000 --> 00:02:56,000
+with no fixed budget. You hand control to Claude, and it sizes its own reasoning for the task.
+
+29
+00:02:56,000 --> 00:03:01,000
+That's the current path on the newest models. The legacy mode is thinking type enabled paired
+
+30
+00:03:01,000 --> 00:03:07,000
+with an explicit budget tokens number. On the current frontier models, that call now returns
+
+31
+00:03:07,000 --> 00:03:14,000
+a 400 error. Same intent, reason before answering, but the old way of expressing it is rejected. If
+
+32
+00:03:14,000 --> 00:03:20,000
+your code still sends budget tokens to a current model, that's a migration bug waiting to surface.
+
+33
+00:03:20,000 --> 00:03:26,000
+This is why every thinking answer needs a named model, because the same call behaves differently
+
+34
+00:03:26,000 --> 00:03:34,000
+depending on where you send it. Walk the ladder with me. On Fable 5, Sonnet 5, Opus 4.8, and Opus
+
+35
+00:03:34,000 --> 00:03:43,000
+4.7, budget tokens returns a 400 today. On Opus 4.6, it's transitional, still working as a deprecated
+
+36
+00:03:43,000 --> 00:03:51,000
+escape hatch while you migrate. And on Sonnet 4.5 and Opus 4.5, it's not just allowed. It's the only
+
+37
+00:03:51,000 --> 00:03:58,000
+way to enable thinking, since those models have no adaptive mode. So the truth of any thinking
+
+38
+00:03:58,000 --> 00:04:04,000
+question changes model by model. Never state whether budget tokens works without saying which
+
+39
+00:04:04,000 --> 00:04:11,000
+model you mean. Now, a quick word on visibility, because seeing the thinking and being charged for
+
+40
+00:04:11,000 --> 00:04:20,000
+it are separate concerns. On the newest models, Fable 5, Opus 4.8, Opus 4.7, and Sonnet 5, thinking
+
+41
+00:04:20,000 --> 00:04:26,000
+display defaults to omitted. The thinking blocks still stream. They just come through with empty
+
+42
+00:04:26,000 --> 00:04:33,000
+text, so you don't see the reasoning. If you want a readable version, set display to summarized, and
+
+43
+00:04:33,000 --> 00:04:39,000
+Claude surfaces a summary of what it worked through. Here's the key point. Display only changes what's
+
+44
+00:04:39,000 --> 00:04:45,000
+shown to you. It has no effect on cost. The thinking is billed the same either way. So flip
+
+45
+00:04:45,000 --> 00:04:51,000
+it to summarized freely when you want visibility without worrying about your bill. When you're doing
+
+46
+00:04:51,000 --> 00:04:58,000
+multi-turn work or a tool loop, thinking blocks come with a handling rule you have to respect.
+
+47
+00:04:58,000 --> 00:05:04,000
+The thinking blocks in the latest assistant message have to go back to the API exactly as you
+
+48
+00:05:04,000 --> 00:05:10,000
+received them, untouched. That includes redacted thinking, which is encrypted reasoning. Claude
+
+49
+00:05:10,000 --> 00:05:16,000
+returns when some content is filtered. It carries a signature, and it needs the same careful handling.
+
+50
+00:05:17,000 --> 00:05:22,000
+If you edit or strip a thinking block or its signature in that latest turn, your next call
+
+51
+00:05:22,000 --> 00:05:28,000
+returns a 400. Prior turns are more forgiving. You can drop their thinking, but if you keep it,
+
+52
+00:05:28,000 --> 00:05:33,000
+keep it unmodified. Treat these blocks as read-only and pass them straight through.
+
+53
+00:05:35,000 --> 00:05:40,000
+One more constraint kicks in when thinking and tools are on together. Normally you get four
+
+54
+00:05:40,000 --> 00:05:46,000
+tool choice options, but with extended thinking active, only auto and none are allowed. If you
+
+55
+00:05:46,000 --> 00:05:52,000
+try to force a call, either with any or by naming a specific tool, the request errors out. So you
+
+56
+00:05:52,000 --> 00:05:58,000
+can't hard require a tool while thinking is on. Layer that on top of the rule we just covered,
+
+57
+00:05:58,000 --> 00:06:03,000
+where the latest assistant thinking blocks travel back unmodified, and you've got both
+
+58
+00:06:03,000 --> 00:06:09,000
+constraints to design around. Plan your tool loop so it leans on auto, lets Claude decide when to
+
+59
+00:06:09,000 --> 00:06:16,000
+call, and never mutates the thinking it hands you back between steps. Let's recap. Adaptive thinking
+
+60
+00:06:16,000 --> 00:06:22,000
+is the current model-specific reasoning path. On Opus 4.8 and 4.7, it's off until you set it.
+
+61
+00:06:23,000 --> 00:06:29,000
+Effort lives under output config rather than the request root, and legacy budget tokens
+
+62
+00:06:29,000 --> 00:06:34,000
+is fading fast. One thing to watch, always name the model in your code.
+
+63
+00:06:35,000 --> 00:06:39,000
+That covers adaptive thinking and effort control. I'll see you in the next one.
+

@@ -1,0 +1,452 @@
+1
+00:00:00,000 --> 00:00:03,000
+There's something else we need to go over when it comes to claud.md.
+
+2
+00:00:03,000 --> 00:00:08,000
+You write a rule in your claud.md, and then you wonder which file actually wins when there
+
+3
+00:00:08,000 --> 00:00:10,000
+are several of them.
+
+4
+00:00:10,000 --> 00:00:14,000
+A home file, a repo file, maybe an admin policy on top.
+
+5
+00:00:14,000 --> 00:00:20,000
+This lesson maps the hierarchy, how those files load, and which one takes precedence.
+
+6
+00:00:20,000 --> 00:00:22,000
+Let's break it down.
+
+7
+00:00:22,000 --> 00:00:24,000
+Claud.md isn't one file.
+
+8
+00:00:24,000 --> 00:00:25,000
+It is a stack of them.
+
+9
+00:00:25,000 --> 00:00:27,000
+And there are four scopes worth knowing.
+
+10
+00:00:27,000 --> 00:00:30,000
+First, managed policy.
+
+11
+00:00:30,000 --> 00:00:35,000
+An administrator deploys it machine-wide, it loads first, and no user can exclude it.
+
+12
+00:00:35,000 --> 00:00:38,000
+Second, the user scope.
+
+13
+00:00:38,000 --> 00:00:44,000
+That is your personal file in your home config directory, and it applies across all of your projects.
+
+14
+00:00:44,000 --> 00:00:46,000
+Third, the project scope.
+
+15
+00:00:46,000 --> 00:00:52,000
+That file sits at the repository root, or the project config folder, and it is committed,
+
+16
+00:00:52,000 --> 00:00:55,000
+so the whole team shares it. Fourth, local.
+
+17
+00:00:55,000 --> 00:01:00,000
+That is a personal git-ignored file scoped to one project, something that stays with
+
+18
+00:01:00,000 --> 00:01:03,000
+you and never gets committed.
+
+19
+00:01:03,000 --> 00:01:08,000
+Four scopes, from the broadest machine policy down to your own private notes.
+
+20
+00:01:08,000 --> 00:01:11,000
+So how do all those files come together at launch?
+
+21
+00:01:11,000 --> 00:01:15,000
+Claud walks up the directory tree from wherever you started it.
+
+22
+00:01:15,000 --> 00:01:20,000
+And it gathers every claud.md it finds along the way.
+
+23
+00:01:20,000 --> 00:01:22,000
+Here is the part to hold on to.
+
+24
+00:01:22,000 --> 00:01:26,000
+Those files are concatenated, not overwriting each other.
+
+25
+00:01:26,000 --> 00:01:27,000
+Nothing gets erased.
+
+26
+00:01:27,000 --> 00:01:33,000
+They are ordered from the file system root downward toward your working directory.
+
+27
+00:01:33,000 --> 00:01:39,000
+Which means the most specific file, the one closest to where you launched, is read last.
+
+28
+00:01:39,000 --> 00:01:41,000
+And reading order is the whole game here.
+
+29
+00:01:41,000 --> 00:01:48,000
+What comes last sits nearest the model's attention and carries the most weight when it is time to act.
+
+30
+00:01:48,000 --> 00:01:50,000
+So broad context loads early.
+
+31
+00:01:50,000 --> 00:01:54,000
+And your most specific rules land at the end.
+
+32
+00:01:54,000 --> 00:01:59,000
+Let's lock in three facts about how the layering works, because they explain everything else.
+
+33
+00:01:59,000 --> 00:02:01,000
+First, concatenation.
+
+34
+00:02:01,000 --> 00:02:06,000
+Every file Claud discovers gets stacked together into context.
+
+35
+00:02:06,000 --> 00:02:07,000
+No file wipes out another.
+
+36
+00:02:07,000 --> 00:02:09,000
+They simply combine.
+
+37
+00:02:09,000 --> 00:02:11,000
+Second, root down order.
+
+38
+00:02:11,000 --> 00:02:15,000
+Files load from the file system root down to your working directory.
+
+39
+00:02:15,000 --> 00:02:18,000
+So the closest file lands last in the stack.
+
+40
+00:02:18,000 --> 00:02:20,000
+Third, composition.
+
+41
+00:02:20,000 --> 00:02:24,000
+The design intent is layering, not strict override.
+
+42
+00:02:24,000 --> 00:02:26,000
+And here is the honest caveat.
+
+43
+00:02:26,000 --> 00:02:30,000
+If rules genuinely contradict each other, Claud may pick either one.
+
+44
+00:02:30,000 --> 00:02:34,000
+So you shouldn't lean on precedence to resolve a real conflict.
+
+45
+00:02:34,000 --> 00:02:38,000
+Keep those three in mind, and the behavior stops feeling mysterious.
+
+46
+00:02:38,000 --> 00:02:43,000
+Files combine, order matters, and clean rules never fight.
+
+47
+00:02:43,000 --> 00:02:47,000
+Let's compare the two scopes you will touch most, user and project.
+
+48
+00:02:47,000 --> 00:02:52,000
+Your user-level file is the personal baseline that follows you across every project.
+
+49
+00:02:52,000 --> 00:02:56,000
+Broad defaults you want in every repository belong there.
+
+50
+00:02:56,000 --> 00:02:59,000
+Your general preferences, your habits.
+
+51
+00:02:59,000 --> 00:03:01,000
+The project-level file is different.
+
+52
+00:03:01,000 --> 00:03:07,000
+It sits in the repo, and because it is read after your user file, it tends to win in practice
+
+53
+00:03:07,000 --> 00:03:09,000
+when the two disagree.
+
+54
+00:03:09,000 --> 00:03:12,000
+Team conventions for this specific codebase live there.
+
+55
+00:03:12,000 --> 00:03:16,000
+The build commands, the patterns, everyone should follow.
+
+56
+00:03:16,000 --> 00:03:18,000
+So the mental rule is simple.
+
+57
+00:03:18,000 --> 00:03:23,000
+The project file tends to carry the day because it is read later in the stack, but nothing
+
+58
+00:03:23,000 --> 00:03:26,000
+enforces that, so don't rely on it.
+
+59
+00:03:26,000 --> 00:03:29,000
+Design the conflicts out instead.
+
+60
+00:03:29,000 --> 00:03:34,000
+Personal defaults set the floor, project rules refine them for the work at hand.
+
+61
+00:03:34,000 --> 00:03:37,000
+Now a piece people miss constantly.
+
+62
+00:03:37,000 --> 00:03:42,000
+Not every Claud.md loads when your session starts.
+
+63
+00:03:42,000 --> 00:03:48,000
+Rules that sit below your working directory, down in subfolders, aren't injected at launch.
+
+64
+00:03:48,000 --> 00:03:54,000
+Instead a nested file loads only when Claude actually reads a file inside that folder.
+
+65
+00:03:54,000 --> 00:03:56,000
+Think about why that is useful.
+
+66
+00:03:56,000 --> 00:04:02,000
+It keeps deep folder-specific rules out of your context until the moment they are relevant.
+
+67
+00:04:02,000 --> 00:04:07,000
+You don't pay for them, and you aren't distracted by them while you work elsewhere in the tree.
+
+68
+00:04:07,000 --> 00:04:14,000
+So a rule you place in a subdirectory scopes itself naturally to the work happening right there.
+
+69
+00:04:14,000 --> 00:04:19,000
+When Claude moves into that part of the codebase, the matching guidance shows up on demand,
+
+70
+00:04:19,000 --> 00:04:22,000
+and not a moment before.
+
+71
+00:04:22,000 --> 00:04:27,000
+Claude.md can also pull in other files through imports, and there are three things to know.
+
+72
+00:04:27,000 --> 00:04:29,000
+First, the syntax.
+
+73
+00:04:29,000 --> 00:04:35,000
+An at-path reference written with the at sign and a file path expands that other file into
+
+74
+00:04:35,000 --> 00:04:40,000
+context at launch, resolved relative to the importing file.
+
+75
+00:04:40,000 --> 00:04:42,000
+Second, the depth limit.
+
+76
+00:04:42,000 --> 00:04:49,000
+Imports can chain one file pulling in another, but the recursion stops at a maximum of four hops.
+
+77
+00:04:49,000 --> 00:04:54,000
+That ceiling keeps a runaway chain from loading half your repository.
+
+78
+00:04:54,000 --> 00:04:56,000
+Third, the cost.
+
+79
+00:04:56,000 --> 00:05:00,000
+Imported files load into context just like inline rules do.
+
+80
+00:05:00,000 --> 00:05:06,000
+So imports help you organize your rules across several files, but they don't save you any tokens.
+
+81
+00:05:06,000 --> 00:05:11,000
+Everything imported still spends its full weight in context.
+
+82
+00:05:11,000 --> 00:05:15,000
+Let's talk about the scope that sits above everything, managed policy.
+
+83
+00:05:15,000 --> 00:05:21,000
+This is a Claude.md an organization deploys machine-wide, and it loads before both the
+
+84
+00:05:21,000 --> 00:05:24,000
+user and project files.
+
+85
+00:05:24,000 --> 00:05:28,000
+The important property is that no user can remove it.
+
+86
+00:05:28,000 --> 00:05:33,000
+Managed can embed its rules directly through a managed setting, so the policy travels with
+
+87
+00:05:33,000 --> 00:05:36,000
+the machine rather than any single repo.
+
+88
+00:05:36,000 --> 00:05:40,000
+And while there is an exclusion mechanism that lets you drop ancestor files you don't
+
+89
+00:05:40,000 --> 00:05:45,000
+want in a monorepo, it can never touch the managed policy file.
+
+90
+00:05:45,000 --> 00:05:51,000
+That one is always in, so when a company needs a standing rule to hold across every project
+
+91
+00:05:51,000 --> 00:05:54,000
+and every developer, no exceptions.
+
+92
+00:05:54,000 --> 00:05:58,000
+Managed policy is exactly how that rule sticks.
+
+93
+00:05:58,000 --> 00:06:04,000
+Let's turn the hierarchy into a design habit, because knowing the order is only half the value.
+
+94
+00:06:04,000 --> 00:06:09,000
+Since these files layer, instead of hard overriding, the safest approach is to avoid conflicts
+
+95
+00:06:09,000 --> 00:06:11,000
+in the first place.
+
+96
+00:06:11,000 --> 00:06:17,000
+So put your broad, personal defaults at the user level, where they follow you everywhere.
+
+97
+00:06:17,000 --> 00:06:23,000
+Put the team's rules in the committed project file, where everyone on the codebase inherits them.
+
+98
+00:06:23,000 --> 00:06:29,000
+And keep narrow, folder-specific rules in subdirectory files, where they load only when
+
+99
+00:06:29,000 --> 00:06:31,000
+that work is active.
+
+100
+00:06:31,000 --> 00:06:33,000
+Notice what this buys you.
+
+101
+00:06:33,000 --> 00:06:39,000
+When each rule is scoped to exactly where it belongs, the different layers rarely contradict each other.
+
+102
+00:06:39,000 --> 00:06:44,000
+You almost never have to rely on precedence to break a tie, because you designed the tie
+
+103
+00:06:44,000 --> 00:06:47,000
+out from the start.
+
+104
+00:06:47,000 --> 00:06:49,000
+Let's look at the big picture.
+
+105
+00:06:49,000 --> 00:06:54,000
+The hierarchy layers your cloud.md files from broad to specific.
+
+106
+00:06:54,000 --> 00:06:57,000
+Managed policy loads first and can't be excluded.
+
+107
+00:06:57,000 --> 00:07:02,000
+Files concatenate, and the most specific one is read last.
+
+108
+00:07:02,000 --> 00:07:06,000
+Keep in mind, project tends to win over user, because it's read later.
+
+109
+00:07:06,000 --> 00:07:08,000
+But don't count on it.
+
+110
+00:07:08,000 --> 00:07:10,000
+It's not always the case.
+
+111
+00:07:10,000 --> 00:07:13,000
+Design for composition, and let scope decide.
+
+112
+00:07:13,000 --> 00:07:16,000
+That wraps up the cloud.md precedence hierarchy.
+
+113
+00:07:16,000 --> 00:07:18,000
+I'll catch you in the next one.
+

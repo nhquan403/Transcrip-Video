@@ -1,0 +1,264 @@
+1
+00:00:00,000 --> 00:00:06,000
+Welcome back. A session that runs too long is where quality quietly dies. Let it bloat and drift,
+
+2
+00:00:06,000 --> 00:00:12,000
+and the model follows your instructions worse while every call costs more. Knowing how to reset
+
+3
+00:00:12,000 --> 00:00:18,000
+is the fix. This lesson covers compacting, clearing, and starting fresh, and when to reach for each.
+
+4
+00:00:19,000 --> 00:00:26,000
+Let's start with the three moves you have, from lightest to heaviest. First, compact. You summarize
+
+5
+00:00:26,000 --> 00:00:32,000
+the older history into a tight recap, keep your recent turns and key decisions, and free up a big
+
+6
+00:00:32,000 --> 00:00:39,000
+chunk of space, all without losing the thread. Second, clear. You wipe the conversation and
+
+7
+00:00:39,000 --> 00:00:45,000
+start the same session over with an empty window, dropping everything that came before. Third, start
+
+8
+00:00:45,000 --> 00:00:51,000
+fresh. You open a brand new session entirely and re-ground it from your clawed .md and memory,
+
+9
+00:00:51,000 --> 00:00:57,000
+which is the right call when the old session has really drifted. Three levers, and the one you pick
+
+10
+00:00:57,000 --> 00:01:03,000
+depends on how much you want to keep versus how much you want gone. Let's put the two similar
+
+11
+00:01:03,000 --> 00:01:09,000
+sounding ones side by side, because people mix them up. Compacting preserves continuity.
+
+12
+00:01:09,000 --> 00:01:15,000
+It summarizes your older turns down to a recap, but it keeps the thread going, so your recent
+
+13
+00:01:15,000 --> 00:01:22,000
+decisions and the task you're on survive in condensed form. You barely feel the seam. Clearing
+
+14
+00:01:22,000 --> 00:01:27,000
+is the opposite. It empties the window completely in the same session, and nothing from the prior
+
+15
+00:01:27,000 --> 00:01:33,000
+conversation carries forward at all. Reach for clearing when the current context has become more
+
+16
+00:01:33,000 --> 00:01:38,000
+baggage than help, and you genuinely want a blank slate. So the quick test is this. Do you want to
+
+17
+00:01:38,000 --> 00:01:45,000
+keep going with less weight? Compact. Do you want to wipe and restart in place? Clear. Here's the
+
+18
+00:01:45,000 --> 00:01:51,000
+thing to really understand about compaction. It isn't lossless. It's a summary, and summaries
+
+19
+00:01:51,000 --> 00:01:57,000
+throw detail away, so you need to know what's protected and what isn't. The good news is your
+
+20
+00:01:57,000 --> 00:02:05,000
+project root clawed .md is safe. It gets re-read from disk and re-injected after a compaction,
+
+21
+00:02:05,000 --> 00:02:11,000
+so your standing rules survive intact. Recent turns and key decisions are kept in the summary
+
+22
+00:02:11,000 --> 00:02:17,000
+too. What can fall away is early prompt detail, the fine points from the start of the conversation,
+
+23
+00:02:17,000 --> 00:02:25,000
+and nested clawed .md files in subdirectories, which don't re-inject on their own. So the lesson
+
+24
+00:02:25,000 --> 00:02:32,000
+is simple. If a piece of guidance has to survive, put it in your project root config, not in an early
+
+25
+00:02:32,000 --> 00:02:38,000
+message that a summary might quietly drop. Let's get specific about three things and whether they
+
+26
+00:02:38,000 --> 00:02:47,000
+survive a reset. First, your project root clawed .md. It's re-read from disk and re-injected after
+
+27
+00:02:47,000 --> 00:02:53,000
+a compaction, so those instructions persist through every reset you do. That's the reliable one.
+
+28
+00:02:54,000 --> 00:03:01,000
+Second, nested clawed .md files, the ones sitting in subdirectories. These aren't re-injected
+
+29
+00:03:01,000 --> 00:03:07,000
+automatically. They only reload the next time clawed reads a file in that same subdirectory,
+
+30
+00:03:07,000 --> 00:03:13,000
+so don't count on them mid-session. Third, conversation-only notes. Anything you said in
+
+31
+00:03:13,000 --> 00:03:20,000
+chat but never wrote down simply doesn't survive. If it matters, add it to clawed .md so it's there
+
+32
+00:03:20,000 --> 00:03:29,000
+next time. Root config persists, nested reloads lazily, and unsaved chat is gone. So when is a
+
+33
+00:03:29,000 --> 00:03:34,000
+brand new session the right answer instead of compacting? A few situations call for it. The
+
+34
+00:03:34,000 --> 00:03:40,000
+first is drift. If the session has wandered a long way from the task you actually want done,
+
+35
+00:03:40,000 --> 00:03:46,000
+no amount of summarizing pulls it back cleanly, and a fresh start is faster. The second is runaway
+
+36
+00:03:46,000 --> 00:03:52,000
+bloat, when junk has piled up faster than pruning can keep pace with. And the third is a genuine
+
+37
+00:03:52,000 --> 00:03:57,000
+task switch, when you're moving to something unrelated that shares no useful context with
+
+38
+00:03:57,000 --> 00:04:03,000
+what you were doing. In all three cases, you open a fresh window and re-ground it from your config
+
+39
+00:04:03,000 --> 00:04:08,000
+and memory. You're not losing anything important, because the durable stuff was never in the window
+
+40
+00:04:08,000 --> 00:04:14,000
+to begin with. Beyond the in-session moves, four settings give you longer-term control over session
+
+41
+00:04:14,000 --> 00:04:21,000
+state. The first is a retention setting, cleanup period days, which controls how long your session
+
+42
+00:04:21,000 --> 00:04:27,000
+data stays on disk before it's cleaned up, defaulting to 30 days. The second is file
+
+43
+00:04:27,000 --> 00:04:33,000
+checkpointing. Turn it on and you can rewind file changes to an earlier point in the session,
+
+44
+00:04:33,000 --> 00:04:39,000
+which is a nice safety net. The third is the auto-memory toggle. That switches Claude's own
+
+45
+00:04:39,000 --> 00:04:46,000
+cross-session memory on or off, so learnings only persist when you want them to. And the fourth is
+
+46
+00:04:46,000 --> 00:04:51,000
+on-demand compaction. You don't have to wait for the window to fill. You can trigger a compaction
+
+47
+00:04:51,000 --> 00:04:58,000
+yourself at a natural break. Four small levers, and together they let you tune how sessions
+
+48
+00:04:58,000 --> 00:05:05,000
+live and die. When you do start fresh, the session isn't really blank, because config re-grounds it
+
+49
+00:05:05,000 --> 00:05:11,000
+for you. Three sources do the work. Your Claude.md loads automatically and restores your durable
+
+50
+00:05:11,000 --> 00:05:17,000
+instructions the moment the session starts, so your rules are back immediately. Auto-memory loads
+
+51
+00:05:17,000 --> 00:05:24,000
+too, though with a limit worth knowing. Only the top of the memory.md index comes in at start,
+
+52
+00:05:24,000 --> 00:05:29,000
+and topic files get pulled in on demand as they're needed, which keeps that load cheap.
+
+53
+00:05:29,000 --> 00:05:36,000
+And your settings.json reapplies your permissions, hooks, and environment, so the harness behaves
+
+54
+00:05:36,000 --> 00:05:41,000
+exactly the way it did before. Put those together and a fresh session inherits everything that's
+
+55
+00:05:41,000 --> 00:05:47,000
+durable, while leaving the disposable conversation behind. That's the whole point of keeping durable
+
+56
+00:05:47,000 --> 00:05:53,000
+state in config. Let's close the loop with the habit that ties this all together, the clean
+
+57
+00:05:53,000 --> 00:06:00,000
+handoff. Before you reset anything, ask what the next step actually needs, and carry only that
+
+58
+00:06:00,000 --> 00:06:05,000
+forward. Write a short summary of the decisions you made, and the thread's still open, so the thinking
+
+59
+00:06:05,000 --> 00:06:12,000
+isn't lost. Save any durable facts to your Claude.md or to memory, not buried in the chat,
+
+60
+00:06:12,000 --> 00:06:18,000
+where a reset will wipe them. Then, once the takeaways are safely recorded, you can drop the
+
+61
+00:06:18,000 --> 00:06:26,000
+raw history without a second thought. The mindset shift is this. A deliberate handoff always beats
+
+62
+00:06:26,000 --> 00:06:32,000
+hoping the old context somehow sticks around. When you hand off on purpose, resetting stops
+
+63
+00:06:32,000 --> 00:06:39,000
+feeling risky and starts feeling like a clean checkpoint. Let's recap. Match the reset to the
+
+64
+00:06:39,000 --> 00:06:45,000
+mess. Compact to shrink history and keep going. Clear to empty the window in place, and start
+
+65
+00:06:45,000 --> 00:06:51,000
+fresh when the session has drifted. One thing to watch. Only durable config survives, so hand off
+
+66
+00:06:51,000 --> 00:06:58,000
+a summary first. That wraps up clearing, compacting, and starting fresh. Let's keep going in the next video.
+

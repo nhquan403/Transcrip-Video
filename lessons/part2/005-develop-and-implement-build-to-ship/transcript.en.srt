@@ -1,0 +1,636 @@
+1
+00:00:00,000 --> 00:00:03,000
+Every cloud application moves through the same four phases.
+
+2
+00:00:03,000 --> 00:00:07,000
+Development, implementation, operation, and maintenance.
+
+3
+00:00:07,000 --> 00:00:09,000
+This lesson frames all four,
+
+4
+00:00:09,000 --> 00:00:11,000
+then zooms in on the first two,
+
+5
+00:00:11,000 --> 00:00:14,000
+where an idea becomes shipped software.
+
+6
+00:00:14,000 --> 00:00:16,000
+We'll prototype against the messages API,
+
+7
+00:00:16,000 --> 00:00:18,000
+then wire up off,
+
+8
+00:00:18,000 --> 00:00:21,000
+error handling, and deployment. Let's dive in.
+
+9
+00:00:21,000 --> 00:00:24,000
+Let's get the whole map in view before we go deep.
+
+10
+00:00:24,000 --> 00:00:27,000
+A cloud application lives through four phases.
+
+11
+00:00:27,000 --> 00:00:31,000
+In develop, you prototype your prompts and integrations
+
+12
+00:00:31,000 --> 00:00:32,000
+against the messages API,
+
+13
+00:00:32,000 --> 00:00:35,000
+just proving the idea can work.
+
+14
+00:00:35,000 --> 00:00:37,000
+In implement, you wire in auth, secrets,
+
+15
+00:00:37,000 --> 00:00:39,000
+error handling, and deployment,
+
+16
+00:00:39,000 --> 00:00:43,000
+so that prototype runs in its real target environment.
+
+17
+00:00:43,000 --> 00:00:45,000
+In operate, the app is live,
+
+18
+00:00:45,000 --> 00:00:47,000
+and you're watching latency, token usage,
+
+19
+00:00:47,000 --> 00:00:51,000
+error rates, and any refusal or failure signatures.
+
+20
+00:00:51,000 --> 00:00:54,000
+And in maintain, you migrate models,
+
+21
+00:00:54,000 --> 00:00:56,000
+version your prompts and schemas,
+
+22
+00:00:56,000 --> 00:00:58,000
+and regression test every upgrade.
+
+23
+00:00:58,000 --> 00:01:03,000
+Four phases, and each one asks something different of you as the builder.
+
+24
+00:01:03,000 --> 00:01:05,000
+Today, we're focused on the first two.
+
+25
+00:01:06,000 --> 00:01:08,000
+So let's start in the develop phase,
+
+26
+00:01:08,000 --> 00:01:12,000
+where the whole point is learning, not polishing.
+
+27
+00:01:12,000 --> 00:01:16,000
+You prototype your prompts directly against the messages API
+
+28
+00:01:16,000 --> 00:01:18,000
+and see what cloud actually returns.
+
+29
+00:01:18,000 --> 00:01:20,000
+You wire up a rough integration,
+
+30
+00:01:20,000 --> 00:01:22,000
+just enough to confirm the shape of the response
+
+31
+00:01:22,000 --> 00:01:24,000
+is what your app needs.
+
+32
+00:01:24,000 --> 00:01:25,000
+And you iterate on the prompt,
+
+33
+00:01:25,000 --> 00:01:27,000
+testing it against real inputs
+
+34
+00:01:27,000 --> 00:01:30,000
+and the messy adversarial ones too,
+
+35
+00:01:30,000 --> 00:01:33,000
+because one lucky output isn't proof it works.
+
+36
+00:01:33,000 --> 00:01:36,000
+What you're deliberately not doing yet is hardening.
+
+37
+00:01:36,000 --> 00:01:40,000
+No elaborate error handling, no production configuration.
+
+38
+00:01:40,000 --> 00:01:45,000
+Speed and learning matter more than polish right now.
+
+39
+00:01:45,000 --> 00:01:46,000
+Get the idea proven first,
+
+40
+00:01:46,000 --> 00:01:50,000
+and save the hardening for the implement phase that follows.
+
+41
+00:01:51,000 --> 00:01:53,000
+Let's look at what actually goes into a request,
+
+42
+00:01:54,000 --> 00:01:55,000
+because there are three pieces
+
+43
+00:01:55,000 --> 00:01:57,000
+you'll set on every single call.
+
+44
+00:01:57,000 --> 00:01:59,000
+First, the endpoint.
+
+45
+00:01:59,000 --> 00:02:03,000
+Every call is an HTTP post to the V1 messages endpoint,
+
+46
+00:02:03,000 --> 00:02:06,000
+and you send JSON and get JSON back.
+
+47
+00:02:06,000 --> 00:02:09,000
+So this is a plain REST API underneath.
+
+48
+00:02:09,000 --> 00:02:12,000
+Second, the XAPI key header.
+
+49
+00:02:12,000 --> 00:02:13,000
+That's what authenticates you,
+
+50
+00:02:13,000 --> 00:02:16,000
+and you keep that key in a secret manager.
+
+51
+00:02:16,000 --> 00:02:18,000
+Never paste it into your code.
+
+52
+00:02:18,000 --> 00:02:21,000
+Third, the anthropic version header.
+
+53
+00:02:21,000 --> 00:02:23,000
+It's required, and it pins the request
+
+54
+00:02:24,000 --> 00:02:27,000
+and response behavior to a dated API version,
+
+55
+00:02:27,000 --> 00:02:29,000
+so your integration doesn't shift under you
+
+56
+00:02:29,000 --> 00:02:31,000
+when the API evolves.
+
+57
+00:02:31,000 --> 00:02:32,000
+Endpoint key version.
+
+58
+00:02:32,000 --> 00:02:35,000
+Get those three right, and you're talking to Claude.
+
+59
+00:02:35,000 --> 00:02:37,000
+Here's a distinction worth holding onto,
+
+60
+00:02:37,000 --> 00:02:41,000
+because develop and implement pull in opposite directions.
+
+61
+00:02:41,000 --> 00:02:45,000
+When you prototype, you move fast and accept rough edges.
+
+62
+00:02:45,000 --> 00:02:48,000
+You try different prompts and tweak the wording,
+
+63
+00:02:48,000 --> 00:02:50,000
+all because the only goal is proving
+
+64
+00:02:50,000 --> 00:02:52,000
+the idea can work at all.
+
+65
+00:02:52,000 --> 00:02:56,000
+Then, as you move toward implement, you harden.
+
+66
+00:02:56,000 --> 00:02:57,000
+You lock the pieces down.
+
+67
+00:02:57,000 --> 00:03:01,000
+You add input validation, real error handling,
+
+68
+00:03:01,000 --> 00:03:04,000
+retries for flaky calls, and stable configuration,
+
+69
+00:03:04,000 --> 00:03:07,000
+so the same request behaves predictably
+
+70
+00:03:07,000 --> 00:03:08,000
+every time you run it.
+
+71
+00:03:08,000 --> 00:03:11,000
+Same code, two mindsets.
+
+72
+00:03:11,000 --> 00:03:14,000
+Prototype asks, can this work?
+
+73
+00:03:14,000 --> 00:03:16,000
+Harden asks, will this keep working under load
+
+74
+00:03:16,000 --> 00:03:19,000
+on a bad day in production?
+
+75
+00:03:19,000 --> 00:03:21,000
+You need both, just not at the same moment.
+
+76
+00:03:22,000 --> 00:03:26,000
+Now, the implement phase, where that proven prototype
+
+77
+00:03:26,000 --> 00:03:29,000
+becomes something that runs in the real world.
+
+78
+00:03:29,000 --> 00:03:31,000
+The theme of this phase is durability,
+
+79
+00:03:31,000 --> 00:03:34,000
+taking something that worked once on your machine
+
+80
+00:03:34,000 --> 00:03:37,000
+and making it run reliably, unattended,
+
+81
+00:03:37,000 --> 00:03:38,000
+everywhere it needs to.
+
+82
+00:03:38,000 --> 00:03:40,000
+Think about what actually changes
+
+83
+00:03:40,000 --> 00:03:42,000
+when the code leaves your laptop.
+
+84
+00:03:42,000 --> 00:03:46,000
+On your machine, the API key sat in an environment variable.
+
+85
+00:03:46,000 --> 00:03:49,000
+You exported by hand, and when a call failed,
+
+86
+00:03:49,000 --> 00:03:51,000
+you just ran it again.
+
+87
+00:03:51,000 --> 00:03:54,000
+In production, nobody is there to rerun anything.
+
+88
+00:03:54,000 --> 00:03:57,000
+The app has to load its own credentials,
+
+89
+00:03:57,000 --> 00:03:59,000
+survive a rate limit at two in the morning,
+
+90
+00:03:59,000 --> 00:04:03,000
+and behave the same in staging as it does in production.
+
+91
+00:04:03,000 --> 00:04:06,000
+Every manual step you performed while prototyping
+
+92
+00:04:06,000 --> 00:04:09,000
+has to become something the system does for itself.
+
+93
+00:04:09,000 --> 00:04:11,000
+That's the checklist we'll wire up next.
+
+94
+00:04:12,000 --> 00:04:15,000
+Let's make the implement phase concrete
+
+95
+00:04:15,000 --> 00:04:18,000
+with the three things you'll wire up almost every time.
+
+96
+00:04:18,000 --> 00:04:20,000
+One, auth and secrets.
+
+97
+00:04:20,000 --> 00:04:23,000
+Store your API key in a secret manager
+
+98
+00:04:23,000 --> 00:04:27,000
+and load it at runtime and never commit it to the repo
+
+99
+00:04:27,000 --> 00:04:30,000
+because a leaked key is a real incident.
+
+100
+00:04:30,000 --> 00:04:32,000
+Two, error handling.
+
+101
+00:04:32,000 --> 00:04:34,000
+Catch rate limit and server errors.
+
+102
+00:04:34,000 --> 00:04:37,000
+Back off and retry so a single hiccup
+
+103
+00:04:37,000 --> 00:04:40,000
+doesn't crash the whole request.
+
+104
+00:04:40,000 --> 00:04:41,000
+Three, deployment.
+
+105
+00:04:41,000 --> 00:04:45,000
+Package the app, set its configuration for each environment,
+
+106
+00:04:45,000 --> 00:04:48,000
+and deploy it to your target platform.
+
+107
+00:04:48,000 --> 00:04:50,000
+Auth errors deployment.
+
+108
+00:04:50,000 --> 00:04:52,000
+None of it is glamorous, but this is the plumbing
+
+109
+00:04:52,000 --> 00:04:54,000
+that turns a working prototype
+
+110
+00:04:54,000 --> 00:04:57,000
+into something you can actually put in front of users.
+
+111
+00:04:58,000 --> 00:05:02,000
+Let's zoom in on errors because at the integration edge,
+
+112
+00:05:02,000 --> 00:05:04,000
+every network call can fail.
+
+113
+00:05:04,000 --> 00:05:07,000
+The 429 and the 500 series errors,
+
+114
+00:05:07,000 --> 00:05:10,000
+you can already triage from the architecture lessons.
+
+115
+00:05:10,000 --> 00:05:14,000
+Both sit in the retry bucket, so back off and resend.
+
+116
+00:05:14,000 --> 00:05:17,000
+The new case in the implement phase is the 401.
+
+117
+00:05:17,000 --> 00:05:20,000
+That means your authentication is bad,
+
+118
+00:05:20,000 --> 00:05:22,000
+a missing or wrong key,
+
+119
+00:05:22,000 --> 00:05:24,000
+and no amount of retrying will fix it.
+
+120
+00:05:24,000 --> 00:05:26,000
+You have to correct the credentials,
+
+121
+00:05:26,000 --> 00:05:30,000
+and until you do, every call fails the same way.
+
+122
+00:05:30,000 --> 00:05:31,000
+That's why a well-built edge
+
+123
+00:05:31,000 --> 00:05:34,000
+surfaces an auth failure immediately
+
+124
+00:05:34,000 --> 00:05:37,000
+instead of letting it hide inside a retry loop.
+
+125
+00:05:37,000 --> 00:05:39,000
+Triage stays the skill.
+
+126
+00:05:39,000 --> 00:05:42,000
+Retry what clears, surface, and fix what doesn't.
+
+127
+00:05:43,000 --> 00:05:45,000
+One more implement phase habit,
+
+128
+00:05:45,000 --> 00:05:47,000
+and it's about version control.
+
+129
+00:05:48,000 --> 00:05:49,000
+Some of your configuration belongs in Git,
+
+130
+00:05:49,000 --> 00:05:51,000
+and some deliberately doesn't.
+
+131
+00:05:51,000 --> 00:05:54,000
+Your shared config, your Claw.md,
+
+132
+00:05:54,000 --> 00:05:58,000
+and the project settings.json gets committed,
+
+133
+00:05:58,000 --> 00:06:00,000
+so every teammate and every environment
+
+134
+00:06:00,000 --> 00:06:02,000
+picks up the same behavior.
+
+135
+00:06:02,000 --> 00:06:06,000
+Your personal config, the settings.local.json
+
+136
+00:06:06,000 --> 00:06:09,000
+stays Git-ignored because it holds
+
+137
+00:06:09,000 --> 00:06:12,000
+machine-specific overrides that are yours alone.
+
+138
+00:06:12,000 --> 00:06:14,000
+And here's the one people forget,
+
+139
+00:06:14,000 --> 00:06:18,000
+pin an exact model ID and commit that too.
+
+140
+00:06:18,000 --> 00:06:22,000
+On pre-4.6 models, that means the dated snapshot
+
+141
+00:06:22,000 --> 00:06:24,000
+rather than the shorter floating alias.
+
+142
+00:06:24,000 --> 00:06:29,000
+From 4.6 on, the dateless ID like Clawed Opus 4.8
+
+143
+00:06:29,000 --> 00:06:31,000
+already is the pinned snapshot,
+
+144
+00:06:31,000 --> 00:06:33,000
+so there is no alias to avoid.
+
+145
+00:06:33,000 --> 00:06:36,000
+That way, a teammate's run and production's run
+
+146
+00:06:36,000 --> 00:06:39,000
+behave like yours instead of silently drifting
+
+147
+00:06:39,000 --> 00:06:41,000
+when a new model ships.
+
+148
+00:06:41,000 --> 00:06:43,000
+Reproducible behavior starts with putting
+
+149
+00:06:43,000 --> 00:06:49,000
+the right configuration under source control. Let's recap.
+
+150
+00:06:49,000 --> 00:06:51,000
+Develop and implement carry an idea
+
+151
+00:06:51,000 --> 00:06:54,000
+from prototype all the way to shipped software.
+
+152
+00:06:54,000 --> 00:06:58,000
+Develop proves it against the messages API.
+
+153
+00:06:58,000 --> 00:07:00,000
+Implement wires in auth, secrets,
+
+154
+00:07:00,000 --> 00:07:02,000
+error handling, and deployment,
+
+155
+00:07:02,000 --> 00:07:04,000
+and handles failures at the edge.
+
+156
+00:07:04,000 --> 00:07:07,000
+Just remember, commit your shared config
+
+157
+00:07:07,000 --> 00:07:12,000
+and pin an exact model ID so behavior stays reproducible.
+
+158
+00:07:12,000 --> 00:07:14,000
+That covers the develop and implement phases.
+
+159
+00:07:14,000 --> 00:07:17,000
+Take a breath, and I'll see you in the next one.
+

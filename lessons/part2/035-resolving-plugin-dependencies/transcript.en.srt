@@ -1,0 +1,368 @@
+1
+00:00:00,000 --> 00:00:05,000
+A plugin rarely works by itself, it leans on other plugins, and Cloud Code gives you
+
+2
+00:00:05,000 --> 00:00:08,000
+a way to declare exactly what it needs.
+
+3
+00:00:08,000 --> 00:00:14,000
+This lesson maps how dependencies get declared, how version ranges resolve, and how enabling
+
+4
+00:00:14,000 --> 00:00:18,000
+and disabling cascade through the graph. Let's dive in.
+
+5
+00:00:18,000 --> 00:00:21,000
+How does a plugin say what it depends on?
+
+6
+00:00:21,000 --> 00:00:26,000
+It lists those needs in a dependencies array, inside its manifest.
+
+7
+00:00:26,000 --> 00:00:31,000
+Each entry names another plugin, and Cloud Code reads that list whenever you install.
+
+8
+00:00:31,000 --> 00:00:32,000
+Here's the payoff.
+
+9
+00:00:32,000 --> 00:00:39,000
+When you install a plugin, Cloud Code resolves that array and pulls in every dependency automatically.
+
+10
+00:00:39,000 --> 00:00:45,000
+You don't hunt them down by hand, the install output prints exactly what got added, so you
+
+11
+00:00:45,000 --> 00:00:47,000
+can see the full set that landed.
+
+12
+00:00:47,000 --> 00:00:53,000
+I want you to think of a dependency as any other plugin that this one has to have present to function.
+
+13
+00:00:53,000 --> 00:00:58,000
+This one, and the features you installed the plugin for, simply won't work.
+
+14
+00:00:58,000 --> 00:01:00,000
+Let's look at what actually goes in that array.
+
+15
+00:01:00,000 --> 00:01:03,000
+Each entry can be simple or precise.
+
+16
+00:01:03,000 --> 00:01:10,000
+The simple form is just a bare plugin name, a string that says track whatever the marketplace provides.
+
+17
+00:01:10,000 --> 00:01:13,000
+The precise form is an object.
+
+18
+00:01:13,000 --> 00:01:18,000
+You give the name plus a version range, so resolution locks onto a compatible release
+
+19
+00:01:18,000 --> 00:01:19,000
+instead of drifting.
+
+20
+00:01:19,000 --> 00:01:25,000
+That same object can carry one more field, a marketplace name, when the dependency lives
+
+21
+00:01:25,000 --> 00:01:28,000
+in a different catalog than the plugin declaring it.
+
+22
+00:01:28,000 --> 00:01:33,000
+So think of it as a spectrum, bare when you want to follow the latest, an object when
+
+23
+00:01:33,000 --> 00:01:39,000
+a specific version matters, and the marketplace field only when you reach across catalogs.
+
+24
+00:01:39,000 --> 00:01:42,000
+Most entries stay simple.
+
+25
+00:01:42,000 --> 00:01:45,000
+Here's the tradeoff between those two forms, side by side.
+
+26
+00:01:45,000 --> 00:01:50,000
+With a bare name, you list only the plugin, and it resolves to whatever the marketplace
+
+27
+00:01:50,000 --> 00:01:51,000
+currently offers.
+
+28
+00:01:51,000 --> 00:01:54,000
+That keeps you current with zero effort.
+
+29
+00:01:54,000 --> 00:01:59,000
+But the version you actually get can shift out from under you between installs.
+
+30
+00:01:59,000 --> 00:02:06,000
+With a pinned version object, you attach a semver range, something like tilde 2.1.0.
+
+31
+00:02:06,000 --> 00:02:13,000
+Now clod code fetches the highest tagged release that satisfies your range and nothing newer.
+
+32
+00:02:13,000 --> 00:02:17,000
+You trade a little freshness for reproducibility.
+
+33
+00:02:17,000 --> 00:02:21,000
+Everyone who installs resolves the same compatible version.
+
+34
+00:02:21,000 --> 00:02:28,000
+When a plugin's behavior has to stay stable across a team, that predictability is worth pinning for.
+
+35
+00:02:28,000 --> 00:02:33,000
+Let me make those version ranges concrete, because the syntax carries real meaning.
+
+36
+00:02:33,000 --> 00:02:39,000
+A tilde like tilde 2.1.0 allows patch updates only.
+
+37
+00:02:39,000 --> 00:02:43,000
+You stay on the 2.1 line and pick up bug fixes.
+
+38
+00:02:43,000 --> 00:02:48,000
+A caret like caret 2.0 opens things up to minor and patch releases.
+
+39
+00:02:48,000 --> 00:02:53,000
+So you ride new features as long as the major version stays at 2.
+
+40
+00:02:53,000 --> 00:02:59,000
+A comparator like greater than or equal 1.4 is the loosest.
+
+41
+00:02:59,000 --> 00:03:03,000
+It accepts anything at or above that floor, which gives you the least protection from
+
+42
+00:03:03,000 --> 00:03:05,000
+a breaking change.
+
+43
+00:03:05,000 --> 00:03:07,000
+Tighter ranges mean more stability.
+
+44
+00:03:07,000 --> 00:03:12,000
+Looser ranges mean less friction, but more risk.
+
+45
+00:03:12,000 --> 00:03:17,000
+Enabling pulls dependencies in, but there's a second behavior that trips people up. Enabling.
+
+46
+00:03:17,000 --> 00:03:24,000
+When you enable a plugin, clod code also enables its dependencies, at the same scope, automatically.
+
+47
+00:03:24,000 --> 00:03:26,000
+And it does this transitively.
+
+48
+00:03:26,000 --> 00:03:32,000
+If a dependency has its own dependencies, those come on too, all the way down the chain.
+
+49
+00:03:32,000 --> 00:03:33,000
+Here's the subtle part.
+
+50
+00:03:33,000 --> 00:03:40,000
+A dependency enabled this way is turned on even if its own manifest says it should default to off.
+
+51
+00:03:40,000 --> 00:03:43,000
+The active plugin that needs it wins.
+
+52
+00:03:43,000 --> 00:03:46,000
+So you rarely flip dependencies on by hand.
+
+53
+00:03:46,000 --> 00:03:53,000
+You enable the thing you care about, and everything it relies on wakes up with it as a single working unit.
+
+54
+00:03:53,000 --> 00:03:56,000
+Now the mirror image, disabling.
+
+55
+00:03:56,000 --> 00:04:02,000
+You might expect to turn any plugin off whenever you like, but the dependency graph steps in.
+
+56
+00:04:02,000 --> 00:04:07,000
+If you try to disable a plugin while another enabled plugin still depends on it, clod code
+
+57
+00:04:07,000 --> 00:04:10,000
+blocks the action, and it's helpful about it.
+
+58
+00:04:10,000 --> 00:04:17,000
+The error prints a chained command that disables the dependence first, then the plugin you targeted.
+
+59
+00:04:17,000 --> 00:04:21,000
+Once nothing enabled points at it anymore, the disable goes through cleanly.
+
+60
+00:04:21,000 --> 00:04:23,000
+Think about why this matters.
+
+61
+00:04:23,000 --> 00:04:28,000
+Without that guard, you could silently break a plugin that quietly relied on the one you
+
+62
+00:04:28,000 --> 00:04:30,000
+just switched off.
+
+63
+00:04:30,000 --> 00:04:34,000
+The graph keeps you from pulling a thread that unravels something else.
+
+64
+00:04:34,000 --> 00:04:40,000
+What happens when two plugins both depend on the same thing, but ask for different versions?
+
+65
+00:04:40,000 --> 00:04:42,000
+Clod code doesn't just pick one at random.
+
+66
+00:04:42,000 --> 00:04:47,000
+It intersects their ranges and looks for a single version that satisfies every constraint
+
+67
+00:04:47,000 --> 00:04:52,000
+at once, then fetches the highest one that fits.
+
+68
+00:04:52,000 --> 00:04:53,000
+That's constraint intersection.
+
+69
+00:04:53,000 --> 00:04:58,000
+When the ranges genuinely can't be reconciled, one demands version 1.
+
+70
+00:04:58,000 --> 00:05:00,000
+Another demands version 3.
+
+71
+00:05:00,000 --> 00:05:07,000
+You get a range conflict error, the install fails, and your existing setup is left untouched.
+
+72
+00:05:07,000 --> 00:05:08,000
+Nothing half applies.
+
+73
+00:05:08,000 --> 00:05:15,000
+And within any single range, resolution always reaches for the newest, tagged release that still fits.
+
+74
+00:05:15,000 --> 00:05:17,000
+Highest compatible wins.
+
+75
+00:05:17,000 --> 00:05:21,000
+Understanding that lets you predict exactly which version lands.
+
+76
+00:05:21,000 --> 00:05:23,000
+Let's close the loop on cleanup.
+
+77
+00:05:23,000 --> 00:05:28,000
+When you remove a plugin, the dependencies it dragged in don't leave with it.
+
+78
+00:05:28,000 --> 00:05:32,000
+They stay installed because something else might still need them.
+
+79
+00:05:32,000 --> 00:05:34,000
+Left alone, those become orphans.
+
+80
+00:05:34,000 --> 00:05:38,000
+Auto-installed plugins with nothing pointing at them anymore.
+
+81
+00:05:38,000 --> 00:05:40,000
+To clear them, you run plugin prune.
+
+82
+00:05:40,000 --> 00:05:46,000
+It sweeps away orphaned auto-installed dependencies and reclaims a clean, minimal set.
+
+83
+00:05:46,000 --> 00:05:50,000
+Here's the safety guarantee I want you to hold onto.
+
+84
+00:05:50,000 --> 00:05:53,000
+Prune never removes a plugin you installed directly.
+
+85
+00:05:53,000 --> 00:05:58,000
+Only the extras that got pulled in automatically and are now unused.
+
+86
+00:05:58,000 --> 00:06:05,000
+So you can prune freely without fear of deleting something you chose on purpose. Let's recap.
+
+87
+00:06:05,000 --> 00:06:10,000
+Declaring dependencies lets Cloud Code assemble a working plugin set for you.
+
+88
+00:06:10,000 --> 00:06:15,000
+It matters because install and enable both cascade automatically, and disable is guarded
+
+89
+00:06:15,000 --> 00:06:20,000
+so you can't break a plugin that is depended on by something else.
+
+90
+00:06:20,000 --> 00:06:24,000
+Just remember, prune clears the orphaned leftovers safely.
+
+91
+00:06:24,000 --> 00:06:27,000
+That covers resolving plugin dependencies.
+
+92
+00:06:27,000 --> 00:06:28,000
+I'll see you in the next one.
+

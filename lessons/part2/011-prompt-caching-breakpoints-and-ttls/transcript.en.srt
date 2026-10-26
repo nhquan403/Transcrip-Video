@@ -1,0 +1,252 @@
+1
+00:00:00,000 --> 00:00:06,000
+Every time you send a long system prompt or a big set of tools, the model reprocesses all of it,
+
+2
+00:00:06,000 --> 00:00:13,000
+and you pay for all of it. Prompt caching is how you stop that waste. This lesson walks through
+
+3
+00:00:13,000 --> 00:00:18,000
+marking a prefix with breakpoints, picking a time to live, and knowing when caching actually
+
+4
+00:00:18,000 --> 00:00:24,000
+saves you money. Let's get into it. Let's define three things up front. First,
+
+5
+00:00:24,000 --> 00:00:30,000
+prompt caching itself. It lets you reuse a prefix the model already processed,
+
+6
+00:00:30,000 --> 00:00:37,000
+so a large, stable chunk of context isn't rebuilt on every single call. Second, the cache control
+
+7
+00:00:37,000 --> 00:00:42,000
+breakpoint. That's an explicit marker you place on a block, and you get up to four of them per
+
+8
+00:00:42,000 --> 00:00:50,000
+request, each one closing off a cacheable prefix. Third, the TTL, the time to live for a cache
+
+9
+00:00:50,000 --> 00:00:56,000
+entry. The default is a five-minute ephemeral window, and there's a longer one-hour option
+
+10
+00:00:56,000 --> 00:01:02,000
+when you need it. Caching, breakpoints, and TTLs. Those three names carry the whole lesson,
+
+11
+00:01:02,000 --> 00:01:09,000
+so let's unpack how they fit together. The first thing to internalize is that caching matches
+
+12
+00:01:09,000 --> 00:01:15,000
+on an exact prefix, and the prefix is built in a fixed order. The model renders tools first,
+
+13
+00:01:15,000 --> 00:01:21,000
+then the system prompt, then the messages. Your cache key is the exact rendered bytes of that
+
+14
+00:01:21,000 --> 00:01:27,000
+prefix, up to wherever you marked it. That exactness is the catch. Change a single byte
+
+15
+00:01:27,000 --> 00:01:33,000
+anywhere inside the prefix, and you invalidate everything from that point on. There's no fuzzy
+
+16
+00:01:33,000 --> 00:01:40,000
+matching and no partial credit. It's byte exact, and it's prefix only, which is why the order and
+
+17
+00:01:40,000 --> 00:01:46,000
+the stability of what you put up front matter so much. Get the ordering right, and the cache does
+
+18
+00:01:46,000 --> 00:01:53,000
+its job quietly. So how do you tell the API what to cache? You place cache control breakpoints,
+
+19
+00:01:53,000 --> 00:01:59,000
+and you get up to four per request. You put them at stability boundaries, the points where content
+
+20
+00:01:59,000 --> 00:02:05,000
+stops changing. A really useful one to know, a breakpoint on your last system block caches your
+
+21
+00:02:05,000 --> 00:02:12,000
+tools and your system prompt together as one chunk, since tools render before system. The
+
+22
+00:02:12,000 --> 00:02:18,000
+design rule that follows is simple. Keep the stable stuff up front, behind your breakpoints,
+
+23
+00:02:18,000 --> 00:02:23,000
+and push anything volatile, like the current user turn, after your final breakpoint. That way, the
+
+24
+00:02:23,000 --> 00:02:30,000
+changing content never reaches into the cached prefix and knocks it out. Stable first, volatile
+
+25
+00:02:30,000 --> 00:02:37,000
+last. Now the two lifetimes a cache entry can have. By default, an entry uses the five-minute
+
+26
+00:02:37,000 --> 00:02:44,000
+ephemeral window, and every read refreshes it. So under steady traffic, your prefix just stays warm.
+
+27
+00:02:44,000 --> 00:02:49,000
+When your calls are spaced further apart, you can opt into the one-hour window by setting type to
+
+28
+00:02:49,000 --> 00:02:56,000
+ephemeral and TTL to one hour. It survives those longer gaps, but it costs more to write, which
+
+29
+00:02:56,000 --> 00:03:02,000
+we'll price out in a moment. So the choice isn't about one being better, it's a trade-off between
+
+30
+00:03:02,000 --> 00:03:07,000
+how long you need the entry to live, and what you're willing to pay to write it. Match the TTL
+
+31
+00:03:07,000 --> 00:03:13,000
+to your traffic pattern. Let's price it out, because this is where caching earns its keep
+
+32
+00:03:13,000 --> 00:03:20,000
+or doesn't. All three numbers are multiples of your base input price. A cache read, a hit,
+
+33
+00:03:20,000 --> 00:03:27,000
+costs 10% the cost, so served from cache tokens are roughly a tenth of the normal price. Writing
+
+34
+00:03:27,000 --> 00:03:34,000
+a five-minute entry costs 25% more, a small one-time premium. Writing a one-hour entry costs
+
+35
+00:03:34,000 --> 00:03:41,000
+double, the price of the longer window. Notice the shape. Writes cost a bit more than base,
+
+36
+00:03:41,000 --> 00:03:48,000
+reads cost far less. Don't invert that. The whole strategy only works because a cheap read at 10%
+
+37
+00:03:48,000 --> 00:03:53,000
+the cost, repeated enough times, more than pays back the premium you spent writing the entry once.
+
+38
+00:03:55,000 --> 00:04:01,000
+So when is caching actually worth it? The rule of thumb is reuse. Caching pays off when a stable
+
+39
+00:04:01,000 --> 00:04:08,000
+prefix makes up the bulk of your request, and you hit it again and again. Those cheap reads at 10%
+
+40
+00:04:08,000 --> 00:04:14,000
+of base cost have to outweigh the one-time write premium you paid to create the entry. With the
+
+41
+00:04:14,000 --> 00:04:20,000
+five-minute window, an entry roughly pays for itself after about one reuse, because a write
+
+42
+00:04:20,000 --> 00:04:27,000
+at 25% more plus a read at 10% the cost beats paying full price twice. The flip side matters
+
+43
+00:04:27,000 --> 00:04:34,000
+just as much. If a prefix is barely reused, caching it costs you more than just resending it.
+
+44
+00:04:34,000 --> 00:04:39,000
+So cache the big, stable, frequently hit context, and leave the one-off stuff alone.
+
+45
+00:04:40,000 --> 00:04:45,000
+There's a floor you have to clear, and it catches people off guard. A prefix has to reach a minimum
+
+46
+00:04:45,000 --> 00:04:52,000
+token count before it caches at all, and that minimum depends on the model. It's 1024 tokens
+
+47
+00:04:52,000 --> 00:05:01,000
+on Opus 4.8 and 2048 on Opus 4.7. Come in under the floor and nothing gets cached. You won't see
+
+48
+00:05:01,000 --> 00:05:07,000
+an error, you'll just see cache creation input tokens come back as zero, which is easy to miss.
+
+49
+00:05:08,000 --> 00:05:14,000
+One more scoping detail. Caches are tied to a specific model. Switch models mid-flow and you
+
+50
+00:05:14,000 --> 00:05:19,000
+take a full miss, because the cache from one model doesn't carry to another. So size your
+
+51
+00:05:19,000 --> 00:05:26,000
+prefix above the floor, and don't swap models on a hot cache. Last piece, proving the cache
+
+52
+00:05:26,000 --> 00:05:33,000
+is actually working. Every response comes back with usage fields, and the one to watch is cache
+
+53
+00:05:33,000 --> 00:05:39,000
+read input tokens. Make two calls with an identical prefix, and on the second you should
+
+54
+00:05:39,000 --> 00:05:46,000
+see that number climb. If it stays at zero across repeated identical calls, something is silently
+
+55
+00:05:46,000 --> 00:05:52,000
+invalidating your prefix. The usual suspects are a date time stamp baked into your system prompt,
+
+56
+00:05:52,000 --> 00:05:59,000
+JSON whose keys aren't sorted the same way each time, or a tool set that shifts between calls,
+
+57
+00:05:59,000 --> 00:06:04,000
+since tools sit at the very front of the prefix. Freeze everything up front, keep it
+
+58
+00:06:04,000 --> 00:06:09,000
+byte for byte identical, and those cache reads will show up right where you expect them.
+
+59
+00:06:10,000 --> 00:06:17,000
+Here's the bottom line. Prompt caching reuses a byte exact prefix over the tools system messages
+
+60
+00:06:17,000 --> 00:06:24,000
+order. You mark it with up to four break points, pick a five minute or one hour time to live,
+
+61
+00:06:24,000 --> 00:06:30,000
+and it pays off when cheap reads outweigh the right cost. Just remember, name the model for
+
+62
+00:06:30,000 --> 00:06:35,000
+the minimum prefix. That wraps up prompt caching break points and time to live.
+
+63
+00:06:35,000 --> 00:06:36,000
+I'll see you in the next one.
+

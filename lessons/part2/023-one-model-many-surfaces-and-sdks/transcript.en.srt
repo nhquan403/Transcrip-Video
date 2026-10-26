@@ -1,0 +1,580 @@
+1
+00:00:00,000 --> 00:00:02,000
+Here's something worth getting straight.
+
+2
+00:00:02,000 --> 00:00:03,000
+Clod is one model,
+
+3
+00:00:03,000 --> 00:00:06,000
+but you reach it through very different surfaces,
+
+4
+00:00:06,000 --> 00:00:08,000
+and they don't all behave the same way.
+
+5
+00:00:08,000 --> 00:00:11,000
+The raw API, the agent SDK,
+
+6
+00:00:11,000 --> 00:00:14,000
+and Clod code each wrap that model differently.
+
+7
+00:00:14,000 --> 00:00:16,000
+This lesson maps what stays the same
+
+8
+00:00:16,000 --> 00:00:18,000
+and what shifts between those options.
+
+9
+00:00:18,000 --> 00:00:21,000
+Let's break it down. Let's name
+
+10
+00:00:21,000 --> 00:00:24,000
+the three main ways you reach Clod in code,
+
+11
+00:00:24,000 --> 00:00:27,000
+because each one hands you a different starting point.
+
+12
+00:00:27,000 --> 00:00:29,000
+The first is the raw API.
+
+13
+00:00:29,000 --> 00:00:32,000
+You call the messages endpoint directly and supply
+
+14
+00:00:32,000 --> 00:00:36,000
+every instruction yourself through the system parameter.
+
+15
+00:00:36,000 --> 00:00:38,000
+Nothing is auto-loaded for you.
+
+16
+00:00:38,000 --> 00:00:40,000
+The second is the agent SDK.
+
+17
+00:00:40,000 --> 00:00:43,000
+It runs the agent loop on your behalf,
+
+18
+00:00:43,000 --> 00:00:46,000
+but its default system prompt is deliberately minimal,
+
+19
+00:00:46,000 --> 00:00:48,000
+just enough for tool calling,
+
+20
+00:00:48,000 --> 00:00:50,000
+not the full Clod code prompt.
+
+21
+00:00:50,000 --> 00:00:53,000
+The third is Clod code itself,
+
+22
+00:00:53,000 --> 00:00:54,000
+the command line coding agent.
+
+23
+00:00:54,000 --> 00:00:56,000
+It loads a full system prompt,
+
+24
+00:00:56,000 --> 00:00:59,000
+the entire Clod.md hierarchy,
+
+25
+00:00:59,000 --> 00:01:03,000
+and auto-memory the moment a session starts.
+
+26
+00:01:03,000 --> 00:01:04,000
+Same model underneath,
+
+27
+00:01:04,000 --> 00:01:07,000
+three very different amounts of scaffolding.
+
+28
+00:01:07,000 --> 00:01:10,000
+Let's build the right mental model.
+
+29
+00:01:10,000 --> 00:01:12,000
+Underneath every surface,
+
+30
+00:01:12,000 --> 00:01:14,000
+the model's core behavior is constant.
+
+31
+00:01:14,000 --> 00:01:17,000
+Given the same instructions and the same context,
+
+32
+00:01:17,000 --> 00:01:19,000
+it reasons the same way.
+
+33
+00:01:19,000 --> 00:01:23,000
+What changes from one surface to the next is the wrapper around it.
+
+34
+00:01:23,000 --> 00:01:25,000
+Tool access is one axis.
+
+35
+00:01:25,000 --> 00:01:30,000
+It can range from no tools at all on a bare API call-up,
+
+36
+00:01:30,000 --> 00:01:32,000
+to a full tool set in Clod code.
+
+37
+00:01:32,000 --> 00:01:35,000
+File and config loading is another.
+
+38
+00:01:35,000 --> 00:01:38,000
+Some surfaces read files and configuration off-disk,
+
+39
+00:01:38,000 --> 00:01:41,000
+others touch nothing you didn't hand them.
+
+40
+00:01:41,000 --> 00:01:44,000
+The session and memory model varies too.
+
+41
+00:01:44,000 --> 00:01:47,000
+When a behavior looks different across surfaces,
+
+42
+00:01:47,000 --> 00:01:50,000
+the first suspect is the scaffolding, not the model.
+
+43
+00:01:50,000 --> 00:01:54,000
+Now let's pin down where your instructions actually live,
+
+44
+00:01:54,000 --> 00:01:57,000
+because it's different on every surface. On the raw API,
+
+45
+00:01:57,000 --> 00:02:01,000
+instructions go in the system parameter you set on the request,
+
+46
+00:02:01,000 --> 00:02:03,000
+and nothing else is loaded for you.
+
+47
+00:02:03,000 --> 00:02:04,000
+On the agent SDK,
+
+48
+00:02:04,000 --> 00:02:06,000
+you get a minimal default prompt,
+
+49
+00:02:06,000 --> 00:02:11,000
+plus your Clod.md when the matching setting sources are enabled,
+
+50
+00:02:11,000 --> 00:02:12,000
+which they are by default.
+
+51
+00:02:12,000 --> 00:02:16,000
+In Clod code, a full system prompt loads along with
+
+52
+00:02:16,000 --> 00:02:19,000
+the whole Clod.md hierarchy, your rules,
+
+53
+00:02:19,000 --> 00:02:22,000
+and auto-memory, all at launch.
+
+54
+00:02:22,000 --> 00:02:23,000
+On a hosted chat surface,
+
+55
+00:02:23,000 --> 00:02:26,000
+your profile and project custom instructions apply,
+
+56
+00:02:26,000 --> 00:02:29,000
+but only inside that web surface.
+
+57
+00:02:29,000 --> 00:02:32,000
+Same instruction, four different homes.
+
+58
+00:02:32,000 --> 00:02:34,000
+Let's zoom in on the raw API,
+
+59
+00:02:34,000 --> 00:02:36,000
+because it's the most bare-bones surface,
+
+60
+00:02:36,000 --> 00:02:38,000
+and that makes the pattern obvious.
+
+61
+00:02:38,000 --> 00:02:40,000
+There's no magic here.
+
+62
+00:02:40,000 --> 00:02:43,000
+You get exactly what you configure and not one thing more.
+
+63
+00:02:43,000 --> 00:02:46,000
+Your only channel for system level instruction is
+
+64
+00:02:46,000 --> 00:02:49,000
+the system parameter on the request, that's it.
+
+65
+00:02:49,000 --> 00:02:52,000
+There's no Clod.md being read off-disk,
+
+66
+00:02:52,000 --> 00:02:57,000
+no presets, and no auto-memory carrying anything between calls.
+
+67
+00:02:57,000 --> 00:03:00,000
+Persona, safety rules, and tool guidance
+
+68
+00:03:00,000 --> 00:03:03,000
+are all yours to write and send every time.
+
+69
+00:03:03,000 --> 00:03:07,000
+The upside is total control over what the model sees.
+
+70
+00:03:07,000 --> 00:03:10,000
+The trade-off is total responsibility.
+
+71
+00:03:10,000 --> 00:03:13,000
+If you didn't put an instruction in the request,
+
+72
+00:03:13,000 --> 00:03:15,000
+the model simply never got it.
+
+73
+00:03:15,000 --> 00:03:19,000
+Here's a distinction that trips people up constantly.
+
+74
+00:03:19,000 --> 00:03:20,000
+So let's be precise.
+
+75
+00:03:20,000 --> 00:03:22,000
+When you use the agent SDK,
+
+76
+00:03:22,000 --> 00:03:25,000
+its default system prompt is minimal.
+
+77
+00:03:25,000 --> 00:03:28,000
+It's built for tool calling and little else.
+
+78
+00:03:28,000 --> 00:03:30,000
+It isn't the Clod code prompt.
+
+79
+00:03:30,000 --> 00:03:33,000
+If you want the SDK to behave like the command line agent,
+
+80
+00:03:33,000 --> 00:03:36,000
+you set the Clod code preset explicitly,
+
+81
+00:03:36,000 --> 00:03:39,000
+and you can append your own text on top.
+
+82
+00:03:39,000 --> 00:03:43,000
+Clod code itself is the opposite default.
+
+83
+00:03:43,000 --> 00:03:45,000
+Even when you run it headless in print mode,
+
+84
+00:03:45,000 --> 00:03:48,000
+it uses the full Clod code system prompt
+
+85
+00:03:49,000 --> 00:03:51,000
+and loads its whole config stack
+
+86
+00:03:51,000 --> 00:03:53,000
+without you opting into anything.
+
+87
+00:03:53,000 --> 00:03:56,000
+So the same underlying loop feels very different
+
+88
+00:03:56,000 --> 00:03:58,000
+depending on which default you inherited.
+
+89
+00:03:58,000 --> 00:04:01,000
+Name the surface before you assume the prompt.
+
+90
+00:04:02,000 --> 00:04:04,000
+This is the single most misunderstood piece,
+
+91
+00:04:04,000 --> 00:04:06,000
+so let's slow down.
+
+92
+00:04:06,000 --> 00:04:09,000
+The SDK doesn't load your Clod.md
+
+93
+00:04:09,000 --> 00:04:12,000
+because you turned on the Clod code preset.
+
+94
+00:04:12,000 --> 00:04:14,000
+Those are two separate switches.
+
+95
+00:04:14,000 --> 00:04:19,000
+What actually controls Clod.md loading is setting sources.
+
+96
+00:04:19,000 --> 00:04:24,000
+The project source loads the Clod.md in your repository.
+
+97
+00:04:24,000 --> 00:04:29,000
+The user source loads the one in your home config directory.
+
+98
+00:04:29,000 --> 00:04:30,000
+Here's the reassuring part.
+
+99
+00:04:30,000 --> 00:04:34,000
+The default query options enable both of those sources,
+
+100
+00:04:34,000 --> 00:04:38,000
+so out of the box, your Clod.md does load automatically.
+
+101
+00:04:38,000 --> 00:04:42,000
+But the moment you pass an explicit sources list, you own it.
+
+102
+00:04:42,000 --> 00:04:48,000
+Pass an empty list and no Clod.md loads at all, preset or not.
+
+103
+00:04:48,000 --> 00:04:51,000
+Setting sources decide every time.
+
+104
+00:04:52,000 --> 00:04:54,000
+Let's cover the hosted chat surfaces,
+
+105
+00:04:54,000 --> 00:04:56,000
+the ones you open in a browser or an app
+
+106
+00:04:56,000 --> 00:04:58,000
+rather than call from code.
+
+107
+00:04:58,000 --> 00:05:02,000
+On Clod.ai, you can set profile custom instructions
+
+108
+00:05:02,000 --> 00:05:04,000
+and project instructions,
+
+109
+00:05:04,000 --> 00:05:08,000
+and every conversation in that project inherits them.
+
+110
+00:05:08,000 --> 00:05:11,000
+Clod Desktop is a comparable consumer chat app
+
+111
+00:05:11,000 --> 00:05:15,000
+with its own custom instructions and connectors.
+
+112
+00:05:15,000 --> 00:05:17,000
+The exact precedence mechanics there are lighter,
+
+113
+00:05:17,000 --> 00:05:19,000
+so we'll keep it high level.
+
+114
+00:05:19,000 --> 00:05:22,000
+Here's the point that matters for a builder.
+
+115
+00:05:22,000 --> 00:05:25,000
+Everything you set in these chat apps is surface scoped.
+
+116
+00:05:25,000 --> 00:05:29,000
+Those instructions never reach your Clod code sessions
+
+117
+00:05:29,000 --> 00:05:31,000
+or your raw API calls.
+
+118
+00:05:31,000 --> 00:05:33,000
+Each surface keeps its own configuration,
+
+119
+00:05:33,000 --> 00:05:36,000
+so a rule you typed in the web app
+
+120
+00:05:36,000 --> 00:05:38,000
+won't follow the model into your code.
+
+121
+00:05:39,000 --> 00:05:41,000
+Let's turn this into a debugging habit
+
+122
+00:05:41,000 --> 00:05:43,000
+because you will hit a behavior difference
+
+123
+00:05:43,000 --> 00:05:46,000
+between surfaces sooner or later.
+
+124
+00:05:46,000 --> 00:05:50,000
+The instinct is to blame the model or the prompt. Resist that.
+
+125
+00:05:50,000 --> 00:05:54,000
+First, separate the interface layer from the model output.
+
+126
+00:05:54,000 --> 00:05:57,000
+Reproduce the exact same prompt on a second surface,
+
+127
+00:05:57,000 --> 00:06:00,000
+say the raw API, where you control everything.
+
+128
+00:06:00,000 --> 00:06:03,000
+Then check what each surface actually loaded,
+
+129
+00:06:03,000 --> 00:06:07,000
+its config, its system prompt, and its tools,
+
+130
+00:06:07,000 --> 00:06:10,000
+because that's usually where the difference lives.
+
+131
+00:06:10,000 --> 00:06:12,000
+Only after you've ruled out the scaffolding
+
+132
+00:06:12,000 --> 00:06:15,000
+should you look at the model output itself.
+
+133
+00:06:15,000 --> 00:06:18,000
+Nine times out of 10, the surprise traces back
+
+134
+00:06:18,000 --> 00:06:22,000
+to a loaded config or a missing tool,
+
+135
+00:06:22,000 --> 00:06:26,000
+not to the model reasoning differently. Let's recap.
+
+136
+00:06:26,000 --> 00:06:29,000
+One Clod model reaches you through several surfaces
+
+137
+00:06:29,000 --> 00:06:32,000
+and each wraps it with different scaffolding.
+
+138
+00:06:32,000 --> 00:06:35,000
+The raw API gives you only the system parameter,
+
+139
+00:06:35,000 --> 00:06:39,000
+the agent SDK defaults to a minimal prompt.
+
+140
+00:06:39,000 --> 00:06:43,000
+Clod code loads the full prompt and hierarchy.
+
+141
+00:06:43,000 --> 00:06:46,000
+Keep in mind, setting sources, not the preset,
+
+142
+00:06:46,000 --> 00:06:48,000
+are what load clod.md.
+
+143
+00:06:48,000 --> 00:06:50,000
+That covers how one model behaves
+
+144
+00:06:50,000 --> 00:06:52,000
+across many surfaces and SDKs.
+
+145
+00:06:52,000 --> 00:06:54,000
+I'll see you in the next one.
+

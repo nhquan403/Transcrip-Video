@@ -1,0 +1,632 @@
+1
+00:00:00,000 --> 00:00:01,000
+Welcome back.
+
+2
+00:00:01,000 --> 00:00:03,000
+Running one Claude call without blocking
+
+3
+00:00:03,000 --> 00:00:05,000
+is only half the story.
+
+4
+00:00:05,000 --> 00:00:07,000
+The moment you need 50 results,
+
+5
+00:00:07,000 --> 00:00:09,000
+you're managing concurrency, streams,
+
+6
+00:00:09,000 --> 00:00:12,000
+and the limits that push back when you go too fast.
+
+7
+00:00:12,000 --> 00:00:14,000
+This lesson walks through fanning out requests,
+
+8
+00:00:14,000 --> 00:00:18,000
+consuming a stream, and staying under your rate limit.
+
+9
+00:00:19,000 --> 00:00:20,000
+Let's start with the payoff,
+
+10
+00:00:20,000 --> 00:00:23,000
+because it's the whole reason we bother with concurrency.
+
+11
+00:00:23,000 --> 00:00:27,000
+Say you have 50 independent Claude calls to make,
+
+12
+00:00:27,000 --> 00:00:29,000
+none of them depending on another.
+
+13
+00:00:29,000 --> 00:00:30,000
+Run them one by one,
+
+14
+00:00:30,000 --> 00:00:34,000
+and your total time is the sum of all 50.
+
+15
+00:00:34,000 --> 00:00:37,000
+Run them concurrently, and something better happens.
+
+16
+00:00:37,000 --> 00:00:38,000
+You start every request,
+
+17
+00:00:38,000 --> 00:00:41,000
+so they're all in flight at the same time.
+
+18
+00:00:41,000 --> 00:00:43,000
+Then you await them as a group,
+
+19
+00:00:43,000 --> 00:00:45,000
+and gather the results together.
+
+20
+00:00:45,000 --> 00:00:49,000
+Now your total time trends toward your single slowest call,
+
+21
+00:00:49,000 --> 00:00:51,000
+not the sum of all of them.
+
+22
+00:00:51,000 --> 00:00:53,000
+That overlap, all that waiting happening at once,
+
+23
+00:00:53,000 --> 00:00:57,000
+instead of back to back, is exactly what you're buying.
+
+24
+00:00:57,000 --> 00:01:00,000
+The catch is doing it without overwhelming the API,
+
+25
+00:01:00,000 --> 00:01:01,000
+which is the rest of this lesson.
+
+26
+00:01:02,000 --> 00:01:05,000
+Three tools do most of the work when you fan out,
+
+27
+00:01:05,000 --> 00:01:08,000
+so let's define them. First, gather.
+
+28
+00:01:08,000 --> 00:01:11,000
+That's a call that takes many core routines,
+
+29
+00:01:11,000 --> 00:01:12,000
+starts them all together,
+
+30
+00:01:12,000 --> 00:01:14,000
+and waits until everyone has finished,
+
+31
+00:01:14,000 --> 00:01:17,000
+handing you back the whole set of results.
+
+32
+00:01:17,000 --> 00:01:19,000
+Second, the semaphore.
+
+33
+00:01:19,000 --> 00:01:21,000
+It's just a counter with a cap.
+
+34
+00:01:21,000 --> 00:01:24,000
+It limits how many requests are allowed to run at once,
+
+35
+00:01:24,000 --> 00:01:26,000
+and any request beyond the cap
+
+36
+00:01:26,000 --> 00:01:29,000
+waits its turn until a slot opens.
+
+37
+00:01:29,000 --> 00:01:31,000
+Third, bounded parallelism,
+
+38
+00:01:31,000 --> 00:01:35,000
+which is really the goal the first two serve.
+
+39
+00:01:35,000 --> 00:01:38,000
+You run concurrently, but only so many at a time,
+
+40
+00:01:38,000 --> 00:01:41,000
+say five or 10, instead of launching everything at once.
+
+41
+00:01:41,000 --> 00:01:44,000
+Gather, semaphore, bounded parallelism.
+
+42
+00:01:44,000 --> 00:01:48,000
+Together they let you go fast without flooding the API.
+
+43
+00:01:49,000 --> 00:01:51,000
+Here's the mistake almost everyone makes first,
+
+44
+00:01:51,000 --> 00:01:53,000
+and how to fix it.
+
+45
+00:01:53,000 --> 00:01:55,000
+The naive approach is unbounded fan out.
+
+46
+00:01:55,000 --> 00:02:00,000
+You just launch all 50 or all 5,000 requests at once.
+
+47
+00:02:00,000 --> 00:02:02,000
+It's the simplest code you could write,
+
+48
+00:02:02,000 --> 00:02:05,000
+and for a handful of calls it's totally fine,
+
+49
+00:02:05,000 --> 00:02:08,000
+but push it, and you instantly blow past your rate limit.
+
+50
+00:02:08,000 --> 00:02:13,000
+The API starts rejecting requests with 429 errors,
+
+51
+00:02:13,000 --> 00:02:15,000
+and now you're handling a wave of failures
+
+52
+00:02:15,000 --> 00:02:17,000
+you created yourself.
+
+53
+00:02:17,000 --> 00:02:19,000
+The fix is bounded fan out.
+
+54
+00:02:19,000 --> 00:02:21,000
+You wrap your calls in a semaphore
+
+55
+00:02:21,000 --> 00:02:24,000
+that keeps only, say, 10 in flight at any moment.
+
+56
+00:02:24,000 --> 00:02:26,000
+It's a little more code,
+
+57
+00:02:26,000 --> 00:02:29,000
+but it's dramatically more reliable under real load.
+
+58
+00:02:29,000 --> 00:02:31,000
+The rule of thumb is simple.
+
+59
+00:02:31,000 --> 00:02:35,000
+Never fan out unbounded against a rate-limited API.
+
+60
+00:02:36,000 --> 00:02:40,000
+Streaming is the other async pattern you'll use constantly,
+
+61
+00:02:40,000 --> 00:02:42,000
+and it works a little differently.
+
+62
+00:02:42,000 --> 00:02:43,000
+When you set streaming on,
+
+63
+00:02:43,000 --> 00:02:45,000
+you don't wait for the whole response.
+
+64
+00:02:45,000 --> 00:02:48,000
+Instead, the call gives you an async iterator,
+
+65
+00:02:48,000 --> 00:02:51,000
+and you loop over it with async four.
+
+66
+00:02:52,000 --> 00:02:53,000
+Each time through, you get a small event.
+
+67
+00:02:53,000 --> 00:02:57,000
+The text of the answer arrives as deltas, tiny fragments,
+
+68
+00:02:57,000 --> 00:03:01,000
+and your job is to append them in order as they come.
+
+69
+00:03:01,000 --> 00:03:03,000
+You keep accumulating those pieces
+
+70
+00:03:03,000 --> 00:03:06,000
+until the content block signals that it's complete.
+
+71
+00:03:06,000 --> 00:03:09,000
+The reason this matters is user experience.
+
+72
+00:03:09,000 --> 00:03:12,000
+Instead of staring at a spinner for several seconds,
+
+73
+00:03:12,000 --> 00:03:14,000
+the person sees words appear almost immediately
+
+74
+00:03:14,000 --> 00:03:17,000
+and keep flowing while the rest of the answer
+
+75
+00:03:17,000 --> 00:03:19,000
+is still being generated.
+
+76
+00:03:19,000 --> 00:03:22,000
+Same total time, but it feels far faster.
+
+77
+00:03:23,000 --> 00:03:25,000
+Now, let's talk about what pushes back
+
+78
+00:03:25,000 --> 00:03:27,000
+when you go too fast.
+
+79
+00:03:27,000 --> 00:03:29,000
+The API enforces rate limits,
+
+80
+00:03:29,000 --> 00:03:32,000
+caps on requests, and tokens per minute.
+
+81
+00:03:32,000 --> 00:03:36,000
+Cross one and you get a 429, too many requests.
+
+82
+00:03:36,000 --> 00:03:39,000
+Back pressure is the principle for respecting that.
+
+83
+00:03:39,000 --> 00:03:42,000
+You let the slowest stage in your pipeline set the pace,
+
+84
+00:03:42,000 --> 00:03:44,000
+so you're never submitting new work
+
+85
+00:03:44,000 --> 00:03:46,000
+faster than results are draining out.
+
+86
+00:03:46,000 --> 00:03:49,000
+The practical tool is the semaphore we mentioned.
+
+87
+00:03:49,000 --> 00:03:51,000
+Capping in-flight requests to a fixed number
+
+88
+00:03:51,000 --> 00:03:54,000
+and holding new work until a slot frees up.
+
+89
+00:03:54,000 --> 00:03:57,000
+And when a 429 does slip through,
+
+90
+00:03:57,000 --> 00:04:00,000
+you don't just retry instantly and make it worse.
+
+91
+00:04:00,000 --> 00:04:03,000
+You wait and you back off exponentially
+
+92
+00:04:03,000 --> 00:04:04,000
+before trying again.
+
+93
+00:04:04,000 --> 00:04:08,000
+Rate limits, back pressure, a semaphore, and back off.
+
+94
+00:04:08,000 --> 00:04:10,000
+That's the toolkit for staying inside the lines.
+
+95
+00:04:11,000 --> 00:04:13,000
+Let's go deeper on retries,
+
+96
+00:04:13,000 --> 00:04:17,000
+because getting this wrong wastes real money and time.
+
+97
+00:04:17,000 --> 00:04:20,000
+At scale, transient failures are normal,
+
+98
+00:04:20,000 --> 00:04:23,000
+and you already know the transient versus permanent rule
+
+99
+00:04:23,000 --> 00:04:25,000
+from the architecture lessons.
+
+100
+00:04:25,000 --> 00:04:27,000
+What's new here is how you schedule
+
+101
+00:04:27,000 --> 00:04:29,000
+the retries under concurrency.
+
+102
+00:04:29,000 --> 00:04:31,000
+You use exponential back off,
+
+103
+00:04:31,000 --> 00:04:33,000
+waiting a little after the first failure,
+
+104
+00:04:33,000 --> 00:04:37,000
+longer after the second, longer still after the third.
+
+105
+00:04:37,000 --> 00:04:40,000
+On top of that, you add random jitter to each wait,
+
+106
+00:04:40,000 --> 00:04:43,000
+so that a whole batch of failed requests
+
+107
+00:04:43,000 --> 00:04:45,000
+doesn't retry in perfect lockstep
+
+108
+00:04:45,000 --> 00:04:48,000
+and stampede the API again.
+
+109
+00:04:48,000 --> 00:04:50,000
+And the old rule bites harder here.
+
+110
+00:04:50,000 --> 00:04:52,000
+Only retry the errors that can clear,
+
+111
+00:04:52,000 --> 00:04:54,000
+because a permanent failure retried
+
+112
+00:04:54,000 --> 00:04:59,000
+across 50 parallel branches burns budget 50 times faster.
+
+113
+00:05:00,000 --> 00:05:01,000
+It's worth drawing a hard line here,
+
+114
+00:05:01,000 --> 00:05:04,000
+because this is the most common mix-up.
+
+115
+00:05:04,000 --> 00:05:08,000
+Async concurrency and the batch's API aren't the same tool.
+
+116
+00:05:08,000 --> 00:05:10,000
+Async concurrency means firing off
+
+117
+00:05:10,000 --> 00:05:12,000
+many real-time calls at once.
+
+118
+00:05:12,000 --> 00:05:14,000
+Everyone runs at full price,
+
+119
+00:05:14,000 --> 00:05:16,000
+and they all count against your rate limit,
+
+120
+00:05:16,000 --> 00:05:19,000
+but you get every answer back within seconds.
+
+121
+00:05:19,000 --> 00:05:20,000
+That's what you reach for
+
+122
+00:05:20,000 --> 00:05:23,000
+when a user or a downstream system is waiting.
+
+123
+00:05:23,000 --> 00:05:26,000
+The batch's API is the opposite trade.
+
+124
+00:05:26,000 --> 00:05:30,000
+You submit one asynchronous job, it runs at half price,
+
+125
+00:05:30,000 --> 00:05:33,000
+and most batches finish within the hour,
+
+126
+00:05:33,000 --> 00:05:35,000
+with 24 hours as the ceiling.
+
+127
+00:05:35,000 --> 00:05:39,000
+That's for bulk work, when nobody is waiting on any result.
+
+128
+00:05:39,000 --> 00:05:42,000
+So the real question is simply whether someone is waiting.
+
+129
+00:05:42,000 --> 00:05:45,000
+Answer that, and the choice makes itself.
+
+130
+00:05:46,000 --> 00:05:48,000
+One last piece makes concurrent code,
+
+131
+00:05:48,000 --> 00:05:51,000
+production grade, and it's error isolation.
+
+132
+00:05:51,000 --> 00:05:53,000
+When you fan out 50 calls,
+
+133
+00:05:53,000 --> 00:05:56,000
+you have to decide what happens if one of them fails.
+
+134
+00:05:56,000 --> 00:05:59,000
+The wrong answer is letting a single exception
+
+135
+00:05:59,000 --> 00:06:01,000
+tear down the whole group,
+
+136
+00:06:01,000 --> 00:06:05,000
+throwing away 49 good results because one went bad.
+
+137
+00:06:05,000 --> 00:06:08,000
+The better pattern is to gather results
+
+138
+00:06:08,000 --> 00:06:11,000
+in a way that captures each branch's outcome independently,
+
+139
+00:06:11,000 --> 00:06:15,000
+whether it returned a result or raised an exception.
+
+140
+00:06:15,000 --> 00:06:17,000
+Then, after the whole group comes back,
+
+141
+00:06:17,000 --> 00:06:19,000
+you walk through the outcomes,
+
+142
+00:06:19,000 --> 00:06:24,000
+keep the successes, and handle or retry just the failures.
+
+143
+00:06:24,000 --> 00:06:29,000
+That way, one flaky call, one timeout, one content filter
+
+144
+00:06:30,000 --> 00:06:33,000
+doesn't sink an otherwise successful batch.
+
+145
+00:06:33,000 --> 00:06:35,000
+Designed for the fact that at scale,
+
+146
+00:06:35,000 --> 00:06:39,000
+some branch always fails, and make sure it fails alone.
+
+147
+00:06:40,000 --> 00:06:42,000
+Let's frame the big picture.
+
+148
+00:06:42,000 --> 00:06:44,000
+Concurrency gives you a handful of tools
+
+149
+00:06:44,000 --> 00:06:46,000
+for running many clogged calls safely.
+
+150
+00:06:46,000 --> 00:06:49,000
+Gather, semaphores, streaming, and backoff,
+
+151
+00:06:49,000 --> 00:06:51,000
+each with its own job.
+
+152
+00:06:51,000 --> 00:06:54,000
+The name matters less than the discipline behind them.
+
+153
+00:06:54,000 --> 00:06:57,000
+Keep concurrency bounded and isolate failures.
+
+154
+00:06:57,000 --> 00:07:00,000
+One thing to watch, many real-time calls
+
+155
+00:07:00,000 --> 00:07:02,000
+is not the same as the batch's API.
+
+156
+00:07:02,000 --> 00:07:04,000
+Just keep that in mind.
+
+157
+00:07:04,000 --> 00:07:07,000
+That wraps up concurrency, streaming, and backpressure.
+
+158
+00:07:07,000 --> 00:07:08,000
+I'll see you in the next one.
+

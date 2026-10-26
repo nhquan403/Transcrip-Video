@@ -1,0 +1,652 @@
+1
+00:00:00,000 --> 00:00:02,000
+Two very different features share this lesson,
+
+2
+00:00:02,000 --> 00:00:05,000
+but both change how you work with Cloud day to day.
+
+3
+00:00:05,000 --> 00:00:08,000
+Streaming changes how a response reaches you,
+
+4
+00:00:08,000 --> 00:00:11,000
+arriving live instead of all at once.
+
+5
+00:00:11,000 --> 00:00:13,000
+Vision changes what Cloud can take in,
+
+6
+00:00:13,000 --> 00:00:17,000
+letting you send images right alongside your text.
+
+7
+00:00:17,000 --> 00:00:19,000
+We'll cover the mechanics of each in this lesson.
+
+8
+00:00:20,000 --> 00:00:24,000
+Let's start with what streaming actually looks like on the wire.
+
+9
+00:00:24,000 --> 00:00:26,000
+You turn it on by setting stream to true,
+
+10
+00:00:26,000 --> 00:00:29,000
+and instead of one final response,
+
+11
+00:00:29,000 --> 00:00:32,000
+you get a series of events in a fixed, predictable order.
+
+12
+00:00:32,000 --> 00:00:34,000
+It opens with message start,
+
+13
+00:00:34,000 --> 00:00:39,000
+which hands you a message shell with empty content, no text yet.
+
+14
+00:00:39,000 --> 00:00:42,000
+Then, for each block of the response,
+
+15
+00:00:42,000 --> 00:00:44,000
+you get a content block start,
+
+16
+00:00:44,000 --> 00:00:47,000
+followed by a run of content block delta events,
+
+17
+00:00:47,000 --> 00:00:48,000
+carrying the actual pieces,
+
+18
+00:00:48,000 --> 00:00:51,000
+and finally, a content block stop.
+
+19
+00:00:51,000 --> 00:00:54,000
+After the blocks, a message delta arrives
+
+20
+00:00:54,000 --> 00:00:57,000
+with the stop reason and the usage totals,
+
+21
+00:00:57,000 --> 00:01:00,000
+and then message stop closes everything out.
+
+22
+00:01:00,000 --> 00:01:03,000
+Two housekeeping events, ping and error,
+
+23
+00:01:03,000 --> 00:01:06,000
+can show up anywhere in between,
+
+24
+00:01:06,000 --> 00:01:08,000
+knowing that order is what lets you consume a stream
+
+25
+00:01:08,000 --> 00:01:09,000
+without guessing.
+
+26
+00:01:10,000 --> 00:01:12,000
+A couple of details in that sequence
+
+27
+00:01:12,000 --> 00:01:14,000
+save you from real bugs.
+
+28
+00:01:14,000 --> 00:01:16,000
+The first is that opening event.
+
+29
+00:01:16,000 --> 00:01:19,000
+Message start gives you a message object,
+
+30
+00:01:19,000 --> 00:01:21,000
+but its content is empty.
+
+31
+00:01:21,000 --> 00:01:24,000
+If you try to read text out of it, you'll get nothing,
+
+32
+00:01:24,000 --> 00:01:28,000
+so treat it as a signal that the response is starting, not as data.
+
+33
+00:01:28,000 --> 00:01:30,000
+The second is how the pieces work.
+
+34
+00:01:30,000 --> 00:01:34,000
+Each content block delta is only a fragment of the block,
+
+35
+00:01:34,000 --> 00:01:36,000
+so your job is to accumulate them,
+
+36
+00:01:36,000 --> 00:01:39,000
+appending each delta until the block finishes,
+
+37
+00:01:39,000 --> 00:01:42,000
+and don't go looking for the stop reason
+
+38
+00:01:42,000 --> 00:01:44,000
+or the token usage early.
+
+39
+00:01:44,000 --> 00:01:47,000
+Those show up in the message delta near the very end,
+
+40
+00:01:47,000 --> 00:01:49,000
+not at the start.
+
+41
+00:01:49,000 --> 00:01:50,000
+Handle those three things,
+
+42
+00:01:50,000 --> 00:01:53,000
+and streaming becomes straightforward to work with.
+
+43
+00:01:54,000 --> 00:01:57,000
+Tool calls behave in a special way when you stream them,
+
+44
+00:01:57,000 --> 00:01:59,000
+and it trips people up.
+
+45
+00:01:59,000 --> 00:02:00,000
+When a tool use block streams,
+
+46
+00:02:00,000 --> 00:02:04,000
+its arguments don't arrive as finished JSON.
+
+47
+00:02:04,000 --> 00:02:06,000
+Instead, they come in as partial JSON.
+
+48
+00:02:06,000 --> 00:02:09,000
+The delta type is input JSON delta,
+
+49
+00:02:09,000 --> 00:02:12,000
+and each one carries a partial JSON field,
+
+50
+00:02:12,000 --> 00:02:14,000
+holding a small chunk of the argument text.
+
+51
+00:02:14,000 --> 00:02:19,000
+Your client's job is to concatenate those chunks as they arrive,
+
+52
+00:02:19,000 --> 00:02:21,000
+building up the JSON string piece by piece.
+
+53
+00:02:21,000 --> 00:02:24,000
+You only parse it at content block stop
+
+54
+00:02:24,000 --> 00:02:25,000
+when the block is complete,
+
+55
+00:02:25,000 --> 00:02:28,000
+and here's the key point to hold on to.
+
+56
+00:02:28,000 --> 00:02:32,000
+The final tool input is always a complete JSON object,
+
+57
+00:02:32,000 --> 00:02:33,000
+never a partial string,
+
+58
+00:02:33,000 --> 00:02:35,000
+so don't try to parse midstream.
+
+59
+00:02:35,000 --> 00:02:38,000
+Wait for the stop event, then parse once,
+
+60
+00:02:38,000 --> 00:02:40,000
+and you'll always get a well-formed object.
+
+61
+00:02:41,000 --> 00:02:43,000
+Let's step back and think about
+
+62
+00:02:43,000 --> 00:02:45,000
+when streaming is the right call,
+
+63
+00:02:45,000 --> 00:02:49,000
+because it changes the experience, not the answer itself.
+
+64
+00:02:49,000 --> 00:02:51,000
+The classic case is long outputs.
+
+65
+00:02:51,000 --> 00:02:54,000
+If Claude is generating a lengthy response,
+
+66
+00:02:54,000 --> 00:02:57,000
+streaming lets your users watch it appear
+
+67
+00:02:57,000 --> 00:02:58,000
+instead of staring at a spinner.
+
+68
+00:02:58,000 --> 00:03:01,000
+It's also what powers those live
+
+69
+00:03:01,000 --> 00:03:04,000
+token-by-token interfaces you see in chat apps.
+
+70
+00:03:04,000 --> 00:03:06,000
+There's one important limit, though.
+
+71
+00:03:06,000 --> 00:03:09,000
+Streaming isn't supported inside the Batches API.
+
+72
+00:03:09,000 --> 00:03:12,000
+Batches are built for large, asynchronous jobs
+
+73
+00:03:12,000 --> 00:03:14,000
+that run in the background,
+
+74
+00:03:14,000 --> 00:03:16,000
+so there's no live connection to stream over.
+
+75
+00:03:16,000 --> 00:03:20,000
+If your design leans on batch processing for bulk work,
+
+76
+00:03:20,000 --> 00:03:22,000
+you're accepting that you give up streaming
+
+77
+00:03:22,000 --> 00:03:23,000
+for those requests.
+
+78
+00:03:23,000 --> 00:03:26,000
+For everything interactive in real time,
+
+79
+00:03:26,000 --> 00:03:28,000
+streaming is usually the better default.
+
+80
+00:03:29,000 --> 00:03:30,000
+Now let's switch to Vision.
+
+81
+00:03:30,000 --> 00:03:32,000
+The idea is simple.
+
+82
+00:03:32,000 --> 00:03:35,000
+You can send images to Claude as content blocks,
+
+83
+00:03:35,000 --> 00:03:39,000
+right alongside your text, in the same messages array.
+
+84
+00:03:39,000 --> 00:03:41,000
+There are three ways to supply an image.
+
+85
+00:03:41,000 --> 00:03:43,000
+The first is Base64,
+
+86
+00:03:44,000 --> 00:03:47,000
+where you inline the raw image data encoded as Base64
+
+87
+00:03:47,000 --> 00:03:49,000
+and tell Claude the media type,
+
+88
+00:03:49,000 --> 00:03:52,000
+something like image slash png.
+
+89
+00:03:52,000 --> 00:03:54,000
+That method works everywhere.
+
+90
+00:03:54,000 --> 00:03:56,000
+The second is a URL,
+
+91
+00:03:56,000 --> 00:03:58,000
+just a link that the system fetches for you,
+
+92
+00:03:58,000 --> 00:04:01,000
+which keeps your own request small.
+
+93
+00:04:01,000 --> 00:04:02,000
+The third is a file ID,
+
+94
+00:04:02,000 --> 00:04:05,000
+a reference to an image you uploaded ahead of time
+
+95
+00:04:05,000 --> 00:04:07,000
+through the Files API,
+
+96
+00:04:07,000 --> 00:04:09,000
+which you can reuse across turns
+
+97
+00:04:09,000 --> 00:04:11,000
+without sending the bytes again.
+
+98
+00:04:11,000 --> 00:04:15,000
+Base64, URL, or file ID.
+
+99
+00:04:15,000 --> 00:04:18,000
+Pick whichever fits how your images are stored.
+
+100
+00:04:19,000 --> 00:04:22,000
+A few practical rules make Vision work smoothly.
+
+101
+00:04:22,000 --> 00:04:25,000
+On formats, Claude reads the common web image types,
+
+102
+00:04:25,000 --> 00:04:28,000
+JPEG, PNG, GIF, and WebP.
+
+103
+00:04:28,000 --> 00:04:30,000
+If you hand it an animated image,
+
+104
+00:04:30,000 --> 00:04:33,000
+know that only the first frame is actually read,
+
+105
+00:04:33,000 --> 00:04:35,000
+so don't rely on animation.
+
+106
+00:04:35,000 --> 00:04:37,000
+Placement matters too.
+
+107
+00:04:37,000 --> 00:04:39,000
+As a rule, put the image before the text
+
+108
+00:04:39,000 --> 00:04:41,000
+that talks about it.
+
+109
+00:04:42,000 --> 00:04:43,000
+Leading with the image and then asking your question
+
+110
+00:04:43,000 --> 00:04:45,000
+gives the best results.
+
+111
+00:04:45,000 --> 00:04:48,000
+And when you're sending more than one image
+
+112
+00:04:48,000 --> 00:04:49,000
+in a single prompt,
+
+113
+00:04:49,000 --> 00:04:52,000
+label them something as simple as image one,
+
+114
+00:04:52,000 --> 00:04:56,000
+image two, so you can refer to a specific one later.
+
+115
+00:04:56,000 --> 00:04:58,000
+None of these are heavy lifts,
+
+116
+00:04:58,000 --> 00:05:00,000
+but following them keeps Claude focused
+
+117
+00:05:00,000 --> 00:05:02,000
+on the right picture at the right moment.
+
+118
+00:05:03,000 --> 00:05:06,000
+Vision comes with concrete limits worth knowing.
+
+119
+00:05:06,000 --> 00:05:11,000
+On size, a single image can be up to 8,000 by 8,000 pixels,
+
+120
+00:05:11,000 --> 00:05:16,000
+and up to 10 megabytes when it's Base64 on the Claude API.
+
+121
+00:05:16,000 --> 00:05:19,000
+Go past those hard caps and the image is rejected.
+
+122
+00:05:19,000 --> 00:05:22,000
+The model's resolution tier is a different limit.
+
+123
+00:05:22,000 --> 00:05:24,000
+An image over the long edge tier
+
+124
+00:05:24,000 --> 00:05:27,000
+just gets downscaled, not rejected.
+
+125
+00:05:27,000 --> 00:05:30,000
+On cost, Claude doesn't see an image as one unit.
+
+126
+00:05:30,000 --> 00:05:34,000
+It breaks it into patches, each one 28 by 28 pixels,
+
+127
+00:05:35,000 --> 00:05:38,000
+and every patch counts as a single visual token.
+
+128
+00:05:38,000 --> 00:05:41,000
+So bigger images cost more tokens.
+
+129
+00:05:41,000 --> 00:05:44,000
+There's also a resolution split by model.
+
+130
+00:05:44,000 --> 00:05:49,000
+The newer models, like Opus 4.8, handle a longer edge,
+
+131
+00:05:49,000 --> 00:05:52,000
+up to 2,576 pixels,
+
+132
+00:05:52,000 --> 00:05:55,000
+so they take in more detail before downscaling.
+
+133
+00:05:55,000 --> 00:05:56,000
+When resolution really matters,
+
+134
+00:05:56,000 --> 00:05:59,000
+the model you choose is part of the decision.
+
+135
+00:06:00,000 --> 00:06:03,000
+Just as important is knowing what vision won't do
+
+136
+00:06:03,000 --> 00:06:05,000
+so you set expectations correctly.
+
+137
+00:06:05,000 --> 00:06:09,000
+Vision means understanding images, not creating them.
+
+138
+00:06:09,000 --> 00:06:11,000
+Claude can read and interpret a picture,
+
+139
+00:06:11,000 --> 00:06:13,000
+but it can't generate a new image
+
+140
+00:06:13,000 --> 00:06:15,000
+or edit the one you sent.
+
+141
+00:06:15,000 --> 00:06:19,000
+It also won't pull hidden metadata out of a file,
+
+142
+00:06:19,000 --> 00:06:20,000
+and as a matter of policy,
+
+143
+00:06:20,000 --> 00:06:23,000
+it won't identify or name real people in a photo.
+
+144
+00:06:23,000 --> 00:06:25,000
+Watch out for precision, too.
+
+145
+00:06:25,000 --> 00:06:27,000
+When you ask Claude to count objects
+
+146
+00:06:27,000 --> 00:06:29,000
+or give exact positions,
+
+147
+00:06:29,000 --> 00:06:33,000
+treat those answers as approximate, not exact measurements.
+
+148
+00:06:33,000 --> 00:06:34,000
+And one privacy point,
+
+149
+00:06:34,000 --> 00:06:38,000
+the image content you send in line in a request is ephemeral.
+
+150
+00:06:38,000 --> 00:06:40,000
+It's used to answer your request
+
+151
+00:06:40,000 --> 00:06:43,000
+and then discarded, not stored.
+
+152
+00:06:43,000 --> 00:06:44,000
+Keep those boundaries in mind
+
+153
+00:06:44,000 --> 00:06:46,000
+and vision will serve you well.
+
+154
+00:06:47,000 --> 00:06:48,000
+Here's the bottom line.
+
+155
+00:06:48,000 --> 00:06:51,000
+Streaming delivers a response as ordered events,
+
+156
+00:06:51,000 --> 00:06:54,000
+from message start to message stop.
+
+157
+00:06:54,000 --> 00:06:58,000
+A streamed tool call arrives as partial JSON
+
+158
+00:06:58,000 --> 00:07:01,000
+and assembles into one complete object.
+
+159
+00:07:01,000 --> 00:07:04,000
+And streaming isn't available in the batch's API.
+
+160
+00:07:04,000 --> 00:07:08,000
+Vision lets you pass images as content blocks.
+
+161
+00:07:08,000 --> 00:07:11,000
+Understanding only, never generation.
+
+162
+00:07:11,000 --> 00:07:14,000
+That wraps up streaming SSE and vision input.
+
+163
+00:07:14,000 --> 00:07:15,000
+I'll catch you in the next one.
+

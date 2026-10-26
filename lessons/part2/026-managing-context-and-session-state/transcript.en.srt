@@ -1,0 +1,632 @@
+1
+00:00:00,000 --> 00:00:03,000
+And here's a problem that creeps up on every long session.
+
+2
+00:00:03,000 --> 00:00:07,000
+Your context window fills and nothing empties on its own.
+
+3
+00:00:07,000 --> 00:00:10,000
+Every turn piles on more history and more tool output
+
+4
+00:00:10,000 --> 00:00:12,000
+until the model starts to drift.
+
+5
+00:00:12,000 --> 00:00:14,000
+This lesson covers what accumulates,
+
+6
+00:00:14,000 --> 00:00:18,000
+why it costs you, and how state survives a session.
+
+7
+00:00:18,000 --> 00:00:19,000
+Let's break it down.
+
+8
+00:00:20,000 --> 00:00:22,000
+Three terms anchor this whole lesson.
+
+9
+00:00:22,000 --> 00:00:24,000
+So let's pin them down.
+
+10
+00:00:24,000 --> 00:00:26,000
+First, the context window.
+
+11
+00:00:26,000 --> 00:00:28,000
+That's the token budget the model can read
+
+12
+00:00:28,000 --> 00:00:32,000
+in a single request, and it holds the system prompt,
+
+13
+00:00:32,000 --> 00:00:34,000
+the running history, your tool definitions,
+
+14
+00:00:34,000 --> 00:00:39,000
+and every tool result, all competing for the same space.
+
+15
+00:00:39,000 --> 00:00:41,000
+Second, durable state.
+
+16
+00:00:41,000 --> 00:00:44,000
+That's knowledge you keep outside the live window,
+
+17
+00:00:44,000 --> 00:00:47,000
+in a file or in config, so it survives a truncation
+
+18
+00:00:47,000 --> 00:00:49,000
+or the end of a session.
+
+19
+00:00:49,000 --> 00:00:52,000
+Third, the session boundary.
+
+20
+00:00:52,000 --> 00:00:55,000
+That's the line where one working session ends
+
+21
+00:00:55,000 --> 00:00:58,000
+and a fresh window begins, carrying nothing forward
+
+22
+00:00:59,000 --> 00:01:00,000
+unless you deliberately saved it.
+
+23
+00:01:00,000 --> 00:01:04,000
+Window, durable state, boundary, hold onto those three.
+
+24
+00:01:05,000 --> 00:01:08,000
+Let's look at what actually piles up while you work,
+
+25
+00:01:08,000 --> 00:01:11,000
+because it's more than you'd think.
+
+26
+00:01:11,000 --> 00:01:13,000
+Within a single session, everything accumulates.
+
+27
+00:01:13,000 --> 00:01:16,000
+The system prompt is present on every turn.
+
+28
+00:01:16,000 --> 00:01:20,000
+Your tool definitions are present on every turn.
+
+29
+00:01:20,000 --> 00:01:22,000
+The full back and forth of the conversation
+
+30
+00:01:22,000 --> 00:01:24,000
+keeps growing as you go.
+
+31
+00:01:24,000 --> 00:01:27,000
+And the real budget killer is large tool output,
+
+32
+00:01:27,000 --> 00:01:30,000
+a giant file you read, a huge search result.
+
+33
+00:01:30,000 --> 00:01:33,000
+They sit in the window, taking up space
+
+34
+00:01:33,000 --> 00:01:35,000
+long after they stop being useful.
+
+35
+00:01:35,000 --> 00:01:37,000
+Here's the part people miss.
+
+36
+00:01:37,000 --> 00:01:39,000
+Nothing gets removed automatically.
+
+37
+00:01:39,000 --> 00:01:41,000
+The model doesn't quietly forget
+
+38
+00:01:41,000 --> 00:01:43,000
+the boring stuff to make room.
+
+39
+00:01:43,000 --> 00:01:45,000
+If you want something out of that window,
+
+40
+00:01:45,000 --> 00:01:47,000
+your code has to take it out.
+
+41
+00:01:48,000 --> 00:01:51,000
+Now let's separate two kinds of state,
+
+42
+00:01:51,000 --> 00:01:54,000
+because mixing them up causes real bugs.
+
+43
+00:01:54,000 --> 00:01:56,000
+Ephemeral context is whatever sits
+
+44
+00:01:56,000 --> 00:01:58,000
+in the live window right now.
+
+45
+00:01:58,000 --> 00:02:00,000
+It's wonderfully fast.
+
+46
+00:02:00,000 --> 00:02:03,000
+The model sees it instantly, but it's fragile.
+
+47
+00:02:03,000 --> 00:02:07,000
+The moment the window truncates or the session ends, it's gone.
+
+48
+00:02:07,000 --> 00:02:09,000
+Durable state is the opposite.
+
+49
+00:02:09,000 --> 00:02:14,000
+You write it outside the window to a file or to config,
+
+50
+00:02:14,000 --> 00:02:15,000
+and it survives.
+
+51
+00:02:15,000 --> 00:02:17,000
+It survives compaction.
+
+52
+00:02:17,000 --> 00:02:19,000
+It survives a session boundary.
+
+53
+00:02:19,000 --> 00:02:20,000
+It's still there tomorrow.
+
+54
+00:02:20,000 --> 00:02:22,000
+So the rule writes itself.
+
+55
+00:02:22,000 --> 00:02:25,000
+Anything you need to remember for the long haul,
+
+56
+00:02:25,000 --> 00:02:28,000
+a decision, a fact, a running record,
+
+57
+00:02:28,000 --> 00:02:30,000
+doesn't belong in the live window.
+
+58
+00:02:30,000 --> 00:02:33,000
+It belongs somewhere durable, on disk,
+
+59
+00:02:33,000 --> 00:02:35,000
+where a reset can't erase it.
+
+60
+00:02:36,000 --> 00:02:39,000
+So why care about all this accumulation?
+
+61
+00:02:39,000 --> 00:02:42,000
+A bloated window costs you in three concrete ways.
+
+62
+00:02:42,000 --> 00:02:44,000
+The first is higher cost.
+
+63
+00:02:44,000 --> 00:02:47,000
+Every token in the window gets reprocessed
+
+64
+00:02:47,000 --> 00:02:49,000
+on every single turn.
+
+65
+00:02:49,000 --> 00:02:51,000
+So a huge window means a bigger bill,
+
+66
+00:02:51,000 --> 00:02:54,000
+whether or not the extra content is helping.
+
+67
+00:02:54,000 --> 00:02:57,000
+The second is slower responses.
+
+68
+00:02:57,000 --> 00:03:00,000
+More tokens to read on each call adds latency.
+
+69
+00:03:00,000 --> 00:03:03,000
+So replies take longer as the window grows.
+
+70
+00:03:03,000 --> 00:03:06,000
+The third is drift and errors.
+
+71
+00:03:06,000 --> 00:03:08,000
+As low signal history piles up,
+
+72
+00:03:08,000 --> 00:03:11,000
+the model follows your instructions less reliably.
+
+73
+00:03:11,000 --> 00:03:14,000
+And the context that actually matters
+
+74
+00:03:14,000 --> 00:03:15,000
+gets crowded out by noise.
+
+75
+00:03:15,000 --> 00:03:18,000
+So this isn't housekeeping for its own sake.
+
+76
+00:03:18,000 --> 00:03:21,000
+Three real costs are exactly why session hygiene
+
+77
+00:03:21,000 --> 00:03:22,000
+earns its place.
+
+78
+00:03:23,000 --> 00:03:27,000
+Let's get practical about the single biggest offender,
+
+79
+00:03:27,000 --> 00:03:28,000
+old tool output.
+
+80
+00:03:28,000 --> 00:03:31,000
+When a tool dumps a giant result, a whole file,
+
+81
+00:03:31,000 --> 00:03:33,000
+a long search listing,
+
+82
+00:03:33,000 --> 00:03:36,000
+that result doesn't just cost you once.
+
+83
+00:03:36,000 --> 00:03:38,000
+It sits in the window and gets reprocessed
+
+84
+00:03:38,000 --> 00:03:40,000
+on every later turn,
+
+85
+00:03:40,000 --> 00:03:42,000
+quietly draining your budget the whole time.
+
+86
+00:03:42,000 --> 00:03:44,000
+Pruning is the fix.
+
+87
+00:03:44,000 --> 00:03:46,000
+You drop that one stale result
+
+88
+00:03:46,000 --> 00:03:49,000
+without touching anything else in the conversation.
+
+89
+00:03:49,000 --> 00:03:51,000
+You're not nuking the session.
+
+90
+00:03:51,000 --> 00:03:52,000
+You're just clearing the noise
+
+91
+00:03:52,000 --> 00:03:54,000
+that's already served its purpose.
+
+92
+00:03:54,000 --> 00:03:58,000
+Do this and the high signal content, your actual task,
+
+93
+00:03:58,000 --> 00:04:00,000
+your recent decisions,
+
+94
+00:04:00,000 --> 00:04:02,000
+stays right where the model can see it.
+
+95
+00:04:02,000 --> 00:04:04,000
+Think of it as clearing your desk,
+
+96
+00:04:04,000 --> 00:04:05,000
+not burning the room down.
+
+97
+00:04:06,000 --> 00:04:08,000
+So what actually carries knowledge
+
+98
+00:04:08,000 --> 00:04:10,000
+from one session to the next?
+
+99
+00:04:10,000 --> 00:04:11,000
+Three facts settle it.
+
+100
+00:04:11,000 --> 00:04:14,000
+First, every Claude code session
+
+101
+00:04:14,000 --> 00:04:16,000
+starts with a fresh context window.
+
+102
+00:04:17,000 --> 00:04:19,000
+The model remembers nothing from last time on its own.
+
+103
+00:04:19,000 --> 00:04:24,000
+Second, Claude.md files carry instructions you write.
+
+104
+00:04:24,000 --> 00:04:26,000
+They load at the start of every session
+
+105
+00:04:26,000 --> 00:04:28,000
+and the project root file re-injects
+
+106
+00:04:28,000 --> 00:04:30,000
+even after a compaction.
+
+107
+00:04:30,000 --> 00:04:33,000
+So your durable rules always persist.
+
+108
+00:04:33,000 --> 00:04:38,000
+Third, auto memory carries learnings Claude writes for itself.
+
+109
+00:04:38,000 --> 00:04:41,000
+It lives on disk under a memory.md index
+
+110
+00:04:41,000 --> 00:04:43,000
+and reloads as needed.
+
+111
+00:04:43,000 --> 00:04:44,000
+So the split is simple.
+
+112
+00:04:44,000 --> 00:04:48,000
+You author Claude.md, Claude maintains its own memory
+
+113
+00:04:48,000 --> 00:04:51,000
+and the fresh window gets re-grounded from both.
+
+114
+00:04:52,000 --> 00:04:55,000
+Now, if you're building on the API directly
+
+115
+00:04:55,000 --> 00:04:57,000
+rather than inside Claude code,
+
+116
+00:04:57,000 --> 00:05:00,000
+the session boundary is entirely yours to draw.
+
+117
+00:05:00,000 --> 00:05:02,000
+Remember, the API is stateless.
+
+118
+00:05:02,000 --> 00:05:05,000
+It keeps no memory between calls.
+
+119
+00:05:05,000 --> 00:05:07,000
+So all of your conversation state
+
+120
+00:05:07,000 --> 00:05:09,000
+lives in the request you send.
+
+121
+00:05:09,000 --> 00:05:11,000
+Your code owns the transcript
+
+122
+00:05:11,000 --> 00:05:14,000
+and you resend it on every single request.
+
+123
+00:05:14,000 --> 00:05:16,000
+That has a useful consequence.
+
+124
+00:05:16,000 --> 00:05:17,000
+Starting a new session
+
+125
+00:05:17,000 --> 00:05:19,000
+just means resetting that message history,
+
+126
+00:05:19,000 --> 00:05:23,000
+dropping the old turns and beginning a fresh array.
+
+127
+00:05:23,000 --> 00:05:25,000
+You get to decide exactly what carries over,
+
+128
+00:05:25,000 --> 00:05:28,000
+maybe a short summary, maybe nothing.
+
+129
+00:05:28,000 --> 00:05:30,000
+And then you re-ground the new session
+
+130
+00:05:30,000 --> 00:05:32,000
+from your config and system prompt.
+
+131
+00:05:32,000 --> 00:05:33,000
+The boundary isn't magic.
+
+132
+00:05:33,000 --> 00:05:35,000
+It's a choice you make in code.
+
+133
+00:05:36,000 --> 00:05:38,000
+Let's name what goes wrong when you skip all this
+
+134
+00:05:38,000 --> 00:05:40,000
+because the failure is quiet.
+
+135
+00:05:40,000 --> 00:05:44,000
+Left unmanaged, a long session degrades
+
+136
+00:05:44,000 --> 00:05:46,000
+in ways that sneak up on you.
+
+137
+00:05:46,000 --> 00:05:49,000
+Instruction following weakens first.
+
+138
+00:05:49,000 --> 00:05:51,000
+As low signal tokens crowd the window,
+
+139
+00:05:51,000 --> 00:05:52,000
+the model has a harder time
+
+140
+00:05:52,000 --> 00:05:55,000
+keeping your actual rules in focus.
+
+141
+00:05:55,000 --> 00:05:57,000
+Then early context gets pushed out
+
+142
+00:05:57,000 --> 00:05:59,000
+of the model's effective attention.
+
+143
+00:05:59,000 --> 00:06:02,000
+So things you established up front start slipping
+
+144
+00:06:02,000 --> 00:06:04,000
+and your costs climb the whole time,
+
+145
+00:06:04,000 --> 00:06:07,000
+even when the useful content hasn't grown at all
+
+146
+00:06:07,000 --> 00:06:09,000
+because you're paying to reprocess noise.
+
+147
+00:06:09,000 --> 00:06:12,000
+Good hygiene is what keeps a long run
+
+148
+00:06:12,000 --> 00:06:15,000
+as sharp at the end as it was at the very start.
+
+149
+00:06:15,000 --> 00:06:17,000
+You stay deliberate about what's in the window.
+
+150
+00:06:18,000 --> 00:06:20,000
+Here's the bottom line.
+
+151
+00:06:20,000 --> 00:06:23,000
+Managing session state is active engineering,
+
+152
+00:06:23,000 --> 00:06:25,000
+not something the model does for you.
+
+153
+00:06:25,000 --> 00:06:27,000
+The window only accumulates,
+
+154
+00:06:27,000 --> 00:06:29,000
+so nothing leaves unless you take it out.
+
+155
+00:06:29,000 --> 00:06:33,000
+Just remember, ephemeral context vanishes
+
+156
+00:06:33,000 --> 00:06:36,000
+while durable state lives on disk.
+
+157
+00:06:36,000 --> 00:06:38,000
+That covers managing context and session state.
+
+158
+00:06:38,000 --> 00:06:41,000
+Take a breath, and I'll see you in the next lesson.
+

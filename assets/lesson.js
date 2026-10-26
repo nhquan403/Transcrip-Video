@@ -1,11 +1,17 @@
-// Renders lesson.html?id=XXX from lessons/registry.js and lessons/<folder>/content.js.
+// Renders lesson.html?part=N&id=XXX from lessons/registry.js and lessons/<folder>/content.js.
+// Links without `part` (from before the course had parts) open Part 1.
 (function () {
-  const id = new URLSearchParams(location.search).get('id');
-  const lesson = window.LESSONS.find(l => l.id === id) || window.LESSONS[0];
+  const params = new URLSearchParams(location.search);
+  const partId = Number(params.get('part')) || 1;
+  const id = params.get('id');
+  const lesson = window.LESSONS.find(l => l.part === partId && l.id === id) || window.LESSONS[0];
+  const part = window.PARTS.find(p => p.id === lesson.part);
   const base = `lessons/${lesson.folder}/`;
 
-  document.title = `Bài ${lesson.id}: ${lesson.title}`;
-  document.getElementById('lessonNo').textContent = `Bài ${lesson.id}`;
+  document.title = `${part.title} · Bài ${lesson.id}: ${lesson.title}`;
+  document.getElementById('lessonNo').textContent = `${part.title}: ${part.name} · Bài ${lesson.id}`;
+  document.getElementById('back').href = `index.html#part-${part.id}`;
+  renderPager(document.getElementById('pager'));
   document.getElementById('title').textContent = lesson.title;
   document.getElementById('titleVi').textContent = lesson.titleVi;
 
@@ -18,12 +24,32 @@
     const content = window.LESSON_CONTENT;
     document.getElementById('explanation').innerHTML = content.explanation;
     if (content.quiz.length) {
-      renderQuiz(document.getElementById('quizRoot'), content.quiz, 'quiz:' + lesson.id);
+      renderQuiz(document.getElementById('quizRoot'), content.quiz, window.quizKey(lesson));
     } else {
       document.querySelectorAll('#quiz, #quizRoot, a[href="#quiz"]').forEach(el => { el.hidden = true; });
     }
   };
+  script.onerror = () => {
+    document.getElementById('explanation').innerHTML =
+      '<p class="key">Phần giải thích và trắc nghiệm của bài này đang được soạn. Bạn vẫn xem được video kèm transcript ở trên.</p>';
+    document.querySelectorAll('#quiz, #quizRoot, a[href="#quiz"]').forEach(el => { el.hidden = true; });
+  };
   document.body.appendChild(script);
+
+  function renderPager(nav) {
+    const siblings = window.LESSONS.filter(l => l.part === lesson.part);
+    const i = siblings.indexOf(lesson);
+    for (const [other, label] of [[siblings[i - 1], '← Bài trước'], [siblings[i + 1], 'Bài sau →']]) {
+      if (!other) { nav.append(document.createElement('span')); continue; }
+      const a = document.createElement('a');
+      a.className = 'card';
+      a.href = window.lessonUrl(other);
+      a.innerHTML = '<div class="muted"></div><strong></strong>';
+      a.querySelector('.muted').textContent = `${label} · Bài ${other.id}`;
+      a.querySelector('strong').textContent = other.titleVi;
+      nav.append(a);
+    }
+  }
 
   function shuffle(arr) {
     const a = arr.slice();

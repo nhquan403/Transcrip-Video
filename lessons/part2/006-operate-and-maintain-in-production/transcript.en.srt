@@ -1,0 +1,272 @@
+1
+00:00:00,000 --> 00:00:05,000
+Don't let the complexity of this slide fool you. This lesson shouldn't be that overwhelming.
+
+2
+00:00:05,000 --> 00:00:11,000
+A clod application still needs you after it ships. Operation is where you keep the live
+
+3
+00:00:11,000 --> 00:00:15,000
+system healthy, and maintenance is where you keep it current as the platform evolves.
+
+4
+00:00:16,000 --> 00:00:22,000
+Miss a retirement date, and a model change can degrade your app overnight. Let's break it down.
+
+5
+00:00:23,000 --> 00:00:27,000
+Once your app is live, operating it well comes down to watching the right signals.
+
+6
+00:00:28,000 --> 00:00:34,000
+Start with three. First, latency. How long each call takes from send to response.
+
+7
+00:00:34,000 --> 00:00:39,000
+When latency starts climbing, that's often your earliest warning that something is off.
+
+8
+00:00:40,000 --> 00:00:47,000
+Second, token usage. Every response reports its input and output tokens, and those tokens drive
+
+9
+00:00:47,000 --> 00:00:54,000
+both your cost and indirectly your latency, so you track them closely. Third, your error and
+
+10
+00:00:54,000 --> 00:01:02,000
+refusal rate. How often calls fail outright, or clod declines to answer. That rate is a direct
+
+11
+00:01:02,000 --> 00:01:08,000
+read on your app's real-world health. Latency, tokens, errors. Instrument those three from day
+
+12
+00:01:08,000 --> 00:01:15,000
+one, and production stops being a black box. Let's get specific about failures, because they
+
+13
+00:01:15,000 --> 00:01:21,000
+don't all mean the same thing, and reading the signature tells you what to do. The 429 you can
+
+14
+00:01:21,000 --> 00:01:27,000
+read on site by now. Rate limiting, back off, and retry. The signatures worth learning here are the
+
+15
+00:01:27,000 --> 00:01:34,000
+model side ones. When safety classifiers intervene, the response comes back with a refusal stop
+
+16
+00:01:34,000 --> 00:01:40,000
+reason. Clod can also decline conversationally in the reply text under a normal end turn,
+
+17
+00:01:40,000 --> 00:01:46,000
+so plan for both. Either way, it's a prompt or policy question, not a retry. And a max token
+
+18
+00:01:46,000 --> 00:01:52,000
+stop reason means the reply got cut off mid-answer because it hit the output limit, so you raise the
+
+19
+00:01:52,000 --> 00:01:58,000
+limit or ask for something shorter. Same idea across all of them. The signature names the fix,
+
+20
+00:01:58,000 --> 00:02:05,000
+so read it before you react. It helps to hold operate and maintain apart, because they solve
+
+21
+00:02:05,000 --> 00:02:11,000
+different problems. Operate is about right now. You're keeping the live system healthy today,
+
+22
+00:02:11,000 --> 00:02:17,000
+watching latency, token usage, and error rates, and responding to incidents the moment they
+
+23
+00:02:17,000 --> 00:02:23,000
+happen. It's the day-to-day of running the thing. Maintain is about over time. You're keeping the
+
+24
+00:02:23,000 --> 00:02:29,000
+system current as the platform moves under you, migrating to new models, versioning your prompts
+
+25
+00:02:29,000 --> 00:02:35,000
+and schemas, and regression testing upgrades, so a change never quietly breaks production.
+
+26
+00:02:35,000 --> 00:02:42,000
+One keeps today stable, the other keeps tomorrow safe. You need both, and confusing them is how a
+
+27
+00:02:42,000 --> 00:02:49,000
+team ends up firefighting instead of planning ahead. So, what does maintenance actually involve?
+
+28
+00:02:49,000 --> 00:02:55,000
+Three recurring jobs. The first is model migration. Models get deprecated or improved,
+
+29
+00:02:55,000 --> 00:03:00,000
+and when that happens, you have to move to a new one deliberately. The second is prompt and schema
+
+30
+00:03:00,000 --> 00:03:06,000
+versioning. You treat your prompts and your output schemas as versioned artifacts, tracked
+
+31
+00:03:06,000 --> 00:03:13,000
+and reviewable, not edited, live, and forgotten. The third is regression testing. Before you ship
+
+32
+00:03:13,000 --> 00:03:19,000
+any change, you run it against a frozen set of examples, so you can see whether behavior held
+
+33
+00:03:19,000 --> 00:03:25,000
+or slipped. Notice the through line. A deployed app is never truly static, because the platform
+
+34
+00:03:25,000 --> 00:03:31,000
+keeps evolving underneath it. Plan for this work up front, and it becomes routine instead of an
+
+35
+00:03:31,000 --> 00:03:38,000
+emergency. Model migration goes smoother once you understand how model IDs actually work. So,
+
+36
+00:03:38,000 --> 00:03:46,000
+here are three facts to lock in. First, a model ID like Claude Opus 4.8 is a pinned snapshot.
+
+37
+00:03:46,000 --> 00:03:52,000
+It isn't an evergreen alias that quietly points at whatever's newest. It names one specific model.
+
+38
+00:03:52,000 --> 00:03:58,000
+Second, new model, new ID. Anthropic never rewrites the weights behind an existing ID,
+
+39
+00:03:58,000 --> 00:04:05,000
+so an improved model always ships under a brand new ID that you opt into. Third, the weights stay
+
+40
+00:04:05,000 --> 00:04:10,000
+fixed, but serving infrastructure around them can shift over time, which can produce small behavior
+
+41
+00:04:10,000 --> 00:04:17,000
+differences even on a stable ID. Pin the ID you tested, and you control exactly when migration
+
+42
+00:04:17,000 --> 00:04:24,000
+happens instead of being surprised by it. Let's walk through an actual migration,
+
+43
+00:04:24,000 --> 00:04:30,000
+because doing it carelessly is how you regress in production. The trigger is usually a deprecation.
+
+44
+00:04:30,000 --> 00:04:36,000
+Anthropic retires an older model, or a legacy thinking mode goes away, and that forces you to
+
+45
+00:04:36,000 --> 00:04:42,000
+move. Here's the safe sequence. You don't just swap the ID and ship. You regress and test the
+
+46
+00:04:42,000 --> 00:04:47,000
+new model against a frozen evaluation set, the same inputs you validated the old one on.
+
+47
+00:04:48,000 --> 00:04:54,000
+Then you compare the outputs side by side, and you only cut over once. Quality clearly holds.
+
+48
+00:04:54,000 --> 00:04:59,000
+If something slipped, you adjust the prompt for the new model first. Treat a model change exactly
+
+49
+00:04:59,000 --> 00:05:06,000
+like any code change that could break behavior, because that's precisely what it is. Here's what
+
+50
+00:05:06,000 --> 00:05:13,000
+ties the whole life cycle together, the feedback loop. It has three moves. First, you observe.
+
+51
+00:05:13,000 --> 00:05:20,000
+Production surfaces things your test set never did. The real latency, the real cost, the refusals
+
+52
+00:05:20,000 --> 00:05:27,000
+and failures that only show up with real users and real traffic. Second, you feed back. Those
+
+53
+00:05:27,000 --> 00:05:33,000
+observations don't just sit in a dashboard. They flow back into your requirements and sharpen your
+
+54
+00:05:33,000 --> 00:05:40,000
+sense of what the app actually has to handle. Third, you iterate. The next cycle updates your
+
+55
+00:05:40,000 --> 00:05:45,000
+prompts, your schemas, and your error handling, and then the loop starts over. That's the real
+
+56
+00:05:45,000 --> 00:05:51,000
+shape of maintenance. It isn't a checklist you finish. It's a loop you keep running for as long
+
+57
+00:05:51,000 --> 00:05:57,000
+as the app is live. Let's close the maintenance picture with versioning, because prompts and
+
+58
+00:05:57,000 --> 00:06:04,000
+schemas deserve the same discipline as your code. Track every prompt in source control and tie each
+
+59
+00:06:04,000 --> 00:06:11,000
+one to the model version it was tuned for, so you always know which prompt ran against which model.
+
+60
+00:06:11,000 --> 00:06:17,000
+Version your output schema too, so when the shape of a response changes, the downstream code that
+
+61
+00:06:17,000 --> 00:06:24,000
+consumes it stays in sync instead of silently breaking. And before you ship any change, prompt,
+
+62
+00:06:24,000 --> 00:06:31,000
+or schema, rerun it against a frozen evaluation set. That frozen set is your safety net. Here's
+
+63
+00:06:31,000 --> 00:06:38,000
+the mindset to carry away. A prompt edit can regress behavior every bit as much as a code edit,
+
+64
+00:06:38,000 --> 00:06:44,000
+so it earns the same review, versioning, and testing. Here's the bottom line. Operation and
+
+65
+00:06:44,000 --> 00:06:51,000
+maintenance keep a live cloud application healthy and current. You operate by watching latency,
+
+66
+00:06:51,000 --> 00:06:56,000
+tokens, and error rates, and reading failure signatures. You maintain by migrating models
+
+67
+00:06:56,000 --> 00:07:02,000
+and versioning prompts and schemas. One thing to watch. Regression tests every change against a
+
+68
+00:07:02,000 --> 00:07:09,000
+frozen set. That wraps up operating and maintaining in production. I'll see you in the next one.
+

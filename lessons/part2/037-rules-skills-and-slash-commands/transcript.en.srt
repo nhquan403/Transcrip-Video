@@ -1,0 +1,600 @@
+1
+00:00:00,000 --> 00:00:01,000
+Well, welcome back.
+
+2
+00:00:01,000 --> 00:00:04,000
+Cloud Code gives you several ways to shape how it works,
+
+3
+00:00:04,000 --> 00:00:06,000
+and three of them matter more than the rest.
+
+4
+00:00:06,000 --> 00:00:09,000
+Rules, skills, and slash commands.
+
+5
+00:00:09,000 --> 00:00:14,000
+We'll walk through what each one is, how it loads into context,
+
+6
+00:00:14,000 --> 00:00:18,000
+when to reach for it, and the mix-up people make most often.
+
+7
+00:00:18,000 --> 00:00:21,000
+Let's lock down three terms, because the whole lesson
+
+8
+00:00:21,000 --> 00:00:25,000
+turns on keeping them straight. First, rules.
+
+9
+00:00:25,000 --> 00:00:27,000
+Those are standing, always-on instructions
+
+10
+00:00:27,000 --> 00:00:31,000
+that live in cloud.md and load into context
+
+11
+00:00:31,000 --> 00:00:32,000
+when your session starts.
+
+12
+00:00:32,000 --> 00:00:37,000
+They apply to every turn, and you never call them up. Second, skills.
+
+13
+00:00:37,000 --> 00:00:43,000
+A skill is a reusable capability packaged as a skill.md file
+
+14
+00:00:43,000 --> 00:00:44,000
+with YAML front matter.
+
+15
+00:00:44,000 --> 00:00:47,000
+And Cloud loads it only when your current task
+
+16
+00:00:47,000 --> 00:00:48,000
+matches its description.
+
+17
+00:00:48,000 --> 00:00:51,000
+Third, slash commands.
+
+18
+00:00:51,000 --> 00:00:54,000
+Those are the shortcuts you type with a slash.
+
+19
+00:00:54,000 --> 00:00:57,000
+Some ship built into the tool, and some you write yourself.
+
+20
+00:00:57,000 --> 00:01:00,000
+Rules, skills, commands.
+
+21
+00:01:00,000 --> 00:01:03,000
+Keep those three straight, and everything else in this lesson
+
+22
+00:01:03,000 --> 00:01:05,000
+falls into place.
+
+23
+00:01:05,000 --> 00:01:08,000
+Now, here's the key distinction in this whole area,
+
+24
+00:01:08,000 --> 00:01:10,000
+and it's the one people get backwards.
+
+25
+00:01:10,000 --> 00:01:13,000
+Rules and skills load completely differently.
+
+26
+00:01:13,000 --> 00:01:15,000
+A rule is always-on.
+
+27
+00:01:15,000 --> 00:01:19,000
+It loads into context the moment your session starts,
+
+28
+00:01:19,000 --> 00:01:21,000
+and it stays there for every turn.
+
+29
+00:01:21,000 --> 00:01:22,000
+You never invoke it.
+
+30
+00:01:22,000 --> 00:01:24,000
+A skill is the opposite.
+
+31
+00:01:24,000 --> 00:01:27,000
+Only its description sits in context,
+
+32
+00:01:27,000 --> 00:01:30,000
+just enough for Cloud to know the skill exists.
+
+33
+00:01:30,000 --> 00:01:33,000
+The body, all the actual instructions,
+
+34
+00:01:33,000 --> 00:01:36,000
+loads only when you or the model invoke it.
+
+35
+00:01:36,000 --> 00:01:37,000
+That's what makes skills cheap.
+
+36
+00:01:37,000 --> 00:01:39,000
+You can write a long, detailed skill,
+
+37
+00:01:39,000 --> 00:01:44,000
+and it costs you almost nothing until the moment it's actually needed.
+
+38
+00:01:44,000 --> 00:01:46,000
+Always-on versus on-demand.
+
+39
+00:01:46,000 --> 00:01:49,000
+That's the line to remember.
+
+40
+00:01:49,000 --> 00:01:50,000
+Let's stay on rules for a second,
+
+41
+00:01:50,000 --> 00:01:53,000
+because this is where the classic mix-up happens.
+
+42
+00:01:53,000 --> 00:01:55,000
+People assume a rule works like a skill, something
+
+43
+00:01:55,000 --> 00:01:58,000
+you trigger on purpose. It doesn't.
+
+44
+00:01:58,000 --> 00:02:01,000
+A rule loads on its own, either when your session starts
+
+45
+00:02:01,000 --> 00:02:05,000
+or when you touch files whose paths it's scoped to.
+
+46
+00:02:05,000 --> 00:02:08,000
+You never type a slash to fire a rule.
+
+47
+00:02:08,000 --> 00:02:09,000
+And here's the other half of it.
+
+48
+00:02:09,000 --> 00:02:13,000
+As your Cloud.md grows, you can split it
+
+49
+00:02:13,000 --> 00:02:16,000
+into separate topic files, one per subject,
+
+50
+00:02:16,000 --> 00:02:18,000
+so it stays readable.
+
+51
+00:02:18,000 --> 00:02:19,000
+One more thing worth knowing.
+
+52
+00:02:19,000 --> 00:02:22,000
+Rules are context, not enforcement.
+
+53
+00:02:22,000 --> 00:02:23,000
+They shape what Cloud tends to do,
+
+54
+00:02:23,000 --> 00:02:25,000
+but they don't guarantee it.
+
+55
+00:02:25,000 --> 00:02:28,000
+If you need a hard block, that's a job for permissions,
+
+56
+00:02:28,000 --> 00:02:31,000
+or hooks, not a rule.
+
+57
+00:02:31,000 --> 00:02:34,000
+Let's open up a skill and see what's inside,
+
+58
+00:02:34,000 --> 00:02:36,000
+because it's simpler than it sounds.
+
+59
+00:02:36,000 --> 00:02:38,000
+A skill is really just a small folder
+
+60
+00:02:38,000 --> 00:02:41,000
+that Cloud can pick up when it's relevant.
+
+61
+00:02:41,000 --> 00:02:45,000
+Inside that folder is a file called skill.md,
+
+62
+00:02:45,000 --> 00:02:47,000
+and that file holds the instructions.
+
+63
+00:02:48,000 --> 00:02:50,000
+At the top of it sits YAML front matter,
+
+64
+00:02:50,000 --> 00:02:53,000
+and the key piece there is the description.
+
+65
+00:02:53,000 --> 00:02:55,000
+That description is what Cloud reads
+
+66
+00:02:55,000 --> 00:03:00,000
+to decide whether the skill fits the task in front of it.
+
+67
+00:03:00,000 --> 00:03:02,000
+Now here's a detail people trip on.
+
+68
+00:03:02,000 --> 00:03:05,000
+The command name comes from the folder name,
+
+69
+00:03:05,000 --> 00:03:07,000
+not from any field inside the file.
+
+70
+00:03:07,000 --> 00:03:09,000
+So if the folder is called deploy,
+
+71
+00:03:09,000 --> 00:03:13,000
+you invoke it by typing slash deploy.
+
+72
+00:03:13,000 --> 00:03:15,000
+The one thing you really need is a clear description,
+
+73
+00:03:15,000 --> 00:03:17,000
+so the model can find it.
+
+74
+00:03:18,000 --> 00:03:20,000
+This is the mistake I see most often,
+
+75
+00:03:20,000 --> 00:03:22,000
+so let's call it out directly.
+
+76
+00:03:22,000 --> 00:03:24,000
+Someone writes a bare markdown file,
+
+77
+00:03:24,000 --> 00:03:26,000
+drops in some instructions,
+
+78
+00:03:26,000 --> 00:03:29,000
+and expects it to fire reliably as a skill.
+
+79
+00:03:29,000 --> 00:03:30,000
+Here's the nuance.
+
+80
+00:03:30,000 --> 00:03:34,000
+The front matter fields are technically optional.
+
+81
+00:03:34,000 --> 00:03:36,000
+The name defaults to the folder name,
+
+82
+00:03:36,000 --> 00:03:40,000
+and the description falls back to the file's first paragraph.
+
+83
+00:03:40,000 --> 00:03:44,000
+But a skill with no clear description matches poorly,
+
+84
+00:03:44,000 --> 00:03:47,000
+so it fires unreliably, if at all.
+
+85
+00:03:48,000 --> 00:03:49,000
+The description is doing the real work,
+
+86
+00:03:49,000 --> 00:03:51,000
+because that's what the model matches against
+
+87
+00:03:51,000 --> 00:03:54,000
+to decide the skill is relevant.
+
+88
+00:03:54,000 --> 00:03:57,000
+A weak description means almost nothing to match,
+
+89
+00:03:57,000 --> 00:03:59,000
+so always write one.
+
+90
+00:03:59,000 --> 00:04:01,000
+And placement matters too.
+
+91
+00:04:01,000 --> 00:04:04,000
+The file has to live in a skills or commands folder
+
+92
+00:04:04,000 --> 00:04:06,000
+that Cloud actually scans.
+
+93
+00:04:06,000 --> 00:04:08,000
+A note sitting anywhere else is just a note.
+
+94
+00:04:09,000 --> 00:04:12,000
+Here's a point that clears up a lot of confusion,
+
+95
+00:04:12,000 --> 00:04:15,000
+especially if you learned this from older tutorials.
+
+96
+00:04:15,000 --> 00:04:18,000
+You'll often see slash commands and skills
+
+97
+00:04:18,000 --> 00:04:21,000
+described as two separate features.
+
+98
+00:04:21,000 --> 00:04:25,000
+In current Cloud code, they were merged into one system.
+
+99
+00:04:25,000 --> 00:04:26,000
+Watch how this works.
+
+100
+00:04:26,000 --> 00:04:29,000
+A file at .cloud commands name.md
+
+101
+00:04:29,000 --> 00:04:32,000
+creates a command you invoke as slash name.
+
+102
+00:04:32,000 --> 00:04:36,000
+A skill folder at .cloud skills name
+
+103
+00:04:36,000 --> 00:04:40,000
+with a skill.md inside creates the very same slash name.
+
+104
+00:04:40,000 --> 00:04:42,000
+Both run the same way.
+
+105
+00:04:42,000 --> 00:04:46,000
+So a custom slash command really is just a skill
+
+106
+00:04:46,000 --> 00:04:48,000
+in a slightly different shape.
+
+107
+00:04:48,000 --> 00:04:50,000
+The older commands form still works,
+
+108
+00:04:50,000 --> 00:04:54,000
+but skills are the recommended path now.
+
+109
+00:04:54,000 --> 00:04:56,000
+And if a skill and a command ever share a name,
+
+110
+00:04:56,000 --> 00:04:58,000
+the skill is the one that wins.
+
+111
+00:04:59,000 --> 00:05:02,000
+So let's split slash commands into two families,
+
+112
+00:05:02,000 --> 00:05:04,000
+because they're not all the same thing.
+
+113
+00:05:04,000 --> 00:05:07,000
+The first family is built in commands.
+
+114
+00:05:07,000 --> 00:05:09,000
+These are coded right into the tool,
+
+115
+00:05:09,000 --> 00:05:12,000
+and they run fixed logic.
+
+116
+00:05:12,000 --> 00:05:17,000
+Think of slash init, slash clear, slash help, slash model.
+
+117
+00:05:17,000 --> 00:05:19,000
+You can't edit what they do.
+
+118
+00:05:19,000 --> 00:05:21,000
+They just work straight out of the box.
+
+119
+00:05:21,000 --> 00:05:25,000
+The second family is custom commands, and these are yours.
+
+120
+00:05:25,000 --> 00:05:27,000
+You write a markdown file,
+
+121
+00:05:27,000 --> 00:05:29,000
+and the file name becomes the keyword
+
+122
+00:05:29,000 --> 00:05:31,000
+you type after the slash.
+
+123
+00:05:31,000 --> 00:05:32,000
+Whatever you put in that file
+
+124
+00:05:32,000 --> 00:05:35,000
+is what the command tells Cloud to do.
+
+125
+00:05:35,000 --> 00:05:38,000
+So built in commands are the tool's own behavior,
+
+126
+00:05:38,000 --> 00:05:41,000
+and custom commands are behavior you author.
+
+127
+00:05:41,000 --> 00:05:44,000
+Same slash, two very different sources.
+
+128
+00:05:45,000 --> 00:05:48,000
+Last piece for this lesson, and it's a practical one.
+
+129
+00:05:48,000 --> 00:05:50,000
+When you create a custom command,
+
+130
+00:05:50,000 --> 00:05:53,000
+where you save the file decides who can use it.
+
+131
+00:05:53,000 --> 00:05:56,000
+There's no registration step, no config to flip.
+
+132
+00:05:56,000 --> 00:05:59,000
+Put the file under .cloud in your project,
+
+133
+00:05:59,000 --> 00:06:00,000
+and it ships with the repo,
+
+134
+00:06:00,000 --> 00:06:03,000
+so your whole team gets it once they pull.
+
+135
+00:06:03,000 --> 00:06:06,000
+Put it under the Cloud folder in your home directory instead
+
+136
+00:06:06,000 --> 00:06:09,000
+and it's personal, available across every project
+
+137
+00:06:09,000 --> 00:06:12,000
+you work on, but only for you.
+
+138
+00:06:12,000 --> 00:06:13,000
+That's the whole rule.
+
+139
+00:06:13,000 --> 00:06:16,000
+The file's location is what sets the scope.
+
+140
+00:06:16,000 --> 00:06:19,000
+And because the project version lives in version control,
+
+141
+00:06:19,000 --> 00:06:22,000
+checking it in is how you make sure everyone on the team
+
+142
+00:06:22,000 --> 00:06:25,000
+is working with the exact same command.
+
+143
+00:06:26,000 --> 00:06:28,000
+Rules and skills can sound similar,
+
+144
+00:06:28,000 --> 00:06:31,000
+but they load in opposite ways.
+
+145
+00:06:31,000 --> 00:06:34,000
+A rule is always on, applied every turn.
+
+146
+00:06:34,000 --> 00:06:37,000
+A skill loads only when its description matches the task.
+
+147
+00:06:37,000 --> 00:06:40,000
+And a custom command is really just a skill
+
+148
+00:06:40,000 --> 00:06:41,000
+you invoke by name.
+
+149
+00:06:41,000 --> 00:06:45,000
+That covers rules, skills, and slash commands.
+
+150
+00:06:45,000 --> 00:06:47,000
+Take a breath here, and I'll see you in the next one.
+

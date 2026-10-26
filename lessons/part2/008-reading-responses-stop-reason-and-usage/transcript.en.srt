@@ -1,0 +1,376 @@
+1
+00:00:00,000 --> 00:00:03,000
+Getting a reply back from Claude is only half the job.
+
+2
+00:00:03,000 --> 00:00:09,000
+Read it the wrong way and your code breaks the moment a tool call or a thinking block shows up first.
+
+3
+00:00:09,000 --> 00:00:18,000
+This lesson covers the response object, how to read its blocks, the stop reason field, and usage counts. Let's dig in.
+
+4
+00:00:18,000 --> 00:00:22,000
+Every response Claude sends back has three parts worth knowing by name.
+
+5
+00:00:22,000 --> 00:00:26,000
+The first is content, the list of blocks the model returned.
+
+6
+00:00:26,000 --> 00:00:29,000
+You loop over that list and handle each block by its type.
+
+7
+00:00:29,000 --> 00:00:32,000
+Rather than reaching for the first one and hoping.
+
+8
+00:00:32,000 --> 00:00:37,000
+The second is stop reason, a single field that names why the model stopped this turn.
+
+9
+00:00:37,000 --> 00:00:41,000
+Your code branches on it to decide what to do next.
+
+10
+00:00:41,000 --> 00:00:45,000
+The third is usage, the token accounting for the call.
+
+11
+00:00:45,000 --> 00:00:51,000
+It reports how much input and output the request consumed, which is exactly what you watch for cost.
+
+12
+00:00:51,000 --> 00:00:53,000
+Read those three every time.
+
+13
+00:00:53,000 --> 00:01:00,000
+Content tells you what Claude said, stop reason tells you what to do, and usage tells you what it cost.
+
+14
+00:01:00,000 --> 00:01:04,000
+Here's the habit that keeps response handling from breaking.
+
+15
+00:01:04,000 --> 00:01:10,000
+The content field is a list, so you read it by looping over it, never by grabbing a fixed index.
+
+16
+00:01:10,000 --> 00:01:15,000
+As you loop, you branch on each block's type field and handle it accordingly.
+
+17
+00:01:15,000 --> 00:01:18,000
+This matters because the order isn't guaranteed.
+
+18
+00:01:18,000 --> 00:01:24,000
+A thinking block or a tool use block can easily come before the text you were expecting.
+
+19
+00:01:24,000 --> 00:01:29,000
+So if you reach straight for the first block and assume it's text, your code will work in testing.
+
+20
+00:01:29,000 --> 00:01:34,000
+And then break in production the first time something else lands in front.
+
+21
+00:01:34,000 --> 00:01:38,000
+Handle text, tool calls, and thinking each in their own branch.
+
+22
+00:01:38,000 --> 00:01:42,000
+And the same handler works no matter what shape the reply takes.
+
+23
+00:01:42,000 --> 00:01:46,000
+Let's walk through four of the most common stop reason values.
+
+24
+00:01:46,000 --> 00:01:51,000
+An intern means Claude finished on its own, so you take the text and you're done.
+
+25
+00:01:51,000 --> 00:01:59,000
+A max tokens means the reply hit your output cap, so raise the cap or continue it in a follow-up request.
+
+26
+00:01:59,000 --> 00:02:05,000
+A tool use means Claude paused to ask for a tool, so you run it and return the result.
+
+27
+00:02:05,000 --> 00:02:09,000
+And a refusal means Claude declined on safety grounds.
+
+28
+00:02:09,000 --> 00:02:12,000
+The single case where stop details gets filled in.
+
+29
+00:02:12,000 --> 00:02:15,000
+For every other value, it stays empty.
+
+30
+00:02:15,000 --> 00:02:18,000
+Three more round out the roster.
+
+31
+00:02:18,000 --> 00:02:21,000
+Stop sequence when a custom stop string fires.
+
+32
+00:02:21,000 --> 00:02:26,000
+Model context window exceeded when the response hits the model's total window.
+
+33
+00:02:26,000 --> 00:02:30,000
+And pause turn when a long turn pauses.
+
+34
+00:02:30,000 --> 00:02:33,000
+So you send the assistant content back to continue.
+
+35
+00:02:33,000 --> 00:02:38,000
+A loop that only waits for end turn can silently break on pause turn.
+
+36
+00:02:38,000 --> 00:02:43,000
+Let's slow down on the tool use case because it's a small loop you'll write over and over.
+
+37
+00:02:43,000 --> 00:02:49,000
+When stop reason comes back as tool use, Claude is asking your code to do something.
+
+38
+00:02:49,000 --> 00:02:54,000
+First, you read the tool use block to get the tool's name and the input it wants.
+
+39
+00:02:54,000 --> 00:02:58,000
+Second, you run that tool inside your own application.
+
+40
+00:02:58,000 --> 00:03:00,000
+Nothing runs on Anthropic's side here.
+
+41
+00:03:00,000 --> 00:03:08,000
+Third, you append a tool result block carrying the output and call the API again with the updated conversation.
+
+42
+00:03:08,000 --> 00:03:11,000
+Then Claude picks up right where it left off.
+
+43
+00:03:11,000 --> 00:03:19,000
+That cycle repeats as many times as needed, and it ends when stop reason finally comes back as end turn instead.
+
+44
+00:03:19,000 --> 00:03:22,000
+Read, run, append, recall.
+
+45
+00:03:22,000 --> 00:03:24,000
+That's the whole pattern.
+
+46
+00:03:24,000 --> 00:03:30,000
+Let's put the two most common stop reasons side by side because your loop pivots on the difference.
+
+47
+00:03:30,000 --> 00:03:34,000
+When stop reason is end turn, the model is finished.
+
+48
+00:03:34,000 --> 00:03:40,000
+You read the final content, stop the loop, and hand the answer back to whoever asked.
+
+49
+00:03:40,000 --> 00:03:42,000
+There's nothing more for you to do.
+
+50
+00:03:42,000 --> 00:03:47,000
+When stop reason is tool use, the model has paused and handed control to you.
+
+51
+00:03:47,000 --> 00:03:54,000
+You execute the requested tool, append the result as a block, and recall so Claude can keep going.
+
+52
+00:03:54,000 --> 00:03:56,000
+The key mental model is this.
+
+53
+00:03:56,000 --> 00:04:00,000
+End turn is an exit, and tool use is a yield.
+
+54
+00:04:00,000 --> 00:04:05,000
+One ends the conversation, the other suspends it and waits on your code.
+
+55
+00:04:05,000 --> 00:04:11,000
+If you can tell those two apart instantly, the rest of the response loop falls into place naturally.
+
+56
+00:04:11,000 --> 00:04:16,000
+Let's read the usage object because it's how you track what a call actually costs.
+
+57
+00:04:16,000 --> 00:04:18,000
+The first field is input tokens.
+
+58
+00:04:18,000 --> 00:04:24,000
+This counts the uncached input tokens the call billed, meaning only the remainder that wasn't served from the cache.
+
+59
+00:04:24,000 --> 00:04:29,000
+That's a common surprise, so remember input tokens isn't your whole prompt.
+
+60
+00:04:29,000 --> 00:04:34,000
+The second is output tokens, every token the model generated in its reply.
+
+61
+00:04:34,000 --> 00:04:37,000
+That's the part your max token's ceiling limits.
+
+62
+00:04:37,000 --> 00:04:43,000
+Then come the cache fields, separate counts for tokens written to the cache and tokens read from it.
+
+63
+00:04:43,000 --> 00:04:45,000
+Here's the practical rule.
+
+64
+00:04:45,000 --> 00:04:49,000
+To get the full prompt size, you add all three input figures together.
+
+65
+00:04:49,000 --> 00:04:52,000
+The uncached input plus both cache counts.
+
+66
+00:04:52,000 --> 00:04:56,000
+Watch these numbers and cost stops being a mystery.
+
+67
+00:04:56,000 --> 00:04:59,000
+Here's a small guard that saves you from a crash.
+
+68
+00:04:59,000 --> 00:05:05,000
+There's a field called stop details that carries extra context about why the model stopped, but it's
+
+69
+00:05:05,000 --> 00:05:07,000
+only populated in one situation.
+
+70
+00:05:08,000 --> 00:05:14,000
+That situation is a refusal when stop reason comes back as refusal on Opus Form 7.
+
+71
+00:05:14,000 --> 00:05:20,000
+And later, stop details fills in with a category and an explanation of what was declined.
+
+72
+00:05:20,000 --> 00:05:28,000
+For every other stop reason, whether that's intern or tool use or max tokens, stop details comes back null.
+
+73
+00:05:28,000 --> 00:05:30,000
+The order of your checks matters.
+
+74
+00:05:30,000 --> 00:05:36,000
+If you reach for stop details on a normal reply, you're reading a null value and risking an error.
+
+75
+00:05:36,000 --> 00:05:43,000
+Always check stop reason first, confirm it's a refusal, and only then read stop details.
+
+76
+00:05:43,000 --> 00:05:47,000
+Guard first, read second, and this never bites you.
+
+77
+00:05:47,000 --> 00:05:54,000
+One more rule keeps multi-turn conversations from falling apart, and it's about how you carry blocks forward.
+
+78
+00:05:54,000 --> 00:05:59,000
+Thinking blocks first, the extended reasoning blocks you'll meet properly in the thinking lesson.
+
+79
+00:05:59,000 --> 00:06:05,000
+When a reply includes thinking, you pass those blocks back unmodified on the latest assistant turn,
+
+80
+00:06:05,000 --> 00:06:09,000
+keeping the signature and everything else exactly intact.
+
+81
+00:06:09,000 --> 00:06:12,000
+Editing them, even slightly, gets the call rejected.
+
+82
+00:06:12,000 --> 00:06:14,000
+Tool blocks work the same way.
+
+83
+00:06:14,000 --> 00:06:21,000
+You carry the tool use and tool result blocks forward as they were, without trimming or reformatting.
+
+84
+00:06:21,000 --> 00:06:27,000
+If you drop them or change them, the very next call fails because the model can't reconcile the conversation.
+
+85
+00:06:27,000 --> 00:06:29,000
+So the discipline is simple.
+
+86
+00:06:29,000 --> 00:06:35,000
+Whatever structured blocks came back on the latest assistant turn, you send them back untouched.
+
+87
+00:06:35,000 --> 00:06:40,000
+Treat those blocks as read-only, and your multi-turn flow stays stable.
+
+88
+00:06:40,000 --> 00:06:42,000
+Here's the bottom line.
+
+89
+00:06:42,000 --> 00:06:47,000
+Reading a response comes down to looping over content by type, branching on stop reason, and
+
+90
+00:06:47,000 --> 00:06:48,000
+checking usage for cost.
+
+91
+00:06:49,000 --> 00:06:56,000
+It matters because indexing blindly or misreading the stop reason is where response handlers quietly break down.
+
+92
+00:06:56,000 --> 00:07:03,000
+Just remember, pass thinking and tool blocks back unchanged, and guard stop details behind a refusal check.
+
+93
+00:07:03,000 --> 00:07:07,000
+That wraps up reading stop reason and usage.
+
+94
+00:07:07,000 --> 00:07:09,000
+I'll see you in the next one.
+

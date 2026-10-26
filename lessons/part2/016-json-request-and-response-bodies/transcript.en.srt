@@ -1,0 +1,276 @@
+1
+00:00:00,000 --> 00:00:05,000
+Here's a problem every builder hits early. You've got the rest call working, but the request keeps
+
+2
+00:00:05,000 --> 00:00:11,000
+getting rejected, or you can't find the model's answer in what comes back. Almost always, it
+
+3
+00:00:11,000 --> 00:00:17,000
+points to the JSON body. This lesson covers the data types, the request shape Claude expects,
+
+4
+00:00:17,000 --> 00:00:23,000
+and how to read the response. Let's break it down. Let's ground JSON in three building blocks,
+
+5
+00:00:23,000 --> 00:00:29,000
+because everything in a Claude call is made of these. First, objects. Those are the curly
+
+6
+00:00:29,000 --> 00:00:34,000
+brace collections of key value pairs. The entire request you send is one big object,
+
+7
+00:00:34,000 --> 00:00:40,000
+and keys, like model and messages, live inside it. Second, arrays. Those are ordered lists in
+
+8
+00:00:40,000 --> 00:00:47,000
+square brackets. The messages array holds your conversation turns in order, and as you'll see,
+
+9
+00:00:47,000 --> 00:00:53,000
+the content inside a turn is an array, too. Third, scalars. Those are the simple leaf values.
+
+10
+00:00:53,000 --> 00:01:00,000
+Strings, numbers, booleans, and null. They fill in the actual data, like the text of a message,
+
+11
+00:01:00,000 --> 00:01:06,000
+or a token count. Objects hold arrays, arrays hold objects, and scalars sit at the bottom.
+
+12
+00:01:06,000 --> 00:01:12,000
+That nesting is the whole language. So let's build that request object piece by piece.
+
+13
+00:01:12,000 --> 00:01:18,000
+At the top level, a Claude request has a handful of keys. The first is model, a string naming,
+
+14
+00:01:18,000 --> 00:01:24,000
+which Claude you want to run. The second is messages. The array of conversation turns
+
+15
+00:01:24,000 --> 00:01:31,000
+we'll dig into next. The third one people forget is max tokens, which caps how long the reply can
+
+16
+00:01:31,000 --> 00:01:38,000
+get. Those three are the core you need on nearly every call. On top of that, you've got optional
+
+17
+00:01:38,000 --> 00:01:44,000
+keys that unlock more behavior. A system field sets the system prompt. Temperature nudges
+
+18
+00:01:44,000 --> 00:01:52,000
+randomness. A tools array hands Claude functions. It can call. But keep the mental picture simple.
+
+19
+00:01:52,000 --> 00:01:59,000
+It's one JSON object, a few required keys, and some optional ones layered on when you need them.
+
+20
+00:02:00,000 --> 00:02:05,000
+Now the messages array, because this is where beginners model things wrong. Each item in the
+
+21
+00:02:05,000 --> 00:02:12,000
+array is one turn, and every turn has two parts. A role, which is either user or assistant,
+
+22
+00:02:12,000 --> 00:02:19,000
+telling Claude who spoke, and content. Here's the key insight. Content isn't a plain string.
+
+23
+00:02:19,000 --> 00:02:26,000
+It's a list of typed blocks. A block might be text, but it could also be an image, a tool use block,
+
+24
+00:02:26,000 --> 00:02:34,000
+or a tool result. That design is what lets a single turn mix text and images, or carry a tool call
+
+25
+00:02:34,000 --> 00:02:41,000
+alongside a reply. Order matters too. Claude reads the turns in array order. So to continue a
+
+26
+00:02:41,000 --> 00:02:47,000
+conversation, you append each new user and assistant message on to the end. Model that
+
+27
+00:02:47,000 --> 00:02:55,000
+structure faithfully, and multi-turn chats just work. Now flip to what comes back. A Claude response
+
+28
+00:02:55,000 --> 00:03:02,000
+is also JSON, and three parts of it carry the weight. First, content. Just like your input, the
+
+29
+00:03:02,000 --> 00:03:09,000
+output is an array of blocks, and the model's text sits inside a text block in its text field.
+
+30
+00:03:09,000 --> 00:03:16,000
+You pull the answer out of there, not from some top-level string. Second, stop reason. This tells
+
+31
+00:03:16,000 --> 00:03:23,000
+you why generation ended. End turn means Claude finished naturally. Max tokens means it ran out
+
+32
+00:03:23,000 --> 00:03:30,000
+of room. Tool use means it wants to call a tool and is waiting on you. And stop sequence means
+
+33
+00:03:30,000 --> 00:03:38,000
+one of your custom stop strings fired. Third, usage. That's your input and output token counts,
+
+34
+00:03:38,000 --> 00:03:43,000
+which you read for cost tracking and for budgeting context. Get comfortable reaching
+
+35
+00:03:43,000 --> 00:03:50,000
+for those three fields, and you can handle almost any response. Let's turn that into actual parsing
+
+36
+00:03:50,000 --> 00:03:56,000
+steps, because the shape tells you exactly what to do. Reading a response means walking the JSON,
+
+37
+00:03:56,000 --> 00:04:03,000
+not grabbing a single string. So step one, loop over the content array and find the blocks with
+
+38
+00:04:03,000 --> 00:04:08,000
+type text. That's where the answer lives, and concatenate them if there's more than one.
+
+39
+00:04:09,000 --> 00:04:16,000
+Step two, check stop reason before you trust the output. If it says max tokens, your reply got cut
+
+40
+00:04:16,000 --> 00:04:22,000
+off, and you may want to continue it. If it says tool use, your code has work to do before the
+
+41
+00:04:22,000 --> 00:04:29,000
+conversation moves on. Step three, read the usage field and log those token counts. Do those three
+
+42
+00:04:29,000 --> 00:04:35,000
+things every time, and you're treating the body as the structured data it is, instead of hoping a
+
+43
+00:04:35,000 --> 00:04:41,000
+string is where you left it. It helps to hold the request and response side by side, because they
+
+44
+00:04:41,000 --> 00:04:48,000
+mirror each other. On the request side, you're in control. You send the model, the messages array,
+
+45
+00:04:48,000 --> 00:04:55,000
+max tokens, and any optional params like system or tools. Every field there is something you decide.
+
+46
+00:04:55,000 --> 00:05:00,000
+On the response side, you're reading what the server produced. You get a content array of
+
+47
+00:05:00,000 --> 00:05:07,000
+blocks, a stop reason, usage counts, and some metadata, like the message ID and which model
+
+48
+00:05:07,000 --> 00:05:13,000
+actually ran. Notice the symmetry. Both are JSON objects, both use arrays of blocks for content,
+
+49
+00:05:13,000 --> 00:05:21,000
+and both nest the same way. Once that clicks, a clawed call stops feeling like magic. It's just an
+
+50
+00:05:21,000 --> 00:05:28,000
+object you build going out, and an object you read coming back. One more practical thing about the
+
+51
+00:05:28,000 --> 00:05:35,000
+body, encoding and size. Remember that JSON is plain text. The content type is application
+
+52
+00:05:35,000 --> 00:05:43,000
+slash JSON, and the body goes over the wire as UTF-8 text. That's fine for words, but what about
+
+53
+00:05:43,000 --> 00:05:50,000
+images or documents? You can't drop raw binary into text, so those get Base64 encoded into a
+
+54
+00:05:50,000 --> 00:05:57,000
+string first, and you send that string as part of the content. Here's the catch to plan for. Base64
+
+55
+00:05:57,000 --> 00:06:04,000
+makes data bigger, roughly a third larger than the original bytes. So a few high-resolution images can
+
+56
+00:06:04,000 --> 00:06:10,000
+balloon your request surprisingly fast. When you're building multimodal prompts, keep an eye on total
+
+57
+00:06:10,000 --> 00:06:18,000
+request size. Resize images when you can, and don't be surprised when a picture costs far more room in
+
+58
+00:06:18,000 --> 00:06:25,000
+the body than a paragraph of text. Finally, let's connect the raw JSON to what you handle in code,
+
+59
+00:06:25,000 --> 00:06:31,000
+because you rarely touch the text directly. When a response arrives, your language turns that JSON
+
+60
+00:06:31,000 --> 00:06:39,000
+into native structures. A JSON object becomes a dictionary in Python, or a typed class if you're
+
+61
+00:06:39,000 --> 00:06:46,000
+using the SDK. Arrays become lists you can loop over, and because the format nests, nested blocks
+
+62
+00:06:46,000 --> 00:06:54,000
+become nested fields you index into. So reaching Claude's answer is just navigation. You go into
+
+63
+00:06:54,000 --> 00:07:02,000
+the content list, grab the first text block, and read its text field. The SDK smooths this further
+
+64
+00:07:02,000 --> 00:07:08,000
+by handing you typed objects with named attributes, so your editor auto-completes the
+
+65
+00:07:08,000 --> 00:07:14,000
+fields. Either way, the lesson is the same. It's structured data all the way down, and once you
+
+66
+00:07:14,000 --> 00:07:22,000
+see the shape, the code writes itself. Here's the bottom line. A Claude call is one JSON object
+
+67
+00:07:22,000 --> 00:07:29,000
+out and another back. Look for model, messages, and max tokens going out, and content, stop reason,
+
+68
+00:07:29,000 --> 00:07:33,000
+and usage coming back. The trap is treating content like a string.
+
+69
+00:07:34,000 --> 00:07:40,000
+That wraps up JSON requests and response bodies. Let's keep going in the next lesson.
+

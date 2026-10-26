@@ -1,0 +1,260 @@
+1
+00:00:00,000 --> 00:00:04,000
+Content boundaries are where prompt injection lives. Get the line between instructions and
+
+2
+00:00:04,000 --> 00:00:10,000
+untrusted data wrong, and a single retrieved document can hijack what your app does.
+
+3
+00:00:11,000 --> 00:00:15,000
+This lesson covers how to mark that boundary, scope data access,
+
+4
+00:00:15,000 --> 00:00:19,000
+and validate what comes back before you act on it. Let's break it down.
+
+5
+00:00:20,000 --> 00:00:25,000
+Let's ground the vocabulary first, because the whole lesson turns on three ideas.
+
+6
+00:00:25,000 --> 00:00:30,000
+Content boundaries are the explicit line you draw between trusted developer instructions
+
+7
+00:00:30,000 --> 00:00:37,000
+and untrusted external content inside a prompt. You mark that line so the model treats data
+
+8
+00:00:37,000 --> 00:00:43,000
+as data, not as commands. Untrusted input is anything your application didn't author and
+
+9
+00:00:43,000 --> 00:00:49,000
+can't vouch for. End user messages, retrieved documents, web content, and tool results all
+
+10
+00:00:49,000 --> 00:00:54,000
+count, no matter how internal the source feels. Trusted context is the opposite,
+
+11
+00:00:54,000 --> 00:00:59,000
+it's your system prompt and the instructions you control. Keeping these three straight is what
+
+12
+00:00:59,000 --> 00:01:04,000
+stops injected text from being read as an order your app then carries out.
+
+13
+00:01:05,000 --> 00:01:11,000
+So how do you actually draw that line in a prompt? You use structure the API already gives you,
+
+14
+00:01:11,000 --> 00:01:16,000
+not clever wording. Start by putting your real instructions in the system role,
+
+15
+00:01:16,000 --> 00:01:22,000
+and keeping user messages and any external data in the user role. That separation alone
+
+16
+00:01:22,000 --> 00:01:27,000
+signals authority. Next, when you include retrieved documents or fetched content,
+
+17
+00:01:27,000 --> 00:01:34,000
+wrap each one in labeled XML tags so the model can see exactly where the data starts and stops.
+
+18
+00:01:34,000 --> 00:01:40,000
+And never paste untrusted text inline with your instructions, where the model can't tell your
+
+19
+00:01:40,000 --> 00:01:45,000
+words from an attacker's. The point isn't the exact tag you pick, it's that structure,
+
+20
+00:01:45,000 --> 00:01:50,000
+not hope, tells the model which text is authority and which is just content to reason over.
+
+21
+00:01:52,000 --> 00:01:58,000
+Here's the part that trips up even careful developers. Untrusted input doesn't only come
+
+22
+00:01:58,000 --> 00:02:03,000
+from the user, it arrives through several channels, and you have to treat all of them
+
+23
+00:02:03,000 --> 00:02:10,000
+as potentially hostile. The obvious one is user messages. Anything someone types can carry an
+
+24
+00:02:10,000 --> 00:02:17,000
+injection aimed at your instructions. Less obvious are retrieved documents, files, web pages,
+
+25
+00:02:17,000 --> 00:02:22,000
+and knowledge base results can all hide instructions in their text, even when they
+
+26
+00:02:22,000 --> 00:02:28,000
+come from your own internal store. And the one people forget entirely is tool results.
+
+27
+00:02:29,000 --> 00:02:35,000
+Output from a tool or an API call is untrusted input too. An injection can arrive through a
+
+28
+00:02:35,000 --> 00:02:41,000
+returned payload just as easily as through a chat message. If your code didn't author it,
+
+29
+00:02:41,000 --> 00:02:47,000
+treat it as suspect. Boundaries aren't only about how you format the prompt, they're also about what
+
+30
+00:02:47,000 --> 00:02:53,000
+a given call is allowed to touch in the first place. The principle here is least privilege.
+
+31
+00:02:53,000 --> 00:03:00,000
+Give each call only the data and the tools that specific task actually needs, and nothing more.
+
+32
+00:03:00,000 --> 00:03:06,000
+Draw a clear line between what Claude is allowed to see and what it's allowed to emit, because
+
+33
+00:03:06,000 --> 00:03:12,000
+those are two different scopes. And do your data minimization on the way in, not just by filtering
+
+34
+00:03:12,000 --> 00:03:18,000
+the answer on the way out. Redact or tokenize sensitive values before they ever enter the prompt
+
+35
+00:03:18,000 --> 00:03:24,000
+or the logs. Why go to the trouble? Because when an injection does slip through, and eventually
+
+36
+00:03:24,000 --> 00:03:30,000
+one will, tight scoping is what shrinks the blast radius to something you can contain.
+
+37
+00:03:31,000 --> 00:03:35,000
+Let's connect boundaries to the data risks they're actually protecting against.
+
+38
+00:03:35,000 --> 00:03:39,000
+Data leakage is the unintended exposure of things that should stay hidden.
+
+39
+00:03:40,000 --> 00:03:45,000
+Secrets, another user's data, even your own system prompt contents. And it doesn't only
+
+40
+00:03:45,000 --> 00:03:50,000
+leak through the final reply. It leaks through tool arguments, through error messages,
+
+41
+00:03:50,000 --> 00:03:57,000
+and through logs. PII handling is your discipline for personal data. Minimize what you collect,
+
+42
+00:03:57,000 --> 00:04:03,000
+then redact or tokenize it before it ever enters a prompt or a log, and restrict who can reach it.
+
+43
+00:04:03,000 --> 00:04:09,000
+Underneath all of this sit three properties. Confidentiality is about who may read. Integrity
+
+44
+00:04:09,000 --> 00:04:17,000
+is about who may change. Privacy is about lawful, minimal use of personal data. Injection and
+
+45
+00:04:17,000 --> 00:04:24,000
+leakage can threaten all three at once. The last boundary is the one on the way out. Before your
+
+46
+00:04:24,000 --> 00:04:31,000
+code acts on anything, Claude returns. Validate it. Start by checking the payload against the schema
+
+47
+00:04:31,000 --> 00:04:37,000
+you declared, so a response with the wrong shape gets caught before it reaches your database or an
+
+48
+00:04:37,000 --> 00:04:44,000
+API call. Then parse defensively. Even with structured outputs guaranteeing valid JSON,
+
+49
+00:04:44,000 --> 00:04:50,000
+write code that expects a field might be missing or malformed rather than trusting the response
+
+50
+00:04:50,000 --> 00:04:56,000
+like a signed contract. And when a payload fails validation, fail loudly. Surface the error and
+
+51
+00:04:56,000 --> 00:05:03,000
+re-prompt with it so the model can correct instead of silently acting on bad data. Remember, guaranteed
+
+52
+00:05:03,000 --> 00:05:10,000
+JSON only promises the shape. It can still carry a plausible looking value that's simply wrong.
+
+53
+00:05:10,000 --> 00:05:16,000
+And that's exactly what this check exists to catch. Let's pull this together into three habits
+
+54
+00:05:16,000 --> 00:05:22,000
+you can apply on every build. First, separate instructions from data. Keep your trusted
+
+55
+00:05:22,000 --> 00:05:28,000
+instructions and any untrusted content in different roles and clearly labeled tags,
+
+56
+00:05:28,000 --> 00:05:36,000
+so injected text can never be read as a command. Second, least privilege. Give each call only the
+
+57
+00:05:36,000 --> 00:05:43,000
+data and the tools that task genuinely needs. So if something does slip through, it has the smallest
+
+58
+00:05:43,000 --> 00:05:50,000
+possible reach into your systems. Third, validate output. Check every payload that comes back
+
+59
+00:05:50,000 --> 00:05:57,000
+against both its schema and your business rules before any code acts on it. None of these three
+
+60
+00:05:57,000 --> 00:06:03,000
+is exotic. They're just disciplined defaults and together they turn boundaries from a nice idea
+
+61
+00:06:03,000 --> 00:06:06,000
+into something your application actually enforces on every request.
+
+62
+00:06:08,000 --> 00:06:12,000
+Here's the bottom line. Separate trusted instructions from untrusted data.
+
+63
+00:06:12,000 --> 00:06:19,000
+Treat user input, retrieved documents, and tool results as untrusted. Every one of them. Give each
+
+64
+00:06:19,000 --> 00:06:26,000
+call only the data and tools that it needs to do its job and validate every payload before you act.
+
+65
+00:06:26,000 --> 00:06:30,000
+That wraps up setting content and data boundaries. On to the next video.
+

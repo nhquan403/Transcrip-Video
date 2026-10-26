@@ -1,0 +1,400 @@
+1
+00:00:00,000 --> 00:00:03,000
+On any team, the moment you share a plugin, you run into the
+
+2
+00:00:03,000 --> 00:00:08,000
+it-works-on-my-machine problem. A dependency that resolves for you
+
+3
+00:00:08,000 --> 00:00:12,000
+fails for a teammate. This lesson covers how to share dependencies
+
+4
+00:00:12,000 --> 00:00:16,000
+through version control, what makes resolution reproducible,
+
+5
+00:00:16,000 --> 00:00:20,000
+and where broken installs come from. Let's start with the mindset that
+
+6
+00:00:20,000 --> 00:00:24,000
+prevents most of this pain. It's tempting to treat a plugin as a
+
+7
+00:00:24,000 --> 00:00:29,000
+self-contained box you drop in, and it just runs. For anything with
+
+8
+00:00:29,000 --> 00:00:33,000
+dependencies, that's wrong. A plugin is really the tip of a
+
+9
+00:00:33,000 --> 00:00:37,000
+graph. It needs other plugins present, enabled, and at compatible
+
+10
+00:00:37,000 --> 00:00:41,000
+versions. When you install it on your own machine,
+
+11
+00:00:41,000 --> 00:00:43,000
+resolution quietly pulls all of that together,
+
+12
+00:00:43,000 --> 00:00:48,000
+so it looks self-contained. But hand the same plugin to a teammate
+
+13
+00:00:48,000 --> 00:00:52,000
+without sharing what it depends on, and the features break for them.
+
+14
+00:00:52,000 --> 00:00:55,000
+The plugin isn't the unit of sharing. The plugin plus
+
+15
+00:00:55,000 --> 00:01:01,000
+its resolved dependencies is. So how does a version range actually
+
+16
+00:01:01,000 --> 00:01:05,000
+find a real release? Through git tags. When you pin a
+
+17
+00:01:05,000 --> 00:01:09,000
+dependency to a range, Cloud Code resolves it against tags on
+
+18
+00:01:09,000 --> 00:01:13,000
+the marketplace repository. Named in a specific pattern, the
+
+19
+00:01:13,000 --> 00:01:18,000
+plugin name two dashes, a V, then the version. The plugin
+
+20
+00:01:18,000 --> 00:01:22,000
+author publishes those tags by running plugin tag with push.
+
+21
+00:01:22,000 --> 00:01:27,000
+Resolution then walks the tags, finds the highest one satisfying your range,
+
+22
+00:01:27,000 --> 00:01:32,000
+and fetches it. And if no tag matches, the dependent plugin is disabled with a
+
+23
+00:01:32,000 --> 00:01:37,000
+no matching tag error, rather than guessing at a version. That
+
+24
+00:01:37,000 --> 00:01:40,000
+tag-based scheme is exactly what makes a resolve
+
+25
+00:01:40,000 --> 00:01:44,000
+reproducible for everyone who pulls the repo.
+
+26
+00:01:44,000 --> 00:01:48,000
+Here's how the team actually stays in sync. The dependency declarations
+
+27
+00:01:48,000 --> 00:01:51,000
+live in files you commit. The plugin manifest
+
+28
+00:01:51,000 --> 00:01:55,000
+carries its dependencies array, and the marketplace file
+
+29
+00:01:55,000 --> 00:01:59,000
+carries its own settings. Commit those, and every teammate
+
+30
+00:01:59,000 --> 00:02:04,000
+who clones or pulls gets the exact same declared dependencies.
+
+31
+00:02:04,000 --> 00:02:08,000
+Enabled plugins are recorded in project settings that you commit to.
+
+32
+00:02:08,000 --> 00:02:11,000
+So the shared environment travels with the repository.
+
+33
+00:02:11,000 --> 00:02:16,000
+The principle is the same one you already use for application config.
+
+34
+00:02:16,000 --> 00:02:20,000
+If behavior depends on it, it belongs in version control,
+
+35
+00:02:20,000 --> 00:02:23,000
+not in someone's head or a private local file.
+
+36
+00:02:23,000 --> 00:02:27,000
+Do that, and a fresh clone resolves to the same working plugin set
+
+37
+00:02:27,000 --> 00:02:31,000
+every time. When a dependency does go wrong,
+
+38
+00:02:31,000 --> 00:02:35,000
+Claude code names the failure precisely, and knowing the codes
+
+39
+00:02:35,000 --> 00:02:40,000
+turns guesswork into diagnosis. Dependency unsatisfied means a required
+
+40
+00:02:40,000 --> 00:02:44,000
+dependency is missing or disabled. Dependency version
+
+41
+00:02:44,000 --> 00:02:48,000
+unsatisfied means it's installed, but the version sits outside the
+
+42
+00:02:48,000 --> 00:02:52,000
+declared range. No matching tag means no published tag
+
+43
+00:02:52,000 --> 00:02:56,000
+satisfies the range at all, often because the author never pushed
+
+44
+00:02:56,000 --> 00:03:00,000
+one. And range conflict means two plugins
+
+45
+00:03:00,000 --> 00:03:03,000
+asked for versions that can't be reconciled.
+
+46
+00:03:03,000 --> 00:03:06,000
+You read these straight from plugin list with the JSON flag
+
+47
+00:03:06,000 --> 00:03:10,000
+under an errors field. So when a teammate says the plugin's broken,
+
+48
+00:03:10,000 --> 00:03:16,000
+you don't poke around. You pull the code, and you know exactly which layer failed.
+
+49
+00:03:16,000 --> 00:03:19,000
+There's one boundary that surprises people the first time they hit it.
+
+50
+00:03:19,000 --> 00:03:23,000
+Marketplaces. If a plugin and its dependency
+
+51
+00:03:23,000 --> 00:03:26,000
+come from the same marketplace, resolution just works.
+
+52
+00:03:26,000 --> 00:03:31,000
+But a cross-marketplace dependency, where a plugin depends on something
+
+53
+00:03:31,000 --> 00:03:34,000
+in a different catalog, is blocked by default.
+
+54
+00:03:34,000 --> 00:03:38,000
+You have to explicitly allow it. The root marketplace
+
+55
+00:03:38,000 --> 00:03:42,000
+lists the target in an allow list field in its marketplace file.
+
+56
+00:03:42,000 --> 00:03:46,000
+Without that, the install fails with a cross-marketplace error.
+
+57
+00:03:46,000 --> 00:03:50,000
+And trust doesn't chain, so listing one marketplace doesn't quietly extend to
+
+58
+00:03:50,000 --> 00:03:55,000
+others it references. The reasoning is security.
+
+59
+00:03:55,000 --> 00:03:59,000
+Reaching into an unlisted catalog is a supply chain risk.
+
+60
+00:03:59,000 --> 00:04:04,000
+So the default is no, and you opt in deliberately.
+
+61
+00:04:04,000 --> 00:04:08,000
+Let's put diagnosis into a repeatable move. A teammate reports a plugin
+
+62
+00:04:08,000 --> 00:04:13,000
+isn't working. Instead of reinstalling blindly, you run plugin list with the
+
+63
+00:04:13,000 --> 00:04:17,000
+JSON flag and read the errors field. That field
+
+64
+00:04:17,000 --> 00:04:21,000
+carries the exact code, so you learn immediately whether the
+
+65
+00:04:21,000 --> 00:04:25,000
+dependency is missing, the wrong version, untagged, or in
+
+66
+00:04:25,000 --> 00:04:28,000
+conflict. Each code points at a different fix.
+
+67
+00:04:28,000 --> 00:04:33,000
+Missing means install or enable it. Wrong version means adjust the range
+
+68
+00:04:33,000 --> 00:04:39,000
+or bump the release. No matching tag usually means the author has to push one.
+
+69
+00:04:39,000 --> 00:04:42,000
+From there, the repair is targeted, not trial and error.
+
+70
+00:04:42,000 --> 00:04:46,000
+The habit I want you to build is read the error code first,
+
+71
+00:04:46,000 --> 00:04:51,000
+then act. A few smaller behaviors round this out, and they matter
+
+72
+00:04:51,000 --> 00:04:55,000
+when plugins churn. First, default enabled.
+
+73
+00:04:55,000 --> 00:04:59,000
+A dependency pulled in to satisfy an active plugin is written as enabled
+
+74
+00:04:59,000 --> 00:05:05,000
+true, even when its own manifest sets default enabled to false. The active
+
+75
+00:05:05,000 --> 00:05:09,000
+plugin's need overrides the dependency's own preference.
+
+76
+00:05:09,000 --> 00:05:14,000
+Second, prune. As plugins get removed over time,
+
+77
+00:05:14,000 --> 00:05:17,000
+their auto-installed dependencies pile up as orphans,
+
+78
+00:05:17,000 --> 00:05:21,000
+and prune clears the ones nothing points at anymore.
+
+79
+00:05:21,000 --> 00:05:24,000
+Third, the allow list field in the marketplace file
+
+80
+00:05:24,000 --> 00:05:28,000
+is what you edit when a legitimate cross-catalog dependency
+
+81
+00:05:28,000 --> 00:05:32,000
+has to be permitted. Keep these in mind, and your manifests stay honest as the
+
+82
+00:05:32,000 --> 00:05:36,000
+plugin set evolves rather than rotting into stale
+
+83
+00:05:36,000 --> 00:05:41,000
+mystery state. Dependency management isn't a one-time
+
+84
+00:05:41,000 --> 00:05:46,000
+setup. It's ongoing maintenance. Every time you add, update, or remove a
+
+85
+00:05:46,000 --> 00:05:49,000
+plugin, the declared dependencies can drift from
+
+86
+00:05:49,000 --> 00:05:53,000
+what's actually installed. So treat the manifests as living files.
+
+87
+00:05:53,000 --> 00:05:57,000
+When you add a plugin, commit its dependency declarations.
+
+88
+00:05:57,000 --> 00:06:01,000
+When you bump a version, update the range and re-tag.
+
+89
+00:06:01,000 --> 00:06:04,000
+When you retire a plugin, prune the orphans
+
+90
+00:06:04,000 --> 00:06:07,000
+it leaves behind and commit that cleanup too.
+
+91
+00:06:07,000 --> 00:06:11,000
+It's the same commit your config discipline from the settings lesson
+
+92
+00:06:11,000 --> 00:06:15,000
+applied to the plugin set. Skip it, and the gap between
+
+93
+00:06:15,000 --> 00:06:20,000
+declared and installed is exactly where the next broken install hides.
+
+94
+00:06:20,000 --> 00:06:25,000
+Sharing plugin dependencies gives your team one reproducible environment, and
+
+95
+00:06:25,000 --> 00:06:30,000
+the mechanism is version control. Commit the declarations, the enabled
+
+96
+00:06:30,000 --> 00:06:34,000
+plugin settings, and the version tags so a fresh clone
+
+97
+00:06:34,000 --> 00:06:38,000
+resolves the same set. Keep in mind, cross-marketplace
+
+98
+00:06:38,000 --> 00:06:41,000
+dependencies stay blocked until you allow list them.
+
+99
+00:06:41,000 --> 00:06:44,000
+Keep the manifests current, and everyone stays in sync.
+
+100
+00:06:44,000 --> 00:06:49,000
+That wraps up this lesson. I'll see you in the next one.
+

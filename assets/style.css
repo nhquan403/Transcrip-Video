@@ -59,3 +59,17 @@ video::cue { font-size: var(--sub-size); background: rgba(0, 0, 0, .6); }
 .question button.opt.wrong { border-color: var(--bad); background: #2d1414; }
 .question .why { margin-top: 8px; font-size: 14px; color: #cfcfcf; }
 .question .why[hidden] { display: none; }
+
+/* Course parts on the home page */
+.part details > summary { cursor: pointer; list-style: none; display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline;
+  font-size: 20px; font-weight: 600; margin: 28px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
+.part details > summary::-webkit-details-marker { display: none; }
+.part details > summary::before { content: '▸'; color: var(--muted); }
+.part details[open] > summary::before { content: '▾'; }
+.part .part-meta { font-size: 14px; font-weight: 400; }
+
+/* Previous / next lesson */
+.pager { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 40px 0 16px; }
+.pager a { text-decoration: none; color: var(--text); }
+.pager a:hover { border-color: var(--accent); }
+.pager a:last-child:not(:first-child) { text-align: right; }

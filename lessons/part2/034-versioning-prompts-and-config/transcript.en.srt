@@ -1,0 +1,252 @@
+1
+00:00:00,000 --> 00:00:06,000
+Welcome back. Previously we learned about pinning a model. Now let's pin everything around it
+
+2
+00:00:06,000 --> 00:00:12,000
+because a prompt change can quietly regress behavior just like a code change. This lesson
+
+3
+00:00:12,000 --> 00:00:19,000
+covers treating prompts and config as versioned artifacts so every behavior change is traceable
+
+4
+00:00:19,000 --> 00:00:26,000
+and reversible. Let's dig in. Let's lock in three terms up front. First, prompt versioning.
+
+5
+00:00:26,000 --> 00:00:32,000
+That means treating your prompts as versioned artifacts, tracked in source control, and tied
+
+6
+00:00:32,000 --> 00:00:38,000
+to a specific model version so a change is reviewable, reproducible, and safe to roll back.
+
+7
+00:00:39,000 --> 00:00:45,000
+Second, a regression eval set. That's a frozen collection of test inputs and the outputs you
+
+8
+00:00:45,000 --> 00:00:51,000
+expect and you run every new version against it to catch a behavior regression before your users
+
+9
+00:00:51,000 --> 00:00:58,000
+ever see it. Third, the anthropic version header. That's a required request header that pins the
+
+10
+00:00:58,000 --> 00:01:04,000
+API's request and response behavior to a dated version so the contract doesn't shift under you.
+
+11
+00:01:04,000 --> 00:01:11,000
+Versioning, evals, and the version header. Those three carry the whole lesson. As we established,
+
+12
+00:01:11,000 --> 00:01:17,000
+a prompt is code. It directly shapes what your application does. The new discipline this lesson
+
+13
+00:01:17,000 --> 00:01:25,000
+adds is the pairing. Tie each prompt version to the exact model ID it was tuned for since a prompt
+
+14
+00:01:25,000 --> 00:01:31,000
+and a model behave as a pair. Run wording tuned for one pinned model against a different one
+
+15
+00:01:31,000 --> 00:01:38,000
+and the same prompt can shift tone, formatting, or tool choices so the pair is what you actually test
+
+16
+00:01:38,000 --> 00:01:44,000
+and ship. That still means keeping every system prompt in source control, not pasted ad hoc into
+
+17
+00:01:44,000 --> 00:01:50,000
+a console, and reviewing prompt edits the way you'd review a pull request with someone else's
+
+18
+00:01:50,000 --> 00:01:56,000
+eyes on the diff. The prompts that regress silently are almost always the ones somebody
+
+19
+00:01:56,000 --> 00:02:03,000
+edited live with no record. So what exactly should you be versioning? Three things and they travel
+
+20
+00:02:03,000 --> 00:02:10,000
+together. First, the prompt text itself. Every system prompt and instruction block committed as a file
+
+21
+00:02:10,000 --> 00:02:17,000
+so each edit shows up in your history. Second, the model ID. The exact pinned ID that prompt was
+
+22
+00:02:17,000 --> 00:02:23,000
+tuned against, versioned right next to the prompt because the two only make sense as a pair. Third,
+
+23
+00:02:23,000 --> 00:02:30,000
+the config. Your settings.json, your permissions, your hooks, all committed so the whole behavioral
+
+24
+00:02:30,000 --> 00:02:37,000
+setup is reproducible from the repo. Prompt, model ID, config. When those three move as one
+
+25
+00:02:37,000 --> 00:02:42,000
+versioned unit, anyone can check out a commit and get exactly the behavior it shipped with.
+
+26
+00:02:43,000 --> 00:02:51,000
+Now the one concrete versioning pin the API hands you directly. The anthropic version header. Every
+
+27
+00:02:51,000 --> 00:02:58,000
+request you send carries it and it pins the request and response behavior to a dated API version.
+
+28
+00:02:58,000 --> 00:03:04,000
+It's required, though in practice the official SDKs set it for you automatically so you rarely
+
+29
+00:03:04,000 --> 00:03:10,000
+type it by hand. Here's why it matters. Within a given version, anthropic only adds things. New
+
+30
+00:03:10,000 --> 00:03:17,000
+optional inputs, new output values, new event types, but it won't break the fields you already rely on.
+
+31
+00:03:17,000 --> 00:03:23,000
+Newer versions can change the contract and older ones eventually get deprecated. So pin the version
+
+32
+00:03:23,000 --> 00:03:29,000
+you built against explicitly and treat moving to a newer one as a deliberate tested upgrade,
+
+33
+00:03:29,000 --> 00:03:35,000
+not a surprise. Let's put the two ways of changing a prompt side by side because the
+
+34
+00:03:35,000 --> 00:03:42,000
+gap is huge. In the ad hoc world, someone tweaks the live prompt to patch one annoying case.
+
+35
+00:03:42,000 --> 00:03:48,000
+There's no record, no review, and when something breaks next week, no way to reproduce what
+
+36
+00:03:48,000 --> 00:03:54,000
+yesterday's behavior even was. In the versioned world, that same edit lands as a reviewed commit
+
+37
+00:03:55,000 --> 00:04:01,000
+tied to the model ID it was tested against. Your history shows exactly what changed and when,
+
+38
+00:04:01,000 --> 00:04:07,000
+and here's the real payoff. Because every version is captured, you can roll back to any known good
+
+39
+00:04:07,000 --> 00:04:15,000
+state in seconds. One is a guess, the other is a controlled reversible change. This next rule is
+
+40
+00:04:15,000 --> 00:04:21,000
+the one that saves you from shipping a regression. Never promote a new model or a new prompt version
+
+41
+00:04:21,000 --> 00:04:27,000
+straight into production. Run the candidate against your frozen eval set first, the same
+
+42
+00:04:27,000 --> 00:04:34,000
+fixed inputs every time. Then compare its outputs to what the current production version produces
+
+43
+00:04:34,000 --> 00:04:39,000
+on those same cases. You're looking for one thing. Does the new version match or beat what
+
+44
+00:04:39,000 --> 00:04:46,000
+you've already got? If it does, promote it. If it regresses on even a few important cases,
+
+45
+00:04:46,000 --> 00:04:54,000
+it stays in staging, not in front of users. That frozen eval set is what turns a nervous
+
+46
+00:04:54,000 --> 00:05:00,000
+guess about a new version into an actual evidence-based decision. Beyond your prompts,
+
+47
+00:05:00,000 --> 00:05:07,000
+let's name three ways versions actually get tracked. First, plain source control. Your own
+
+48
+00:05:07,000 --> 00:05:14,000
+commits are the primary record. The prompt, its model ID, and your config all live in Git, so your
+
+49
+00:05:14,000 --> 00:05:22,000
+commit history is the version log. Second, semver in a plugin. A clod code plugin declares a version
+
+50
+00:05:22,000 --> 00:05:29,000
+field using major, minor, patch, so anyone consuming it can pin or track it deliberately.
+
+51
+00:05:30,000 --> 00:05:37,000
+Third, the commit shaw fallback. When a plugin leaves its version field unset, the Git commit
+
+52
+00:05:37,000 --> 00:05:43,000
+shaw becomes the version automatically, which means every single commit counts as a brand new
+
+53
+00:05:43,000 --> 00:05:51,000
+version. Source control, semver, and the shaw fallback. Three mechanisms. One goal, reproducibility.
+
+54
+00:05:53,000 --> 00:05:59,000
+So, a release lands and behavior gets worse. This is the moment all that versioning pays off.
+
+55
+00:05:59,000 --> 00:06:06,000
+Because everything is captured, rolling back is a revert, not a scramble. First, repoint your pin
+
+56
+00:06:06,000 --> 00:06:13,000
+to the last known good model ID. Second, restore the matching prompt version straight from source
+
+57
+00:06:13,000 --> 00:06:19,000
+control, the one that pairs with that ID. Third, confirm the rollback by running it against the
+
+58
+00:06:19,000 --> 00:06:25,000
+same eval set that caught the regression in the first place. And that's the whole point of versioning
+
+59
+00:06:25,000 --> 00:06:32,000
+the prompt, the model ID, and the config together. When they move as one unit, recovery is a clean
+
+60
+00:06:32,000 --> 00:06:39,000
+revert to a state you know worked in minutes. Here's the bottom line. Versioning treats prompts,
+
+61
+00:06:39,000 --> 00:06:46,000
+model IDs, and config as one reversible unit. It matters because a prompt change can regress
+
+62
+00:06:46,000 --> 00:06:53,000
+behavior just like code. Just remember, test every version against a frozen eval set before promoting
+
+63
+00:06:53,000 --> 00:06:59,000
+it. And that wraps up versioning prompts and config. When you're ready, I'll see you in the next one.
+

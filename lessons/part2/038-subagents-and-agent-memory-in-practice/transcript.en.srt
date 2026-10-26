@@ -1,0 +1,448 @@
+1
+00:00:00,000 --> 00:00:05,000
+A sub-agent and the main-agent are similar, but they live in different zones.
+
+2
+00:00:05,000 --> 00:00:08,000
+The main-agent holds your whole conversation.
+
+3
+00:00:08,000 --> 00:00:14,000
+A sub-agent starts fresh, does one job in isolation, and hands back a summary.
+
+4
+00:00:14,000 --> 00:00:20,000
+This lesson maps that line, shows how to define a sub-agent, and clears up what agent memory is.
+
+5
+00:00:20,000 --> 00:00:22,000
+Let's break it down.
+
+6
+00:00:22,000 --> 00:00:25,000
+Let's anchor three terms before we go deeper.
+
+7
+00:00:25,000 --> 00:00:27,000
+First, a sub-agent.
+
+8
+00:00:27,000 --> 00:00:32,000
+That's a separate, clawed code instance you spawn to handle one delegated subtask, and
+
+9
+00:00:32,000 --> 00:00:37,000
+it runs with its own tools and permissions in an isolated context.
+
+10
+00:00:37,000 --> 00:00:40,000
+Second, that isolated context.
+
+11
+00:00:40,000 --> 00:00:43,000
+It means the sub-agent has its own context window.
+
+12
+00:00:43,000 --> 00:00:47,000
+It doesn't see your conversation history or the files you've already opened.
+
+13
+00:00:47,000 --> 00:00:51,000
+And when it's done, only a summary comes back to the main-agent.
+
+14
+00:00:51,000 --> 00:00:54,000
+Third, agent memory.
+
+15
+00:00:54,000 --> 00:00:59,000
+That's persistent state an agent keeps across sessions, living outside the live context window.
+
+16
+00:00:59,000 --> 00:01:04,000
+So it survives compaction and carries over from one session to the next.
+
+17
+00:01:04,000 --> 00:01:06,000
+Sub-agent, isolation, memory.
+
+18
+00:01:06,000 --> 00:01:08,000
+Hold on to those three.
+
+19
+00:01:08,000 --> 00:01:12,000
+Let's zoom in on the one property that defines a sub-agent.
+
+20
+00:01:12,000 --> 00:01:15,000
+It gets a fresh, separate context window.
+
+21
+00:01:15,000 --> 00:01:16,000
+That's the whole point.
+
+22
+00:01:16,000 --> 00:01:21,000
+It doesn't inherit your chat history, it doesn't see the skills you've already invoked, and
+
+23
+00:01:21,000 --> 00:01:25,000
+it doesn't know about the files Claude has read for you.
+
+24
+00:01:25,000 --> 00:01:26,000
+It starts clean.
+
+25
+00:01:26,000 --> 00:01:32,000
+It runs with its own system prompt, its own set of tools, and its own permissions, all
+
+26
+00:01:32,000 --> 00:01:34,000
+scoped to the job you handed it.
+
+27
+00:01:34,000 --> 00:01:39,000
+And when it finishes, it doesn't dump all its reasoning back into your conversation.
+
+28
+00:01:39,000 --> 00:01:41,000
+It returns a summary.
+
+29
+00:01:41,000 --> 00:01:42,000
+Here's the mindset shift.
+
+30
+00:01:42,000 --> 00:01:46,000
+That isolation isn't a limitation to design around.
+
+31
+00:01:46,000 --> 00:01:53,000
+It's the reason to use a sub-agent in the first place, because it keeps your main context clean.
+
+32
+00:01:53,000 --> 00:01:55,000
+So how do you actually create one?
+
+33
+00:01:55,000 --> 00:02:01,000
+A sub-agent is a markdown file with YAML front matter at the top, and the body of that file
+
+34
+00:02:01,000 --> 00:02:03,000
+becomes the sub-agent's system prompt.
+
+35
+00:02:03,000 --> 00:02:05,000
+Here's the simple part.
+
+36
+00:02:05,000 --> 00:02:10,000
+Only two fields are required, a name and a description. That's it.
+
+37
+00:02:10,000 --> 00:02:11,000
+Everything else is optional.
+
+38
+00:02:11,000 --> 00:02:17,000
+You can specify which tools it's allowed to use, which model it runs on, and what permissions
+
+39
+00:02:17,000 --> 00:02:19,000
+it has, but you don't have to.
+
+40
+00:02:19,000 --> 00:02:26,000
+If you leave the tools field out, the sub-agent just inherits the full set the main agent has.
+
+41
+00:02:26,000 --> 00:02:28,000
+And that description does double duty.
+
+42
+00:02:28,000 --> 00:02:33,000
+It's not only a label, it's what Claude reads to decide, on its own, whether to hand a given
+
+43
+00:02:33,000 --> 00:02:36,000
+task off to this sub-agent.
+
+44
+00:02:36,000 --> 00:02:40,000
+So write it to describe when the agent should be used.
+
+45
+00:02:40,000 --> 00:02:46,000
+Let's put the two side by side, because seeing the contrast makes the isolation click.
+
+46
+00:02:46,000 --> 00:02:49,000
+The main agent is the conversation you're in right now.
+
+47
+00:02:49,000 --> 00:02:51,000
+It has the full picture.
+
+48
+00:02:51,000 --> 00:02:55,000
+Everything you've said, every file it's read, every skill it's pulled in, it all lives in
+
+49
+00:02:55,000 --> 00:02:57,000
+that one context.
+
+50
+00:02:57,000 --> 00:02:59,000
+A sub-agent has none of that.
+
+51
+00:02:59,000 --> 00:03:03,000
+It starts from scratch, with only the task you delegate to it.
+
+52
+00:03:03,000 --> 00:03:08,000
+It works that task off in its own space, and then it reports back with a summary rather
+
+53
+00:03:08,000 --> 00:03:10,000
+than its full transcript.
+
+54
+00:03:10,000 --> 00:03:12,000
+Why does that matter?
+
+55
+00:03:12,000 --> 00:03:17,000
+Because all the messy intermediate work, the tool calls, the dead ends, the long outputs,
+
+56
+00:03:17,000 --> 00:03:20,000
+they stay out of your main context.
+
+57
+00:03:20,000 --> 00:03:24,000
+Your conversation stays clean, and it stays focused.
+
+58
+00:03:24,000 --> 00:03:28,000
+There are three ways to put a sub-agent to work, and they escalate in how much control
+
+59
+00:03:28,000 --> 00:03:30,000
+you're handing over.
+
+60
+00:03:30,000 --> 00:03:32,000
+The first is just natural language.
+
+61
+00:03:32,000 --> 00:03:37,000
+You ask Claude to use a particular sub-agent, and it decides whether to delegate, based
+
+62
+00:03:37,000 --> 00:03:39,000
+on that sub-agent's description.
+
+63
+00:03:39,000 --> 00:03:42,000
+The second is an at-mention.
+
+64
+00:03:42,000 --> 00:03:49,000
+You mention the agent by name, and that guarantees that specific sub-agent runs for the next task. No guessing.
+
+65
+00:03:49,000 --> 00:03:51,000
+The third is a startup flag.
+
+66
+00:03:51,000 --> 00:03:56,000
+You launch with the agent flag set, and the entire session runs as that sub-agent from
+
+67
+00:03:56,000 --> 00:03:58,000
+the very first message.
+
+68
+00:03:58,000 --> 00:04:00,000
+So it's a spectrum.
+
+69
+00:04:00,000 --> 00:04:04,000
+Suggest it, guarantee it for one task, or commit the whole session to it.
+
+70
+00:04:04,000 --> 00:04:09,000
+Now, let's clear up the biggest point of confusion in this whole area.
+
+71
+00:04:09,000 --> 00:04:14,000
+People hear agent memory and think it's the same as Claude.md. It isn't.
+
+72
+00:04:14,000 --> 00:04:16,000
+Think about who's doing the writing.
+
+73
+00:04:16,000 --> 00:04:20,000
+Claude.md is you writing instructions for Claude to follow.
+
+74
+00:04:20,000 --> 00:04:23,000
+It's static, developer-authored rules.
+
+75
+00:04:23,000 --> 00:04:25,000
+Agent memory is the reverse.
+
+76
+00:04:25,000 --> 00:04:30,000
+It's durable state the agent writes for itself, updating it as it works.
+
+77
+00:04:30,000 --> 00:04:32,000
+That difference is everything.
+
+78
+00:04:32,000 --> 00:04:36,000
+One is your standing guidance that you author and maintain.
+
+79
+00:04:36,000 --> 00:04:38,000
+The other is the agent's own running notebook.
+
+80
+00:04:38,000 --> 00:04:44,000
+And because memory lives outside the live context window, it survives compaction, and
+
+81
+00:04:44,000 --> 00:04:46,000
+it carries over after a session ends.
+
+82
+00:04:46,000 --> 00:04:49,000
+So don't file these two under one heading.
+
+83
+00:04:49,000 --> 00:04:54,000
+They're complementary, but they come from opposite directions.
+
+84
+00:04:54,000 --> 00:04:57,000
+There's one more layer here, and it's a common trap on its own.
+
+85
+00:04:57,000 --> 00:05:03,000
+When people say agent memory in Claude code, they can mean two different systems.
+
+86
+00:05:03,000 --> 00:05:06,000
+The first is main agent auto-memory.
+
+87
+00:05:06,000 --> 00:05:12,000
+This is Claude writing notes to itself, learning from your corrections and preferences over time.
+
+88
+00:05:12,000 --> 00:05:17,000
+It's on by default, and it's stored in a per-project folder on your own machine.
+
+89
+00:05:17,000 --> 00:05:20,000
+So it's local to you, not synced across machines.
+
+90
+00:05:20,000 --> 00:05:23,000
+The second is sub-agent memory.
+
+91
+00:05:23,000 --> 00:05:29,000
+That's a sub-agent's own private store, and you turn it on with a field in the sub-agent's front matter.
+
+92
+00:05:29,000 --> 00:05:34,000
+It lets that one agent build up knowledge across sessions on its own.
+
+93
+00:05:34,000 --> 00:05:38,000
+Same word, memory, but two distinct mechanisms.
+
+94
+00:05:38,000 --> 00:05:42,000
+Keep them apart, and the two systems stay easy to reason about.
+
+95
+00:05:42,000 --> 00:05:46,000
+Let's tie this whole domain together with a decision you'll make constantly.
+
+96
+00:05:46,000 --> 00:05:53,000
+You've got a rule, a skill, and a sub-agent, and each one fits a different shape of problem.
+
+97
+00:05:53,000 --> 00:05:55,000
+Ask yourself three quick questions.
+
+98
+00:05:55,000 --> 00:06:00,000
+Is this an always-apply policy, something you want true on every turn?
+
+99
+00:06:00,000 --> 00:06:01,000
+Then it's a rule.
+
+100
+00:06:01,000 --> 00:06:05,000
+Is it an on-demand workflow, a procedure you only need sometimes?
+
+101
+00:06:05,000 --> 00:06:07,000
+Then package it as a skill.
+
+102
+00:06:07,000 --> 00:06:11,000
+Does it need to run in its own space, isolated from your main context?
+
+103
+00:06:11,000 --> 00:06:13,000
+Then delegate it to a sub-agent.
+
+104
+00:06:13,000 --> 00:06:18,000
+Rule, skill, sub-agent, policy, procedure, isolation.
+
+105
+00:06:18,000 --> 00:06:23,000
+When you match the mechanism to the actual job, your setup stays clean, your context
+
+106
+00:06:23,000 --> 00:06:28,000
+stays lean, and each piece does exactly what it's good at.
+
+107
+00:06:28,000 --> 00:06:29,000
+And here's the bottom line.
+
+108
+00:06:29,000 --> 00:06:37,000
+A sub-agent runs a delegated task in its own isolated context, and only a summary comes back.
+
+109
+00:06:37,000 --> 00:06:41,000
+It matters because the isolation keeps your main conversation clean.
+
+110
+00:06:41,000 --> 00:06:47,000
+Just remember, agent memory is the agent's own state, not your CloudMD file.
+
+111
+00:06:47,000 --> 00:06:50,000
+That covers sub-agents and agent memory in practice.
+
+112
+00:06:50,000 --> 00:06:51,000
+I'll see you in the next one.
+

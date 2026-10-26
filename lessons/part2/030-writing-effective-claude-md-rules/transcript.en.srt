@@ -1,0 +1,260 @@
+1
+00:00:00,000 --> 00:00:05,000
+Welcome back. A Claude.md file is where you hand Claude your standing rules,
+
+2
+00:00:05,000 --> 00:00:10,000
+and it loads at the start of every session. Get it right, and Claude works the way your team does.
+
+3
+00:00:10,000 --> 00:00:15,000
+This lesson walks through what makes a rule effective, what it costs, and why you commit it.
+
+4
+00:00:15,000 --> 00:00:22,000
+Let's dig in. Before we write a single rule, let's separate three things people constantly mix up,
+
+5
+00:00:22,000 --> 00:00:28,000
+because they behave very differently. First, Claude.md itself. These are developer-authored
+
+6
+00:00:28,000 --> 00:00:33,000
+rules that you write, and they load into context at the start of every session and apply to every
+
+7
+00:00:33,000 --> 00:00:41,000
+turn. Second, agent memory. That is durable state the agent itself writes and updates as it works,
+
+8
+00:00:41,000 --> 00:00:48,000
+and it survives context compaction and even session boundaries. Third, the context window.
+
+9
+00:00:48,000 --> 00:00:54,000
+That is the ephemeral working space for the current session, and it truncates as things fill up,
+
+10
+00:00:54,000 --> 00:01:01,000
+so nothing living there persists on its own. Claude.md is the one you author by hand,
+
+11
+00:01:01,000 --> 00:01:07,000
+and that is what this lesson is about. Here is the most important mindset to start with.
+
+12
+00:01:07,000 --> 00:01:14,000
+Claude treats your Claude.md as context to consider, not as configuration it is forced to
+
+13
+00:01:14,000 --> 00:01:20,000
+obey. The rules are guidance the model reads and weighs, not a hard constraint wired into the
+
+14
+00:01:20,000 --> 00:01:26,000
+system. That means a rule can be missed, especially when the context gets crowded and your
+
+15
+00:01:26,000 --> 00:01:31,000
+instruction is buried under everything else. So if an action genuinely has to be blocked,
+
+16
+00:01:31,000 --> 00:01:37,000
+a destructive command for example, don't rely on a written rule to stop it. Reach for a pre-tool
+
+17
+00:01:37,000 --> 00:01:44,000
+use hook instead, which runs deterministically before the tool executes and can deny the action
+
+18
+00:01:44,000 --> 00:01:49,000
+outright. Write rules to steer behavior and use hooks when you need real enforcement.
+
+19
+00:01:50,000 --> 00:01:58,000
+So what actually earns a place in your Claude.md? Three kinds of content pull their weight. First,
+
+20
+00:01:58,000 --> 00:02:03,000
+project structure. Tell Claude where things live, the key directories, and how the code base is
+
+21
+00:02:03,000 --> 00:02:10,000
+organized so it navigates without hunting around. Second, conventions. Spell out your coding style,
+
+22
+00:02:10,000 --> 00:02:16,000
+your naming, and the patterns the team follows. Stated plainly so the output matches your norms
+
+23
+00:02:16,000 --> 00:02:23,000
+instead of generic defaults. Third, commands. Put the exact build, test, and lint commands
+
+24
+00:02:23,000 --> 00:02:29,000
+right in the file, written verbatim, so Claude can copy and run them. Notice the theme. Every
+
+25
+00:02:29,000 --> 00:02:34,000
+one of these saves Claude from guessing something your team already knows, and that is what makes a
+
+26
+00:02:34,000 --> 00:02:41,000
+rule worth its tokens. Now the cost side, because this trips people up. Every line you put in
+
+27
+00:02:41,000 --> 00:02:48,000
+Claude.md loads into the context window, so treat that space as a budget you are spending. And here
+
+28
+00:02:48,000 --> 00:02:54,000
+is the key detail. The whole file loads in full, regardless of how long it is. There is no
+
+29
+00:02:54,000 --> 00:03:00,000
+summarizing and no truncation to fit. So a bloated file crowds out room the model needs for the
+
+30
+00:03:00,000 --> 00:03:05,000
+actual work in front of it. A good target is to keep it under a couple hundred lines.
+
+31
+00:03:05,000 --> 00:03:11,000
+The point to internalize is simple. Claude.md isn't free memory sitting off to the side.
+
+32
+00:03:11,000 --> 00:03:16,000
+It is tokens you pay for on every session, so spend them only on rules that earn their place.
+
+33
+00:03:17,000 --> 00:03:22,000
+Let's contrast two ways people write these files, because the difference decides whether the rules
+
+34
+00:03:22,000 --> 00:03:30,000
+actually work. On one side, scoped rules. They are short, specific, and testable. Structure,
+
+35
+00:03:30,000 --> 00:03:36,000
+conventions, and commands, each stated as a clear directive, the model can act on every turn
+
+36
+00:03:36,000 --> 00:03:42,000
+without guessing what you meant. On the other side, verbose prose. Long paragraphs of background
+
+37
+00:03:42,000 --> 00:03:50,000
+and rationale that read like documentation. The trouble is they burn context. They bury the one
+
+38
+00:03:50,000 --> 00:03:56,000
+instruction that mattered, and they make it harder for Claude to find and follow it. Same intent,
+
+39
+00:03:56,000 --> 00:04:02,000
+very different results. When you catch yourself explaining why at length, stop, and rewrite it
+
+40
+00:04:02,000 --> 00:04:10,000
+as a short directive that says what to do. Here is where Claude.md pays off for a whole team,
+
+41
+00:04:10,000 --> 00:04:16,000
+not just you. A project Claude.md lives at the repository root and travels through source
+
+42
+00:04:16,000 --> 00:04:22,000
+control like any other file, so when you commit it, every teammate who clones the repo inherits
+
+43
+00:04:22,000 --> 00:04:27,000
+the exact same conventions automatically. A new contributor gets your build commands on day one
+
+44
+00:04:27,000 --> 00:04:33,000
+without asking anyone or reading a stale wiki, and behavior stays consistent because everyone's
+
+45
+00:04:33,000 --> 00:04:39,000
+sessions start from the same shared brief. Compare that to the alternative, where the real build
+
+46
+00:04:39,000 --> 00:04:45,000
+command lives in one senior engineer's head. Shared rules in version control beat tribal
+
+47
+00:04:45,000 --> 00:04:50,000
+knowledge every time, and they update the moment someone improves the file and pushes it.
+
+48
+00:04:52,000 --> 00:04:58,000
+Let's get precise about how Claude.md actually reaches the model, because three details matter.
+
+49
+00:04:58,000 --> 00:05:04,000
+First, it is loaded at the start. The file is injected at the beginning of every conversation,
+
+50
+00:05:04,000 --> 00:05:10,000
+so its rules are already present before you type your first request. Second, and this surprises
+
+51
+00:05:10,000 --> 00:05:17,000
+people, it arrives as a user or project message. It rides alongside the system prompt rather than
+
+52
+00:05:17,000 --> 00:05:24,000
+being baked into the system prompt itself. Third, it is loaded in full. Unlike capped memory files
+
+53
+00:05:24,000 --> 00:05:31,000
+that only read their first stretch, the entire Claude.md loads no matter how long it is. Those
+
+54
+00:05:31,000 --> 00:05:38,000
+three facts explain both its power and its cost. It is always there, it steers from the conversation,
+
+55
+00:05:38,000 --> 00:05:44,000
+and it always spends its full weight in tokens. Let's turn all of that into how you actually write
+
+56
+00:05:44,000 --> 00:05:51,000
+a good rule. The best rules read like directives, not like documentation, so make each one easy to
+
+57
+00:05:51,000 --> 00:05:57,000
+act on. Use imperative, scoped statements, do this, avoid that, rather than paragraphs of background.
+
+58
+00:05:58,000 --> 00:06:04,000
+Put commands in verbatim so they are copy-ready and there is no ambiguity about the exact flag
+
+59
+00:06:04,000 --> 00:06:09,000
+or path, and trim anything that doesn't change behavior, because every line you keep competes
+
+60
+00:06:09,000 --> 00:06:16,000
+for the model's attention. The habit to build is ruthless editing, short and specific wins,
+
+61
+00:06:16,000 --> 00:06:22,000
+because a crowded file dilutes every rule inside it. If a line wouldn't change what Claude does,
+
+62
+00:06:22,000 --> 00:06:30,000
+it probably doesn't belong. Claude.md is your standing brief to Claude, loaded every session.
+
+63
+00:06:30,000 --> 00:06:35,000
+It holds structure, conventions, and commands, and it counts against your context window.
+
+64
+00:06:35,000 --> 00:06:40,000
+Just remember, it's guidance to consider, not enforcement, so reach for a hook when you need
+
+65
+00:06:40,000 --> 00:06:46,000
+to block something. That covers writing effective Claude.md rules. I'll see you in the next lesson.
+

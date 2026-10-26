@@ -1,0 +1,416 @@
+1
+00:00:00,000 --> 00:00:02,000
+Here's a problem that can bite you the first time you use batching.
+
+2
+00:00:03,000 --> 00:00:08,000
+You submit requests in a careful order, get results back, and they don't line up.
+
+3
+00:00:08,000 --> 00:00:12,000
+Batches don't return results in the order that you sent them.
+
+4
+00:00:12,000 --> 00:00:17,000
+This lesson covers how a batch request is built, how custom ID fixes the problem,
+
+5
+00:00:17,000 --> 00:00:21,000
+and which parameters work inside a batch. Let's dive in.
+
+6
+00:00:22,000 --> 00:00:26,000
+Let's build a batch request from the pieces. A batch is a list of entries,
+
+7
+00:00:26,000 --> 00:00:32,000
+and each entry pairs a custom ID with params. The custom ID is a unique label you attach to
+
+8
+00:00:32,000 --> 00:00:37,000
+that request. Hold on to that idea, because it's the key to everything later.
+
+9
+00:00:37,000 --> 00:00:40,000
+The params is just a standard messages request body.
+
+10
+00:00:40,000 --> 00:00:46,000
+The same model, max tokens, messages, and tools you'd send on a normal call.
+
+11
+00:00:46,000 --> 00:00:50,000
+And there's a rule tying it together. Every custom ID in the batch has to be unique.
+
+12
+00:00:50,000 --> 00:00:56,000
+If you reuse one, your results get ambiguous, and the whole matching step falls apart.
+
+13
+00:00:56,000 --> 00:00:59,000
+Custom ID, params, and uniqueness. That's a batch entry.
+
+14
+00:01:00,000 --> 00:01:05,000
+Let's nail down the custom ID format, because the API enforces it strictly.
+
+15
+00:01:05,000 --> 00:01:09,000
+It has to be between one and 64 characters long.
+
+16
+00:01:09,000 --> 00:01:13,000
+The allowed characters are letters, numbers, hyphens, and underscores.
+
+17
+00:01:13,000 --> 00:01:17,000
+Nothing else. No spaces. No slashes. No special symbols.
+
+18
+00:01:18,000 --> 00:01:20,000
+And as we said, it has to be unique across the batch.
+
+19
+00:01:21,000 --> 00:01:25,000
+Here's a practical tip. Make your custom ID something meaningful.
+
+20
+00:01:25,000 --> 00:01:31,000
+Like the primary key of the database row that request came from, or a document ID.
+
+21
+00:01:31,000 --> 00:01:36,000
+That way, when the results come back, matching each one to its source is trivial.
+
+22
+00:01:36,000 --> 00:01:42,000
+A random or reused custom ID just makes your life harder when you reassemble the output.
+
+23
+00:01:43,000 --> 00:01:46,000
+This brings us to the rule that matters most in the whole lesson.
+
+24
+00:01:46,000 --> 00:01:51,000
+When results come back, you match them by custom ID, never by position.
+
+25
+00:01:51,000 --> 00:01:56,000
+The right pattern is straightforward. Every result carries the custom ID you assigned.
+
+26
+00:01:56,000 --> 00:02:01,000
+So you use that key to look up which input it belongs to, no matter what order it arrived in.
+
+27
+00:02:02,000 --> 00:02:06,000
+The trap is assuming the third result matches the third input. It doesn't.
+
+28
+00:02:07,000 --> 00:02:10,000
+Batch results aren't returned in submission order.
+
+29
+00:02:10,000 --> 00:02:14,000
+So lining them up by index silently corrupts your data.
+
+30
+00:02:14,000 --> 00:02:16,000
+And silently is the dangerous part.
+
+31
+00:02:16,000 --> 00:02:19,000
+Nothing errors. You just get answers stapled to the wrong inputs.
+
+32
+00:02:20,000 --> 00:02:22,000
+Always key on custom ID.
+
+33
+00:02:23,000 --> 00:02:26,000
+One concrete failure mode makes this vivid.
+
+34
+00:02:26,000 --> 00:02:30,000
+Say you batch a thousand support tickets for classification,
+
+35
+00:02:30,000 --> 00:02:35,000
+and you wrote a loop that zips your inputs and outputs together by position.
+
+36
+00:02:35,000 --> 00:02:39,000
+It will happily produce garbage, stapling each label to the wrong ticket,
+
+37
+00:02:39,000 --> 00:02:42,000
+and it won't throw a single error while doing it.
+
+38
+00:02:42,000 --> 00:02:48,000
+Every row you write back now holds a plausible, but wrong, answer.
+
+39
+00:02:48,000 --> 00:02:49,000
+And nothing downstream can tell.
+
+40
+00:02:50,000 --> 00:02:52,000
+The fix is one line of discipline.
+
+41
+00:02:52,000 --> 00:02:56,000
+Load your inputs into a dictionary keyed by custom ID,
+
+42
+00:02:56,000 --> 00:02:59,000
+then walk the results and look each one up by the custom ID it carries.
+
+43
+00:03:00,000 --> 00:03:03,000
+Treat the arrival order as meaningless, because it is,
+
+44
+00:03:03,000 --> 00:03:06,000
+and build your mapping from that key every time.
+
+45
+00:03:07,000 --> 00:03:09,000
+Get that one habit right, and batches become reliable.
+
+46
+00:03:11,000 --> 00:03:13,000
+Here's the misconception I most want to correct.
+
+47
+00:03:13,000 --> 00:03:18,000
+People assume a batch is a stripped-down mode that drops the good features. It isn't.
+
+48
+00:03:18,000 --> 00:03:20,000
+Batches keep almost everything.
+
+49
+00:03:21,000 --> 00:03:26,000
+Vision works, so image inputs process exactly like they do synchronously.
+
+50
+00:03:26,000 --> 00:03:29,000
+Tool use works, and that includes every server tool,
+
+51
+00:03:29,000 --> 00:03:33,000
+web search, web fetch, and code execution.
+
+52
+00:03:33,000 --> 00:03:34,000
+Not just client tools.
+
+53
+00:03:35,000 --> 00:03:40,000
+System messages and full multi-turn conversations carry straight over.
+
+54
+00:03:40,000 --> 00:03:43,000
+And adaptive thinking runs inside batches too,
+
+55
+00:03:43,000 --> 00:03:48,000
+along with legacy extended thinking on the older models that still accept it.
+
+56
+00:03:48,000 --> 00:03:50,000
+So your reasoning heavy jobs are fine.
+
+57
+00:03:51,000 --> 00:03:56,000
+The mental model to drop is that batches lack tool use or vision. They don't.
+
+58
+00:03:56,000 --> 00:04:01,000
+A batch is a normal request that happens to run asynchronously and cheaply.
+
+59
+00:04:02,000 --> 00:04:05,000
+So what actually doesn't work in a batch?
+
+60
+00:04:05,000 --> 00:04:06,000
+The list is short and specific.
+
+61
+00:04:07,000 --> 00:04:08,000
+Streaming is out.
+
+62
+00:04:08,000 --> 00:04:13,000
+Since a batch runs in the background, stream has no meaning and gets rejected.
+
+63
+00:04:13,000 --> 00:04:16,000
+The speed parameter, the fast mode flag, isn't allowed either.
+
+64
+00:04:17,000 --> 00:04:22,000
+Thread-related params, like store and the previous thread reference, are rejected.
+
+65
+00:04:22,000 --> 00:04:25,000
+And so are the cache hint and context hint parameters.
+
+66
+00:04:26,000 --> 00:04:29,000
+And max tokens has to be at least one, never zero.
+
+67
+00:04:30,000 --> 00:04:31,000
+Send any of those.
+
+68
+00:04:31,000 --> 00:04:33,000
+And the request fails validation.
+
+69
+00:04:34,000 --> 00:04:39,000
+This tends to bite when you build batch entries by reusing your synchronous request code,
+
+70
+00:04:39,000 --> 00:04:42,000
+because that code often sets stream to true.
+
+71
+00:04:42,000 --> 00:04:44,000
+And the leftover flag syncs the entry.
+
+72
+00:04:45,000 --> 00:04:49,000
+Strip those fields when you convert a call into a batch entry.
+
+73
+00:04:49,000 --> 00:04:51,000
+But notice what's not on this list.
+
+74
+00:04:51,000 --> 00:04:55,000
+Tool use, vision, thinking, and system messages are all fine.
+
+75
+00:04:56,000 --> 00:04:59,000
+One more practical detail on caching.
+
+76
+00:04:59,000 --> 00:05:04,000
+Prompt caching does work in a batch, but with a caveat rooted in how batches run.
+
+77
+00:05:04,000 --> 00:05:08,000
+Requests in a batch execute concurrently and in any order.
+
+78
+00:05:08,000 --> 00:05:10,000
+So caching is best effort.
+
+79
+00:05:11,000 --> 00:05:17,000
+A short cache lifetime can easily expire before the requests that would have shared it actually run.
+
+80
+00:05:18,000 --> 00:05:24,000
+The practical move is to prefer the one-hour cache lifetime instead of the default short one
+
+81
+00:05:24,000 --> 00:05:30,000
+when your batch entries share a common prefix, like a big system prompt or a policy document.
+
+82
+00:05:30,000 --> 00:05:35,000
+That keeps the shared context warm long enough that later requests in the job can hit the cache.
+
+83
+00:05:35,000 --> 00:05:38,000
+It's a small setting with a real cost impact at scale.
+
+84
+00:05:38,000 --> 00:05:41,000
+Let's lock in the three things that trip people up,
+
+85
+00:05:41,000 --> 00:05:44,000
+because they're what you'll actually get wrong in practice.
+
+86
+00:05:45,000 --> 00:05:47,000
+First, unordered results.
+
+87
+00:05:47,000 --> 00:05:51,000
+They don't follow submission order, so you match everyone by custom ID,
+
+88
+00:05:51,000 --> 00:05:54,000
+never by position, or your data quietly misaligns.
+
+89
+00:05:55,000 --> 00:05:57,000
+Second, the limited parameters.
+
+90
+00:05:57,000 --> 00:06:04,000
+Stream, speed, the thread params, and the cache hint params all get rejected.
+
+91
+00:06:04,000 --> 00:06:06,000
+And max tokens has to be at least one.
+
+92
+00:06:06,000 --> 00:06:10,000
+Third, and this is the flip side, batches are still full-featured.
+
+93
+00:06:10,000 --> 00:06:15,000
+Tool use, vision, system messages, and thinking all work,
+
+94
+00:06:15,000 --> 00:06:18,000
+so don't treat a batch as some stripped-down mode.
+
+95
+00:06:18,000 --> 00:06:22,000
+Unordered results, limited params, still full-featured.
+
+96
+00:06:22,000 --> 00:06:24,000
+Those three keep you out of trouble.
+
+97
+00:06:25,000 --> 00:06:26,000
+Here's the bottom line.
+
+98
+00:06:27,000 --> 00:06:33,000
+A batch pairs a custom ID with a standard params body and runs the whole job asynchronously.
+
+99
+00:06:33,000 --> 00:06:36,000
+It matters because that one key, custom ID,
+
+100
+00:06:36,000 --> 00:06:40,000
+is how you safely match unordered results back to their inputs.
+
+101
+00:06:40,000 --> 00:06:45,000
+Just remember, batches still support tool use, vision, and thinking.
+
+102
+00:06:45,000 --> 00:06:47,000
+They only drop streaming and a few parameters.
+
+103
+00:06:48,000 --> 00:06:51,000
+That wraps up batch jobs and custom ID.
+
+104
+00:06:51,000 --> 00:06:53,000
+When you're ready, let's move on to the next video.
+

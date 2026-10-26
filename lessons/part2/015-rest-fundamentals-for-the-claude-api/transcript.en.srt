@@ -1,0 +1,428 @@
+1
+00:00:00,000 --> 00:00:05,000
+Before you can build anything on Cloud, you have to understand the wire underneath it.
+
+2
+00:00:05,000 --> 00:00:11,000
+The good news is that it's just REST over HTTP, which most people are familiar with if they've been developing.
+
+3
+00:00:11,000 --> 00:00:13,000
+It's a style that you'll already know.
+
+4
+00:00:13,000 --> 00:00:21,000
+This lesson gives you the ideas, the verbs, headers, and status codes you'll use on every call. Let's dig in.
+
+5
+00:00:21,000 --> 00:00:26,000
+Let's start with what REST actually means, because three ideas carry most of the weight.
+
+6
+00:00:26,000 --> 00:00:28,000
+First, client-server.
+
+7
+00:00:28,000 --> 00:00:32,000
+Your code is the client, and Anthropx servers hold the model.
+
+8
+00:00:32,000 --> 00:00:37,000
+The two stay independent, so each side can change without breaking the other.
+
+9
+00:00:37,000 --> 00:00:39,000
+Second, stateless.
+
+10
+00:00:39,000 --> 00:00:41,000
+This one matters a lot with Cloud.
+
+11
+00:00:41,000 --> 00:00:48,000
+Every request has to carry all of its own context, because the server remembers nothing between calls.
+
+12
+00:00:48,000 --> 00:00:52,000
+That's why you resend the whole conversation each time you want continuity.
+
+13
+00:00:52,000 --> 00:00:54,000
+Third, a uniform interface.
+
+14
+00:00:54,000 --> 00:01:00,000
+Resources live behind URLs, and you act on them with a small set of standard verbs.
+
+15
+00:01:00,000 --> 00:01:06,000
+Put those together, and you get one predictable pattern that covers the entire API,
+
+16
+00:01:06,000 --> 00:01:10,000
+which is exactly why REST is so easy to learn.
+
+17
+00:01:10,000 --> 00:01:15,000
+Now let's get concrete about what a Cloud call actually looks like on the wire.
+
+18
+00:01:15,000 --> 00:01:21,000
+For the core of the API, almost everything you do is a single POST request to the messages endpoint.
+
+19
+00:01:21,000 --> 00:01:29,000
+The path is version 1, then messages, and you send it over HTTPS, so the whole exchange is encrypted.
+
+20
+00:01:29,000 --> 00:01:32,000
+Here's the part that surprises people coming from other APIs.
+
+21
+00:01:32,000 --> 00:01:35,000
+You don't put the model name in the URL.
+
+22
+00:01:35,000 --> 00:01:37,000
+The same endpoint serves every model.
+
+23
+00:01:37,000 --> 00:01:41,000
+You choose which one you want inside the request body instead.
+
+24
+00:01:41,000 --> 00:01:43,000
+So the shape is beautifully simple.
+
+25
+00:01:43,000 --> 00:01:48,000
+One verb, POST, one path, the messages endpoint.
+
+26
+00:01:48,000 --> 00:01:53,000
+And a JSON body that carries the model, your messages, and your settings.
+
+27
+00:01:53,000 --> 00:01:59,000
+Get comfortable with that, because every feature you add later still rides on this same call.
+
+28
+00:01:59,000 --> 00:02:04,000
+Two words come up constantly in REST, and they trip people up, so let's pin them down.
+
+29
+00:02:04,000 --> 00:02:08,000
+SAFE means a method doesn't change anything on the server.
+
+30
+00:02:08,000 --> 00:02:14,000
+A GET just reads, you can fire it 100 times, and the resource stays exactly as it was.
+
+31
+00:02:14,000 --> 00:02:16,000
+IDEMPOTENT is different.
+
+32
+00:02:16,000 --> 00:02:21,000
+It means calling the method once, or many times, leaves the server in the same final state.
+
+33
+00:02:21,000 --> 00:02:23,000
+A DELETE is IDEMPOTENT.
+
+34
+00:02:23,000 --> 00:02:27,000
+Delete the same resource twice, and it is still just gone.
+
+35
+00:02:27,000 --> 00:02:29,000
+Here's why this matters for you.
+
+36
+00:02:29,000 --> 00:02:34,000
+A POST is neither SAFE nor IDEMPOTENT, and the clawed messages call is a POST.
+
+37
+00:02:34,000 --> 00:02:37,000
+Each call is a brand new generation.
+
+38
+00:02:37,000 --> 00:02:43,000
+So if a request times out and you blindly retry, you can get a second, separate completion.
+
+39
+00:02:43,000 --> 00:02:46,000
+Retry logic has to account for that.
+
+40
+00:02:46,000 --> 00:02:52,000
+Let's put the common HTTP verbs in one place, since you'll read them everywhere.
+
+41
+00:02:52,000 --> 00:02:55,000
+GET reads a resource and changes nothing.
+
+42
+00:02:55,000 --> 00:02:59,000
+POST creates something new or triggers an action that isn't meant to repeat.
+
+43
+00:02:59,000 --> 00:03:04,000
+PUT fully replaces a resource, while PATCH updates just part of it.
+
+44
+00:03:04,000 --> 00:03:09,000
+DELETE removes a resource, and running it again lands in the same place.
+
+45
+00:03:09,000 --> 00:03:12,000
+Most REST APIs lean on this whole set.
+
+46
+00:03:12,000 --> 00:03:14,000
+The CLAWED API is simpler.
+
+47
+00:03:14,000 --> 00:03:17,000
+For generating a response, you almost always use POST,
+
+48
+00:03:17,000 --> 00:03:22,000
+because each completion is a fresh action, rather than a READ or a REPLACE.
+
+49
+00:03:22,000 --> 00:03:27,000
+So, while it helps to recognize all of these verbs when you read other people's code,
+
+50
+00:03:27,000 --> 00:03:32,000
+the one you'll type again and again against CLAWED is POST.
+
+51
+00:03:32,000 --> 00:03:35,000
+Status codes come back on every response,
+
+52
+00:03:35,000 --> 00:03:41,000
+and the four families you'll actually see from this API are worth recognizing instantly.
+
+53
+00:03:41,000 --> 00:03:44,000
+Anything in the 200s means success.
+
+54
+00:03:44,000 --> 00:03:49,000
+A 200 is the normal OK, and your body is ready to parse.
+
+55
+00:03:49,000 --> 00:03:56,000
+The 300s are redirects, and honestly, you'll rarely touch those directly with the CLAWED API.
+
+56
+00:03:56,000 --> 00:04:00,000
+The 400s are the ones to watch, because they mean the problem is on your side.
+
+57
+00:04:00,000 --> 00:04:05,000
+BADAUTH, a malformed body, or a rate limit all live here.
+
+58
+00:04:05,000 --> 00:04:09,000
+The 500s mean the fault is on the server.
+
+59
+00:04:09,000 --> 00:04:16,000
+Those aren't your bug, so the right move is to retry with BACKOFF rather than rewriting your request.
+
+60
+00:04:16,000 --> 00:04:23,000
+Learn to read the first digit, and you'll know instantly whether to fix your call or simply try again.
+
+61
+00:04:23,000 --> 00:04:29,000
+Before CLAWED ever sees your prompt, a couple of headers have to be right, or the call never lands.
+
+62
+00:04:29,000 --> 00:04:31,000
+The first is XAPIKEY.
+
+63
+00:04:31,000 --> 00:04:34,000
+That header carries your secret API key,
+
+64
+00:04:34,000 --> 00:04:38,000
+and it's how the server knows who you are and whether you're allowed in.
+
+65
+00:04:38,000 --> 00:04:40,000
+The second is ANTHROPICVERSION.
+
+66
+00:04:40,000 --> 00:04:44,000
+That one pins your request to a dated version of the API,
+
+67
+00:04:44,000 --> 00:04:48,000
+so behavior stays stable even as ANTHROPIC SHIPS changes.
+
+68
+00:04:48,000 --> 00:04:52,000
+It's required, though the SDKs set it for you automatically.
+
+69
+00:04:52,000 --> 00:04:57,000
+And of course, you send CONTENT TYPE as APPLICATION slash JSON for the body.
+
+70
+00:04:57,000 --> 00:04:59,000
+Here's the thing to remember.
+
+71
+00:04:59,000 --> 00:05:03,000
+If you forget the key or the version header, you don't get a helpful model reply.
+
+72
+00:05:03,000 --> 00:05:10,000
+You get a 400 or a 401, and the request fails before any generation happens.
+
+73
+00:05:10,000 --> 00:05:15,000
+Let's zoom in on the specific codes you'll actually hit while building.
+
+74
+00:05:15,000 --> 00:05:17,000
+First, the auth pair.
+
+75
+00:05:17,000 --> 00:05:24,000
+A 401 means you aren't authenticated, almost always a missing or wrong API key.
+
+76
+00:05:24,000 --> 00:05:26,000
+A 403 is different.
+
+77
+00:05:26,000 --> 00:05:30,000
+It means the key is valid, but you're not permitted to do that particular thing.
+
+78
+00:05:30,000 --> 00:05:37,000
+Getting those two backwards wastes real debugging time, so keep them straight. Next, 429.
+
+79
+00:05:37,000 --> 00:05:39,000
+That's a rate limit.
+
+80
+00:05:39,000 --> 00:05:41,000
+You're sending faster than your tier allows,
+
+81
+00:05:41,000 --> 00:05:46,000
+so slow down and retry with BACKOFF instead of hammering the endpoint.
+
+82
+00:05:46,000 --> 00:05:51,000
+And a 400 means your request body itself is malformed.
+
+83
+00:05:51,000 --> 00:05:54,000
+That one won't fix itself on retry.
+
+84
+00:05:54,000 --> 00:05:57,000
+You have to correct the request before you send it again.
+
+85
+00:05:57,000 --> 00:06:01,000
+Together, these three cover most of the errors you'll meet early on.
+
+86
+00:06:01,000 --> 00:06:05,000
+Let's close the loop by connecting all of this to the SDKs,
+
+87
+00:06:05,000 --> 00:06:10,000
+because most of you won't handwrite these HTTP calls day to day.
+
+88
+00:06:10,000 --> 00:06:15,000
+The Anthropic SDKs in Python and TypeScript are convenience clients
+
+89
+00:06:15,000 --> 00:06:19,000
+that sit on top of the REST surface we just walked through.
+
+90
+00:06:19,000 --> 00:06:21,000
+When you call a method to create a message,
+
+91
+00:06:21,000 --> 00:06:25,000
+under the hood it's building exactly the POST request we described.
+
+92
+00:06:25,000 --> 00:06:29,000
+It sets your headers, attaches your API key,
+
+93
+00:06:29,000 --> 00:06:35,000
+handles retries, and parses the JSON response into typed objects
+
+94
+00:06:35,000 --> 00:06:37,000
+you can work with directly.
+
+95
+00:06:37,000 --> 00:06:39,000
+That's a real quality-of-life upgrade,
+
+96
+00:06:39,000 --> 00:06:42,000
+but here's the mental model to hold on to.
+
+97
+00:06:42,000 --> 00:06:44,000
+The SDK has no secret powers.
+
+98
+00:06:44,000 --> 00:06:50,000
+Anything it can do maps to a REST call the API already supports.
+
+99
+00:06:50,000 --> 00:06:53,000
+So if the raw endpoint can't do something,
+
+100
+00:06:53,000 --> 00:06:57,000
+no SDK method can either. Let's recap.
+
+101
+00:06:57,000 --> 00:07:00,000
+The Cloud API is REST over HTTP,
+
+102
+00:07:00,000 --> 00:07:03,000
+which gives you one endpoint, a POST,
+
+103
+00:07:03,000 --> 00:07:06,000
+and a handful of headers and status codes.
+
+104
+00:07:06,000 --> 00:07:11,000
+Keep in mind, XAPI key and Anthropic version are required,
+
+105
+00:07:11,000 --> 00:07:15,000
+and the first digit of a status code tells you where to look.
+
+106
+00:07:15,000 --> 00:07:18,000
+That covers REST fundamentals for the Cloud API.
+
+107
+00:07:18,000 --> 00:07:21,000
+Take a breath here, and I'll see you in the next one.
+

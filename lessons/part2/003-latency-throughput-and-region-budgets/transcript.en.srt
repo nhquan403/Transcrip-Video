@@ -1,0 +1,288 @@
+1
+00:00:00,000 --> 00:00:04,000
+Let's get into the constraints that shape a cloud application before features.
+
+2
+00:00:05,000 --> 00:00:12,000
+Can this design hit its latency, throughput, region, and cost targets? Those are infrastructure
+
+3
+00:00:12,000 --> 00:00:17,000
+requirements and they decide the architecture. This lesson covers how to turn them into numbers
+
+4
+00:00:17,000 --> 00:00:23,000
+you can design against. Let's dive in. Start by separating two kinds of requirement
+
+5
+00:00:23,000 --> 00:00:28,000
+because mixing them is a classic mistake. A functional requirement states what the application
+
+6
+00:00:28,000 --> 00:00:34,000
+has to do. Summarize this document. Answer in this format. Those come from the business need
+
+7
+00:00:34,000 --> 00:00:39,000
+and they describe the behavior a user gets. An infrastructure requirement is different.
+
+8
+00:00:39,000 --> 00:00:45,000
+It states what the solution architecture has to provide to support that behavior. Compute,
+
+9
+00:00:45,000 --> 00:00:52,000
+latency, throughput, hosting. The trap is listing a behavior when an infrastructure constraint is
+
+10
+00:00:52,000 --> 00:00:58,000
+really what drives the design. Respond in under two seconds isn't a feature. It's a latency budget
+
+11
+00:00:58,000 --> 00:01:02,000
+and it will shape your whole architecture more than the wording of the prompt ever will.
+
+12
+00:01:04,000 --> 00:01:10,000
+Infrastructure requirements group into four families, so name them early. The first is latency.
+
+13
+00:01:10,000 --> 00:01:16,000
+How long will a caller wait before the design has failed them? The second is throughput. How many
+
+14
+00:01:16,000 --> 00:01:22,000
+requests per minute does the integration edge have to sustain at peak? The third is region and
+
+15
+00:01:22,000 --> 00:01:28,000
+residency. Where do the calls physically run and where is the data allowed to live? The fourth is
+
+16
+00:01:28,000 --> 00:01:34,000
+cost. What ceiling does the bill have to stay inside? Your model tier choice threads through
+
+17
+00:01:34,000 --> 00:01:42,000
+two of these since a heavier tier buys quality at the price of latency and cost. And availability,
+
+18
+00:01:42,000 --> 00:01:48,000
+the uptime commitment, returns in the next lesson as its own reliability requirement. Each of these
+
+19
+00:01:48,000 --> 00:01:53,000
+is a number you can write down. When they're vague, the architecture is guessing. When they're
+
+20
+00:01:53,000 --> 00:02:00,000
+concrete, the design almost falls out of them. A latency budget is a specific number, not a wish.
+
+21
+00:02:00,000 --> 00:02:06,000
+Before you pick a design, decide the worst case response time a user will actually tolerate.
+
+22
+00:02:06,000 --> 00:02:13,000
+Then subtract your own overhead, network hops, authentication, any processing you do before and
+
+23
+00:02:13,000 --> 00:02:20,000
+after the model call. Whatever is left is the budget the cloud call itself has to fit inside.
+
+24
+00:02:20,000 --> 00:02:26,000
+This matters because the budget quietly rules designs in or out. If you've got a second and a
+
+25
+00:02:26,000 --> 00:02:32,000
+half of headroom, a multi-step agent loop that makes five sequential calls is already off the
+
+26
+00:02:32,000 --> 00:02:39,000
+table. A large context that takes longer to process might be too. So work backward from the
+
+27
+00:02:39,000 --> 00:02:45,000
+number. Let the latency budget tell you how many calls and how much context you can afford instead
+
+28
+00:02:45,000 --> 00:02:51,000
+of discovering it in production. Once you have a budget, you choose how the response is delivered.
+
+29
+00:02:51,000 --> 00:02:57,000
+And there are three shapes. Synchronous is the simplest. One request, one response. And the
+
+30
+00:02:57,000 --> 00:03:03,000
+caller waits for the whole thing. Easy to build, but the user feels every millisecond. Streaming
+
+31
+00:03:03,000 --> 00:03:09,000
+sends tokens incrementally over one connection. So output starts appearing almost right away,
+
+32
+00:03:09,000 --> 00:03:14,000
+even if the complete answer still takes a while. That's often how you meet a perceived latency
+
+33
+00:03:14,000 --> 00:03:20,000
+target without making the model any faster. Batch is the other direction entirely. You submit many
+
+34
+00:03:20,000 --> 00:03:26,000
+requests together and collect them later, trading real-time speed for lower cost on work nobody is
+
+35
+00:03:26,000 --> 00:03:32,000
+sitting and waiting for. The budget picks the mode. A chat reply wants streaming. An overnight
+
+36
+00:03:32,000 --> 00:03:39,000
+report wants batch. Throughput is where your design collides with real limits. The API enforces rate
+
+37
+00:03:39,000 --> 00:03:46,000
+limits, caps on how many requests, and how many tokens you get in a given window. When you exceed
+
+38
+00:03:46,000 --> 00:03:52,000
+one, you get a rate limit response, which is a signal to slow down and try again after a wait.
+
+39
+00:03:53,000 --> 00:03:57,000
+The next lesson sorts out exactly which errors deserve that retry treatment.
+
+40
+00:03:57,000 --> 00:04:03,000
+The deeper pattern is back pressure. When incoming demand outruns the capacity you have,
+
+41
+00:04:03,000 --> 00:04:09,000
+you cue the excess work instead of firing it all at the model and getting throttled. Size
+
+42
+00:04:09,000 --> 00:04:14,000
+your concurrency to the rate limit so the integration edge stays smooth. And always
+
+43
+00:04:14,000 --> 00:04:18,000
+plan for the busy minute at peak because the average minute never breaks anything.
+
+44
+00:04:19,000 --> 00:04:25,000
+Region and data residency can decide where your calls physically run. Sometimes a contract or a
+
+45
+00:04:25,000 --> 00:04:31,000
+regulation says user data has to stay inside a particular geography. That constraint shapes the
+
+46
+00:04:31,000 --> 00:04:37,000
+architecture directly. One path is the first party API. You call the provider's own endpoint,
+
+47
+00:04:37,000 --> 00:04:42,000
+which is the simplest integration, but you inherit whichever regions that endpoint serves.
+
+48
+00:04:43,000 --> 00:04:50,000
+The other path is running Claude inside a major cloud platform you already operate in. That option
+
+49
+00:04:50,000 --> 00:04:55,000
+can pin traffic to a specific region, which is often exactly what a data residency rule requires.
+
+50
+00:04:56,000 --> 00:05:02,000
+Neither is better in the abstract. If residency is a hard requirement, it can outweigh convenience
+
+51
+00:05:02,000 --> 00:05:06,000
+and push you toward the deployment that keeps the data where the rules say it has to live.
+
+52
+00:05:07,000 --> 00:05:14,000
+Sometimes the budget that binds hardest isn't the clock, it's the bill. Token cost scales with your
+
+53
+00:05:14,000 --> 00:05:20,000
+context size and your turn count. A loop that resends a growing history gets expensive fast,
+
+54
+00:05:20,000 --> 00:05:26,000
+so a tight cost envelope can forbid a design outright, the same way a tight latency budget can.
+
+55
+00:05:26,000 --> 00:05:32,000
+Here's the mindset shift. When volume is high enough, caching a stable prompt prefix stops being
+
+56
+00:05:33,000 --> 00:05:38,000
+a nice optimization and becomes a requirement, because without it, the numbers simply don't work.
+
+57
+00:05:39,000 --> 00:05:44,000
+Same with deferrable bulk work. If nobody is waiting on it, running it in a cheaper batch
+
+58
+00:05:44,000 --> 00:05:49,000
+lane isn't polish. It's how you stay inside the ceiling. Treat the cost limit as a first-class
+
+59
+00:05:49,000 --> 00:05:57,000
+requirement right next to latency and throughput. So how do you actually hit a tight budget? Three
+
+60
+00:05:57,000 --> 00:06:02,000
+levers do most of the work. The first is prompt caching. When a big chunk of your prompt stays
+
+61
+00:06:02,000 --> 00:06:09,000
+the same across calls, you cache that prefix and repeated reads bill at a fraction of the base
+
+62
+00:06:09,000 --> 00:06:15,000
+input price. Cache writes bill at a premium, so this only pays off when the prefix is actually
+
+63
+00:06:15,000 --> 00:06:23,000
+reused. Reused often, it cuts cost and time to first token, so it helps latency too. The second
+
+64
+00:06:23,000 --> 00:06:29,000
+is message batches. Deferrable work runs asynchronously at half the standard price
+
+65
+00:06:29,000 --> 00:06:35,000
+collected within a day. The catch is results come back in any order, so you match them by
+
+66
+00:06:35,000 --> 00:06:41,000
+identifier, not position. The third is right sizing. Match the model tier to the task,
+
+67
+00:06:41,000 --> 00:06:47,000
+so you never pay for reasoning a light job doesn't need. Pull the levers, the budget demands.
+
+68
+00:06:49,000 --> 00:06:53,000
+Here's the bottom line. Infrastructure requirements are constraints your architecture
+
+69
+00:06:53,000 --> 00:07:01,000
+has to satisfy, not just features. Name a real latency budget, then let it choose sync,
+
+70
+00:07:01,000 --> 00:07:07,000
+streaming, or batch. Plan throughput around rate limits and back pressure. Just remember,
+
+71
+00:07:07,000 --> 00:07:12,000
+when the cost ceiling is tight, caching and batching are requirements, not optional polish.
+
+72
+00:07:13,000 --> 00:07:18,000
+And that covers latency, throughput, and regional budgets. I'll see you in the next lesson.
+

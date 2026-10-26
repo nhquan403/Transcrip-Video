@@ -1,0 +1,604 @@
+1
+00:00:00,000 --> 00:00:02,000
+You can't code against a goal.
+
+2
+00:00:02,000 --> 00:00:05,000
+You have to turn it into a functional requirement document
+
+3
+00:00:05,000 --> 00:00:08,000
+that a developer can build and QA verifies.
+
+4
+00:00:08,000 --> 00:00:11,000
+This lesson covers how to trace a business need
+
+5
+00:00:11,000 --> 00:00:15,000
+down to a concrete testable spec. Let's dive in.
+
+6
+00:00:16,000 --> 00:00:17,000
+Let's anchor three terms
+
+7
+00:00:17,000 --> 00:00:20,000
+because the whole lesson turns on keeping them straight.
+
+8
+00:00:20,000 --> 00:00:22,000
+First, a business need.
+
+9
+00:00:22,000 --> 00:00:25,000
+That's the outcome a stakeholder actually wants,
+
+10
+00:00:25,000 --> 00:00:28,000
+something like cutting ticket triage time in half.
+
+11
+00:00:28,000 --> 00:00:31,000
+It's real value, but you can't code against it
+
+12
+00:00:31,000 --> 00:00:33,000
+because it names no behavior.
+
+13
+00:00:33,000 --> 00:00:35,000
+Second, a functional requirement.
+
+14
+00:00:35,000 --> 00:00:39,000
+That's a specific behavior your application delivers,
+
+15
+00:00:39,000 --> 00:00:42,000
+written as an input and the output you expect back.
+
+16
+00:00:42,000 --> 00:00:45,000
+Third, acceptance criteria.
+
+17
+00:00:45,000 --> 00:00:46,000
+Those are the concrete conditions
+
+18
+00:00:46,000 --> 00:00:49,000
+that prove the requirement is met, written,
+
+19
+00:00:49,000 --> 00:00:52,000
+so a developer can code straight to them
+
+20
+00:00:52,000 --> 00:00:54,000
+and QA can verify each one.
+
+21
+00:00:54,000 --> 00:00:57,000
+Need, requirement, criteria.
+
+22
+00:00:57,000 --> 00:00:58,000
+You move left to right
+
+23
+00:00:58,000 --> 00:01:01,000
+and each step gets more testable than the last.
+
+24
+00:01:02,000 --> 00:01:05,000
+Here's the discipline that keeps a project honest.
+
+25
+00:01:05,000 --> 00:01:07,000
+Every functional requirement
+
+26
+00:01:07,000 --> 00:01:09,000
+should trace back to a business need.
+
+27
+00:01:09,000 --> 00:01:10,000
+So start at the outcome.
+
+28
+00:01:10,000 --> 00:01:13,000
+Write down in plain language
+
+29
+00:01:13,000 --> 00:01:16,000
+what the business is actually trying to achieve.
+
+30
+00:01:16,000 --> 00:01:20,000
+Then break that outcome into user-observable capabilities,
+
+31
+00:01:20,000 --> 00:01:23,000
+the things a user would see the app do.
+
+32
+00:01:23,000 --> 00:01:26,000
+For a triage goal, that might be classify the ticket,
+
+33
+00:01:26,000 --> 00:01:28,000
+route it, and draft a reply.
+
+34
+00:01:28,000 --> 00:01:31,000
+Only then do you map each capability
+
+35
+00:01:31,000 --> 00:01:34,000
+to a single clawed interaction that delivers it.
+
+36
+00:01:34,000 --> 00:01:36,000
+When you work outcome first,
+
+37
+00:01:36,000 --> 00:01:38,000
+capability second, interaction last,
+
+38
+00:01:38,000 --> 00:01:41,000
+your scope stays tied to real value
+
+39
+00:01:41,000 --> 00:01:44,000
+and you avoid building clever features nobody asked for.
+
+40
+00:01:45,000 --> 00:01:48,000
+This distinction trips up a lot of specs,
+
+41
+00:01:48,000 --> 00:01:50,000
+so let's separate the two.
+
+42
+00:01:50,000 --> 00:01:52,000
+Business intent is how the product should feel,
+
+43
+00:01:52,000 --> 00:01:55,000
+fast, trustworthy, effortless.
+
+44
+00:01:55,000 --> 00:01:58,000
+That matters, but notice it doesn't yet name a behavior
+
+45
+00:01:58,000 --> 00:02:00,000
+you can build or test.
+
+46
+00:02:00,000 --> 00:02:03,000
+Your job is to translate it into one.
+
+47
+00:02:03,000 --> 00:02:06,000
+Functional behavior is what the application actually does
+
+48
+00:02:06,000 --> 00:02:08,000
+with a given input.
+
+49
+00:02:08,000 --> 00:02:11,000
+It returns a valid JSON object
+
+50
+00:02:11,000 --> 00:02:14,000
+holding the caller's name, email, and plan.
+
+51
+00:02:14,000 --> 00:02:15,000
+See the difference?
+
+52
+00:02:15,000 --> 00:02:18,000
+One is a feeling, the other is a contract.
+
+53
+00:02:18,000 --> 00:02:21,000
+Your job as a developer is to hear the intent,
+
+54
+00:02:21,000 --> 00:02:25,000
+respect it, and then translate it into concrete behavior.
+
+55
+00:02:25,000 --> 00:02:26,000
+Feelings guide the design.
+
+56
+00:02:26,000 --> 00:02:30,000
+Behaviors are what you actually write code against and hand to QA.
+
+57
+00:02:32,000 --> 00:02:34,000
+Let's get practical about decomposition.
+
+58
+00:02:34,000 --> 00:02:37,000
+A big business outcome almost always hides
+
+59
+00:02:37,000 --> 00:02:39,000
+several smaller capabilities inside it,
+
+60
+00:02:39,000 --> 00:02:42,000
+and your job is to pull them out.
+
+61
+00:02:42,000 --> 00:02:44,000
+Walk through the user's experience
+
+62
+00:02:44,000 --> 00:02:48,000
+and list each thing they would actually watch the app do.
+
+63
+00:02:48,000 --> 00:02:50,000
+Keep every item observable,
+
+64
+00:02:50,000 --> 00:02:51,000
+something a person could point at,
+
+65
+00:02:51,000 --> 00:02:54,000
+not internal plumbing like which model you called.
+
+66
+00:02:54,000 --> 00:02:57,000
+And size each capability so it maps cleanly
+
+67
+00:02:57,000 --> 00:02:59,000
+to a single interaction with Claude.
+
+68
+00:02:59,000 --> 00:03:03,000
+If a capability feels too big to test in one shot,
+
+69
+00:03:03,000 --> 00:03:04,000
+split it further.
+
+70
+00:03:04,000 --> 00:03:06,000
+When you finish, you should have a short list
+
+71
+00:03:06,000 --> 00:03:08,000
+of small, visible capabilities,
+
+72
+00:03:08,000 --> 00:03:11,000
+and each one becomes a testable requirement
+
+73
+00:03:11,000 --> 00:03:13,000
+you can verify on its own.
+
+74
+00:03:14,000 --> 00:03:17,000
+Once you have a capability, you pick how Claude delivers it,
+
+75
+00:03:17,000 --> 00:03:20,000
+and there are three tiers to choose from.
+
+76
+00:03:20,000 --> 00:03:22,000
+The first is a single call.
+
+77
+00:03:22,000 --> 00:03:26,000
+One request in, one response out.
+
+78
+00:03:26,000 --> 00:03:28,000
+That covers a huge amount of real work,
+
+79
+00:03:28,000 --> 00:03:31,000
+classification, summarization, extraction,
+
+80
+00:03:31,000 --> 00:03:32,000
+a direct question.
+
+81
+00:03:32,000 --> 00:03:34,000
+The second is a workflow.
+
+82
+00:03:34,000 --> 00:03:37,000
+That's a fixed sequence of steps you author in code
+
+83
+00:03:37,000 --> 00:03:40,000
+where you decide the path at design time.
+
+84
+00:03:40,000 --> 00:03:41,000
+The third is an agent.
+
+85
+00:03:41,000 --> 00:03:44,000
+That's an open-ended loop where the model itself
+
+86
+00:03:44,000 --> 00:03:46,000
+chooses each next action at runtime
+
+87
+00:03:46,000 --> 00:03:48,000
+until the task is finished.
+
+88
+00:03:48,000 --> 00:03:50,000
+Single call, workflow, agent.
+
+89
+00:03:50,000 --> 00:03:52,000
+They climb in power,
+
+90
+00:03:52,000 --> 00:03:54,000
+but they also climb in cost and complexity,
+
+91
+00:03:54,000 --> 00:03:57,000
+which sets up the rule coming next.
+
+92
+00:03:57,000 --> 00:04:01,000
+Now, the rule that saves you the most grief.
+
+93
+00:04:01,000 --> 00:04:03,000
+Always reach for the simplest tier
+
+94
+00:04:03,000 --> 00:04:05,000
+that genuinely meets the need.
+
+95
+00:04:05,000 --> 00:04:08,000
+Developers love reaching straight for an agent
+
+96
+00:04:08,000 --> 00:04:10,000
+because agents feel powerful and modern,
+
+97
+00:04:10,000 --> 00:04:13,000
+but an agent isn't your default.
+
+98
+00:04:13,000 --> 00:04:17,000
+Reach for it only when the four checks coming up say so.
+
+99
+00:04:17,000 --> 00:04:19,000
+Simpler tiers are cheaper to run,
+
+100
+00:04:19,000 --> 00:04:22,000
+faster to respond, and far easier to test
+
+101
+00:04:22,000 --> 00:04:24,000
+because their behavior is predictable.
+
+102
+00:04:24,000 --> 00:04:26,000
+So start at the bottom.
+
+103
+00:04:26,000 --> 00:04:28,000
+Ask whether a single call gets the job done.
+
+104
+00:04:28,000 --> 00:04:32,000
+If it can't, ask whether a fixed workflow can.
+
+105
+00:04:32,000 --> 00:04:33,000
+Only climb to an agent
+
+106
+00:04:33,000 --> 00:04:36,000
+when the simpler options genuinely fall short.
+
+107
+00:04:36,000 --> 00:04:40,000
+Start low and let the requirement, not your enthusiasm,
+
+108
+00:04:40,000 --> 00:04:42,000
+be the thing that pushes you higher.
+
+109
+00:04:43,000 --> 00:04:46,000
+If you think a capability really does need an agent,
+
+110
+00:04:46,000 --> 00:04:49,000
+run it through four honest checks before you commit.
+
+111
+00:04:49,000 --> 00:04:51,000
+First, complexity.
+
+112
+00:04:51,000 --> 00:04:54,000
+Is the task genuinely multi-step
+
+113
+00:04:54,000 --> 00:04:56,000
+and hard to script in advance,
+
+114
+00:04:56,000 --> 00:05:00,000
+or could a fixed workflow handle it? Second, value.
+
+115
+00:05:00,000 --> 00:05:03,000
+Does the outcome justify an agent's higher cost
+
+116
+00:05:03,000 --> 00:05:05,000
+and slower response?
+
+117
+00:05:05,000 --> 00:05:07,000
+Third, viability.
+
+118
+00:05:07,000 --> 00:05:09,000
+Is Claude actually capable
+
+119
+00:05:09,000 --> 00:05:11,000
+of the open-ended task you're imagining?
+
+120
+00:05:11,000 --> 00:05:13,000
+And fourth, cost of error.
+
+121
+00:05:13,000 --> 00:05:15,000
+If the agent takes a wrong step,
+
+122
+00:05:15,000 --> 00:05:18,000
+is that recoverable or is it catastrophic?
+
+123
+00:05:18,000 --> 00:05:20,000
+If any one of those four comes back weak,
+
+124
+00:05:20,000 --> 00:05:23,000
+the honest answer is to meet the requirement
+
+125
+00:05:23,000 --> 00:05:24,000
+at a simpler tier.
+
+126
+00:05:24,000 --> 00:05:27,000
+Passing all four is what earns the agent.
+
+127
+00:05:28,000 --> 00:05:30,000
+Here's a failure mode worth naming
+
+128
+00:05:30,000 --> 00:05:32,000
+because it hides in plain sight.
+
+129
+00:05:32,000 --> 00:05:35,000
+Sometimes what looks like a functional behavior
+
+130
+00:05:35,000 --> 00:05:39,000
+is really an infrastructure constraint, wearing a disguise.
+
+131
+00:05:39,000 --> 00:05:41,000
+A stakeholder says the app feels slow,
+
+132
+00:05:41,000 --> 00:05:43,000
+so you dutifully write a requirement
+
+133
+00:05:43,000 --> 00:05:46,000
+to make Claude answer faster.
+
+134
+00:05:46,000 --> 00:05:49,000
+That reads like functional behavior, but it isn't.
+
+135
+00:05:49,000 --> 00:05:51,000
+The real driver is a latency budget,
+
+136
+00:05:51,000 --> 00:05:55,000
+or a hosting region, or a throughput ceiling.
+
+137
+00:05:55,000 --> 00:05:58,000
+None of those get fixed by rewording a prompt.
+
+138
+00:05:58,000 --> 00:05:59,000
+They get fixed in the architecture,
+
+139
+00:05:59,000 --> 00:06:02,000
+and they belong in infrastructure requirements,
+
+140
+00:06:02,000 --> 00:06:04,000
+which is a separate lesson.
+
+141
+00:06:04,000 --> 00:06:06,000
+So when a requirement smells like performance,
+
+142
+00:06:06,000 --> 00:06:09,000
+cost, or capacity, stop and ask
+
+143
+00:06:09,000 --> 00:06:11,000
+whether you're describing a behavior at all,
+
+144
+00:06:11,000 --> 00:06:16,000
+or an operating constraint in disguise. Let's recap.
+
+145
+00:06:16,000 --> 00:06:18,000
+You turn a business need into a testable spec
+
+146
+00:06:18,000 --> 00:06:22,000
+by decomposing the outcome, telling behavior from intent,
+
+147
+00:06:22,000 --> 00:06:24,000
+and picking the simplest tier.
+
+148
+00:06:24,000 --> 00:06:26,000
+Keep in mind, some behaviors
+
+149
+00:06:26,000 --> 00:06:29,000
+are really infrastructure in disguise.
+
+150
+00:06:29,000 --> 00:06:32,000
+That covers turning a business need into a testable spec.
+
+151
+00:06:32,000 --> 00:06:34,000
+Come with me to the next video.
+

@@ -1,0 +1,648 @@
+1
+00:00:00,000 --> 00:00:02,000
+On every build, you hit the same question.
+
+2
+00:00:02,000 --> 00:00:05,000
+How do I write a requirement precise enough
+
+3
+00:00:05,000 --> 00:00:08,000
+that a developer can code it and QA can verify it?
+
+4
+00:00:08,000 --> 00:00:11,000
+This lesson covers writing acceptance criteria for Claude,
+
+5
+00:00:11,000 --> 00:00:15,000
+decomposing a feature into turns and checks,
+
+6
+00:00:15,000 --> 00:00:18,000
+and treating edge cases as first class.
+
+7
+00:00:18,000 --> 00:00:20,000
+Let's break it down.
+
+8
+00:00:20,000 --> 00:00:22,000
+Let's set up three building blocks
+
+9
+00:00:22,000 --> 00:00:24,000
+you'll use for every requirement you write.
+
+10
+00:00:24,000 --> 00:00:27,000
+The first is acceptance criteria.
+
+11
+00:00:27,000 --> 00:00:29,000
+Those are the specific checkable conditions
+
+12
+00:00:30,000 --> 00:00:32,000
+that mark a requirement as done,
+
+13
+00:00:32,000 --> 00:00:34,000
+and the trick is writing them so a developer
+
+14
+00:00:34,000 --> 00:00:38,000
+and a QA tester read them exactly the same way.
+
+15
+00:00:38,000 --> 00:00:40,000
+The second is the input-output contract.
+
+16
+00:00:40,000 --> 00:00:43,000
+You state what goes in and what should come back,
+
+17
+00:00:43,000 --> 00:00:46,000
+a schema-valid JSON object, for example,
+
+18
+00:00:46,000 --> 00:00:49,000
+rather than describing how the prompt gets there.
+
+19
+00:00:49,000 --> 00:00:50,000
+The third is a measurable signal,
+
+20
+00:00:50,000 --> 00:00:53,000
+an observable check that actually grades
+
+21
+00:00:53,000 --> 00:00:55,000
+whether the output passed.
+
+22
+00:00:55,000 --> 00:00:58,000
+Criteria, contract, signal.
+
+23
+00:00:58,000 --> 00:00:59,000
+Together, they turn a vague wish
+
+24
+00:00:59,000 --> 00:01:01,000
+into something you can build against
+
+25
+00:01:01,000 --> 00:01:03,000
+and prove you delivered.
+
+26
+00:01:04,000 --> 00:01:06,000
+Here's a mistake I see constantly.
+
+27
+00:01:06,000 --> 00:01:08,000
+People write a functional requirement
+
+28
+00:01:08,000 --> 00:01:11,000
+that names a specific prompt. Don't do that.
+
+29
+00:01:11,000 --> 00:01:13,000
+A prompt is an implementation detail,
+
+30
+00:01:13,000 --> 00:01:17,000
+and implementation details don't belong in requirements.
+
+31
+00:01:17,000 --> 00:01:20,000
+What you actually want to specify is the contract.
+
+32
+00:01:20,000 --> 00:01:23,000
+State what goes in and what shape comes back.
+
+33
+00:01:23,000 --> 00:01:27,000
+Say the response is a JSON object with these exact fields,
+
+34
+00:01:27,000 --> 00:01:31,000
+and then let structured outputs enforce that schema for you
+
+35
+00:01:31,000 --> 00:01:33,000
+instead of leaning on clever wording
+
+36
+00:01:33,000 --> 00:01:35,000
+to coax the right format.
+
+37
+00:01:35,000 --> 00:01:37,000
+The payoff is freedom.
+
+38
+00:01:37,000 --> 00:01:39,000
+As long as the contract holds,
+
+39
+00:01:39,000 --> 00:01:41,000
+you can rewrite the prompt, swap an approach,
+
+40
+00:01:41,000 --> 00:01:43,000
+or tune anything underneath,
+
+41
+00:01:43,000 --> 00:01:46,000
+and the requirement is still satisfied.
+
+42
+00:01:46,000 --> 00:01:50,000
+Specify the what and leave the how to the implementation.
+
+43
+00:01:51,000 --> 00:01:52,000
+Let's make the difference between weak
+
+44
+00:01:52,000 --> 00:01:55,000
+and strong criteria concrete
+
+45
+00:01:55,000 --> 00:01:57,000
+because this is where most specs leak.
+
+46
+00:01:57,000 --> 00:02:00,000
+A vague criterion sounds like
+
+47
+00:02:00,000 --> 00:02:02,000
+the answer should look good and be helpful.
+
+48
+00:02:02,000 --> 00:02:05,000
+It feels reasonable, but nobody can code to it,
+
+49
+00:02:05,000 --> 00:02:08,000
+and two reviewers will argue forever
+
+50
+00:02:08,000 --> 00:02:11,000
+about whether a given answer passed.
+
+51
+00:02:11,000 --> 00:02:13,000
+A testable criterion sounds like
+
+52
+00:02:13,000 --> 00:02:16,000
+the response is valid JSON matching the schema,
+
+53
+00:02:16,000 --> 00:02:19,000
+and it cites the source document.
+
+54
+00:02:19,000 --> 00:02:20,000
+Notice what changed.
+
+55
+00:02:20,000 --> 00:02:24,000
+A script can now grade that pass or fail
+
+56
+00:02:24,000 --> 00:02:27,000
+the same way every single time. That's the bar.
+
+57
+00:02:27,000 --> 00:02:29,000
+Push it until a machine could judge it.
+
+58
+00:02:29,000 --> 00:02:31,000
+A quick test helps here.
+
+59
+00:02:31,000 --> 00:02:33,000
+If you can picture writing an assert statement
+
+60
+00:02:33,000 --> 00:02:36,000
+for the criterion, it's testable.
+
+61
+00:02:36,000 --> 00:02:39,000
+If you can't, keep rewriting until you can.
+
+62
+00:02:40,000 --> 00:02:43,000
+So how do you actually build one of these requirements?
+
+63
+00:02:43,000 --> 00:02:45,000
+Decompose the feature into three columns,
+
+64
+00:02:45,000 --> 00:02:48,000
+turns, outputs, and checks.
+
+65
+00:02:48,000 --> 00:02:50,000
+Start with the user turns.
+
+66
+00:02:50,000 --> 00:02:52,000
+Write down what the person sends
+
+67
+00:02:52,000 --> 00:02:54,000
+at each step of the interaction.
+
+68
+00:02:54,000 --> 00:02:58,000
+Then, for each turn, state the expected clod output.
+
+69
+00:02:58,000 --> 00:03:01,000
+Finally, attach a success check to every output,
+
+70
+00:03:01,000 --> 00:03:04,000
+a concrete rule that grades whether it's right.
+
+71
+00:03:04,000 --> 00:03:06,000
+When you lay a feature out this way,
+
+72
+00:03:06,000 --> 00:03:08,000
+you get a requirement that's testable
+
+73
+00:03:08,000 --> 00:03:10,000
+end-to-end, turn-by-turn.
+
+74
+00:03:10,000 --> 00:03:13,000
+It also surfaces gaps immediately.
+
+75
+00:03:13,000 --> 00:03:16,000
+If you can't name the expected output for a turn,
+
+76
+00:03:16,000 --> 00:03:18,000
+or you can't write its check,
+
+77
+00:03:18,000 --> 00:03:20,000
+you've found a hole in the spec
+
+78
+00:03:20,000 --> 00:03:22,000
+before you wrote a line of code.
+
+79
+00:03:23,000 --> 00:03:25,000
+Now, the part that separates a demo spec
+
+80
+00:03:25,000 --> 00:03:29,000
+from a production one, the unhappy paths.
+
+81
+00:03:29,000 --> 00:03:31,000
+There are four kinds worth planning for every time.
+
+82
+00:03:31,000 --> 00:03:34,000
+First, edge cases, empty fields,
+
+83
+00:03:34,000 --> 00:03:37,000
+enormous inputs, strange formats.
+
+84
+00:03:37,000 --> 00:03:38,000
+Decide the required behavior
+
+85
+00:03:38,000 --> 00:03:41,000
+rather than leaving it to chance.
+
+86
+00:03:41,000 --> 00:03:43,000
+Second, refusal handling.
+
+87
+00:03:43,000 --> 00:03:45,000
+Clod may decline an unsafe request,
+
+88
+00:03:45,000 --> 00:03:48,000
+so plan what your application does
+
+89
+00:03:48,000 --> 00:03:51,000
+when the stop reason comes back as a refusal.
+
+90
+00:03:51,000 --> 00:03:53,000
+Third, out-of-scope inputs.
+
+91
+00:03:53,000 --> 00:03:56,000
+Requests outside this feature's job.
+
+92
+00:03:56,000 --> 00:04:01,000
+Define a graceful decline so your scope stays bounded.
+
+93
+00:04:01,000 --> 00:04:03,000
+And fourth, ambiguous requests.
+
+94
+00:04:03,000 --> 00:04:05,000
+When details are vague or missing,
+
+95
+00:04:05,000 --> 00:04:08,000
+specify whether clod asks for clarification
+
+96
+00:04:08,000 --> 00:04:11,000
+or falls back on a documented default.
+
+97
+00:04:11,000 --> 00:04:13,000
+Write these four into the requirement,
+
+98
+00:04:13,000 --> 00:04:15,000
+not as afterthoughts.
+
+99
+00:04:16,000 --> 00:04:19,000
+Let's give refusal handling the attention it deserves
+
+100
+00:04:19,000 --> 00:04:22,000
+because it's a requirement, not an edge note.
+
+101
+00:04:22,000 --> 00:04:24,000
+When safety classifiers step in,
+
+102
+00:04:24,000 --> 00:04:28,000
+the response comes back with a refusal stop reason.
+
+103
+00:04:28,000 --> 00:04:31,000
+But clod can also decline conversationally
+
+104
+00:04:31,000 --> 00:04:34,000
+in the reply text with a normal end turn,
+
+105
+00:04:34,000 --> 00:04:36,000
+so plan for both.
+
+106
+00:04:36,000 --> 00:04:38,000
+Branching only on refusal
+
+107
+00:04:38,000 --> 00:04:40,000
+misses those conversational declines.
+
+108
+00:04:40,000 --> 00:04:44,000
+Your application has to know what to do with either case,
+
+109
+00:04:44,000 --> 00:04:46,000
+so write it into the spec.
+
+110
+00:04:46,000 --> 00:04:48,000
+Decide the exact user-facing message.
+
+111
+00:04:48,000 --> 00:04:51,000
+Decide whether there's a fallback path.
+
+112
+00:04:51,000 --> 00:04:53,000
+And log every refusal,
+
+113
+00:04:53,000 --> 00:04:57,000
+so you can measure how often it happens in production.
+
+114
+00:04:57,000 --> 00:04:58,000
+Here's the mindset shift.
+
+115
+00:04:58,000 --> 00:05:03,000
+A refusal you planned for and handled cleanly is a feature.
+
+116
+00:05:03,000 --> 00:05:05,000
+A refusal that slips through
+
+117
+00:05:05,000 --> 00:05:08,000
+and shows the user a raw error is a bug.
+
+118
+00:05:08,000 --> 00:05:11,000
+Same event, and the requirement decides which one you ship.
+
+119
+00:05:12,000 --> 00:05:14,000
+Every requirement you write
+
+120
+00:05:14,000 --> 00:05:16,000
+should map to a measurable signal.
+
+121
+00:05:16,000 --> 00:05:18,000
+Let's look at three common ones.
+
+122
+00:05:18,000 --> 00:05:20,000
+The first is a format signal.
+
+123
+00:05:20,000 --> 00:05:23,000
+Does the output parse and match the schema?
+
+124
+00:05:23,000 --> 00:05:26,000
+A JSON validator answers that automatically,
+
+125
+00:05:26,000 --> 00:05:28,000
+no human judgment required.
+
+126
+00:05:28,000 --> 00:05:31,000
+The second is a grounding signal.
+
+127
+00:05:31,000 --> 00:05:34,000
+Does the answer cite the source it was handed?
+
+128
+00:05:34,000 --> 00:05:35,000
+You check that the quoted spans
+
+129
+00:05:35,000 --> 00:05:38,000
+actually appear in the document you supplied.
+
+130
+00:05:38,000 --> 00:05:40,000
+The third is a behavior signal.
+
+131
+00:05:40,000 --> 00:05:44,000
+Did the app take the right action, route correctly,
+
+132
+00:05:44,000 --> 00:05:46,000
+or refuse when it should have?
+
+133
+00:05:46,000 --> 00:05:49,000
+You compare its choices against a labeled set of examples.
+
+134
+00:05:49,000 --> 00:05:52,000
+Format, grounding, behavior.
+
+135
+00:05:52,000 --> 00:05:55,000
+Those three cover most requirements you'll write.
+
+136
+00:05:56,000 --> 00:05:58,000
+Let's close the loop on why every requirement
+
+137
+00:05:58,000 --> 00:06:00,000
+needs a measurable signal.
+
+138
+00:06:00,000 --> 00:06:02,000
+It's about keeping scope under control.
+
+139
+00:06:02,000 --> 00:06:03,000
+If you can't grade a requirement,
+
+140
+00:06:03,000 --> 00:06:06,000
+you genuinely can't tell when it's done,
+
+141
+00:06:06,000 --> 00:06:10,000
+which means it can expand forever and the project slips.
+
+142
+00:06:10,000 --> 00:06:12,000
+When every requirement carries a concrete check,
+
+143
+00:06:12,000 --> 00:06:16,000
+scope creep becomes visible almost immediately.
+
+144
+00:06:16,000 --> 00:06:19,000
+Because a new ask either has a signal or it doesn't,
+
+145
+00:06:19,000 --> 00:06:20,000
+there's a bonus too.
+
+146
+00:06:20,000 --> 00:06:22,000
+Each of those success checks
+
+147
+00:06:22,000 --> 00:06:24,000
+becomes a real test in your suite later.
+
+148
+00:06:24,000 --> 00:06:27,000
+So the work you do defining criteria
+
+149
+00:06:27,000 --> 00:06:29,000
+pays you back during implementation.
+
+150
+00:06:29,000 --> 00:06:32,000
+Bounded and gradable isn't bureaucracy.
+
+151
+00:06:32,000 --> 00:06:34,000
+It's how a spec stays honest
+
+152
+00:06:34,000 --> 00:06:36,000
+and how you protect yourself from a scope
+
+153
+00:06:36,000 --> 00:06:37,000
+that quietly balloons.
+
+154
+00:06:38,000 --> 00:06:40,000
+Here's the bottom line.
+
+155
+00:06:40,000 --> 00:06:42,000
+A strong functional requirement
+
+156
+00:06:42,000 --> 00:06:46,000
+is a contract with a testable check, edge cases included.
+
+157
+00:06:46,000 --> 00:06:50,000
+Specify the input output contract instead of the prompt.
+
+158
+00:06:50,000 --> 00:06:54,000
+Decompose features into turns, outputs, and checks,
+
+159
+00:06:54,000 --> 00:06:57,000
+and give every requirement a measurable signal.
+
+160
+00:06:57,000 --> 00:07:01,000
+Just remember, if you can't grade it, it isn't done.
+
+161
+00:07:01,000 --> 00:07:04,000
+That wraps up writing functional requirements for Claude.
+
+162
+00:07:04,000 --> 00:07:06,000
+When you're ready, I'll see you in the next lesson.
+

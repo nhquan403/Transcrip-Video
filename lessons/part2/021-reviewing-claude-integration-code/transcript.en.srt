@@ -1,0 +1,268 @@
+1
+00:00:00,000 --> 00:00:05,000
+On most projects that call Clod, the integration code hits a pull request and it needs the same
+
+2
+00:00:05,000 --> 00:00:11,000
+review as anything else. This lesson covers what to look for, how to review error handling, retries
+
+3
+00:00:11,000 --> 00:00:17,000
+and response validation, and how Clod itself can assist while a person still sits in the pipeline
+
+4
+00:00:17,000 --> 00:00:25,000
+and gives final approval. Let's dig in. Let's start with the three focus areas that matter most
+
+5
+00:00:25,000 --> 00:00:32,000
+when you review Clod integration code. First, error handling. Good code classifies each failure
+
+6
+00:00:32,000 --> 00:00:38,000
+by type before it reacts, then retries transient errors and fixes or escalates permanent ones.
+
+7
+00:00:38,000 --> 00:00:44,000
+Second, response validation. The code should check the model response against a schema or
+
+8
+00:00:44,000 --> 00:00:50,000
+business rules after generation and re-prompt with the error on failure so the model can correct
+
+9
+00:00:50,000 --> 00:00:57,000
+itself. Third, defensive parsing. The code consumes output while anticipating malformed
+
+10
+00:00:57,000 --> 00:01:04,000
+or incomplete content so a single bad generation never crashes the pipeline. Error handling,
+
+11
+00:01:04,000 --> 00:01:10,000
+response validation, defensive parsing. Keep those three in view and most review problems surface
+
+12
+00:01:10,000 --> 00:01:17,000
+quickly. Zoom in on error handling because it's where integration code quietly goes wrong. The
+
+13
+00:01:17,000 --> 00:01:23,000
+first thing I look for is whether the code classifies the error before it reacts. A timeout
+
+14
+00:01:23,000 --> 00:01:29,000
+isn't a bad request and treating them the same is the root of a lot of flaky behavior. The classic
+
+15
+00:01:29,000 --> 00:01:35,000
+smell is a single catch-all block that treats every exception identically and retries it. That
+
+16
+00:01:35,000 --> 00:01:42,000
+looks robust at a glance but it isn't. Once the type is known, the response should match it. Back
+
+17
+00:01:42,000 --> 00:01:49,000
+off and retry on one side. Fix, fall back, or escalate on the other. A retry loop wrapped
+
+18
+00:01:49,000 --> 00:01:55,000
+around a bad request just burns budget and never succeeds because a permanent failure returns the
+
+19
+00:01:55,000 --> 00:02:02,000
+same answer on every attempt. When you see that pattern in a review, flag it and ask the author
+
+20
+00:02:02,000 --> 00:02:08,000
+to branch on the error type first. You know the transient versus permanent split cold by now
+
+21
+00:02:08,000 --> 00:02:15,000
+so in review it compresses into one question. Is the code only retrying the errors that can
+
+22
+00:02:15,000 --> 00:02:21,000
+actually clear? Timeouts, rate limits, and 500 series blips clear so back off and retry around
+
+23
+00:02:21,000 --> 00:02:29,000
+those is exactly right. A bad request, a malformed schema, or an auth failure returns the same result
+
+24
+00:02:29,000 --> 00:02:36,000
+every time so a retry wrapped around one is a defect hiding the real problem and burning budget
+
+25
+00:02:36,000 --> 00:02:42,000
+while it does. Picture a nightly job retrying a malformed request three times per record across
+
+26
+00:02:42,000 --> 00:02:49,000
+a huge data set. Every attempt fails the same way and the log fills with noise instead of one clear
+
+27
+00:02:49,000 --> 00:02:55,000
+error you could have fixed in minutes. Ask that one question of every retry policy you review
+
+28
+00:02:55,000 --> 00:03:02,000
+and the classification does the rest of the work for you. Now response validation which is where
+
+29
+00:03:02,000 --> 00:03:07,000
+confident but wrong output gets caught. Claude states a wrong answer with the same fluency as a
+
+30
+00:03:07,000 --> 00:03:13,000
+right one so review can't stop at whether the call returned successfully. I want to see the response
+
+31
+00:03:13,000 --> 00:03:20,000
+checked against a schema or against business rules after it comes back and on failure the code should
+
+32
+00:03:20,000 --> 00:03:26,000
+reprompt with the specific error so the model gets a chance to correct itself. The full loop is
+
+33
+00:03:26,000 --> 00:03:34,000
+generate, validate, and reprompt not a one-shot check. Watch for validation that only checks syntax
+
+34
+00:03:34,000 --> 00:03:40,000
+or that only runs at the very end. Semantic checks plus a correction path are what actually catch a
+
+35
+00:03:40,000 --> 00:03:46,000
+plausible but wrong result. Defensive parsing is the habit of consuming model output as if it might
+
+36
+00:03:46,000 --> 00:03:53,000
+surprise you because sometimes it will. Three checks show up when I review it. First, tolerant extraction.
+
+37
+00:03:53,000 --> 00:03:58,000
+The code reads fields without assuming they're present or well typed and it handles a missing or
+
+38
+00:03:58,000 --> 00:04:05,000
+null value on purpose. Second, explicit failure. When the output doesn't match what the parser expected
+
+39
+00:04:05,000 --> 00:04:13,000
+it fails safely and loudly rather than proceeding on half-formed data. Third, no blind trust. Even with
+
+40
+00:04:13,000 --> 00:04:18,000
+structured outputs turned on downstream code shouldn't treat a confident looking response
+
+41
+00:04:18,000 --> 00:04:23,000
+as a guaranteed contract. Treating a fluent response as certain is exactly the mistake
+
+42
+00:04:23,000 --> 00:04:30,000
+defensive parsing exists to prevent. As we established prompts are behavior so prompt edits
+
+43
+00:04:30,000 --> 00:04:36,000
+and schema edits deserve the same scrutiny as application logic not a rubber stamp. When a
+
+44
+00:04:36,000 --> 00:04:42,000
+prompt changes I want the diff to show exactly what shifted because a small wording tweak can move the
+
+45
+00:04:42,000 --> 00:04:48,000
+model's output in ways a reviewer needs to see. When a schema changes check it against the structured
+
+46
+00:04:48,000 --> 00:04:55,000
+output rules your integration relies on so an edit doesn't quietly reject valid responses or
+
+47
+00:04:55,000 --> 00:05:01,000
+break a downstream parser. The trap is treating prompts and schemas as configuration that lives
+
+48
+00:05:01,000 --> 00:05:07,000
+outside code review. Their behavior, diff them, reason about the effect, and review them with the
+
+49
+00:05:07,000 --> 00:05:14,000
+same care you'd give a function. Readability sounds soft but it's a real review criterion
+
+50
+00:05:14,000 --> 00:05:20,000
+especially for code that talks to a fallible model. Clear naming comes first. A name should say
+
+51
+00:05:20,000 --> 00:05:27,000
+what a value or a function actually does so a reviewer can follow the flow without tracing
+
+52
+00:05:27,000 --> 00:05:35,000
+every call by hand. Next, readable structure. The request, the call, the validation, and the parse
+
+53
+00:05:35,000 --> 00:05:41,000
+should read top to bottom not hide inside one dense block that does everything at once and keep
+
+54
+00:05:41,000 --> 00:05:47,000
+changes reviewable in size. A small focused change is easier to reason about and approve
+
+55
+00:05:47,000 --> 00:05:53,000
+than a sprawling edit that mixes many concerns. If a reviewer can't hold the change in their head
+
+56
+00:05:53,000 --> 00:06:00,000
+it's probably too big. Let's talk about using Clod itself as a review assistant because it's
+
+57
+00:06:00,000 --> 00:06:07,000
+genuinely useful here with one firm boundary. Clod can read a diff and flag likely defects,
+
+58
+00:06:07,000 --> 00:06:13,000
+point out missing error handling, or summarize what a prompt or schema change actually does
+
+59
+00:06:13,000 --> 00:06:19,000
+in plain language. That widens your review coverage and it catches things a tired human
+
+60
+00:06:19,000 --> 00:06:27,000
+skims past but the approval stays human. A person reviews Clod's suggestions and approves every
+
+61
+00:06:27,000 --> 00:06:33,000
+change before it merges. The failure mode is letting the assistant's confidence stand in for
+
+62
+00:06:33,000 --> 00:06:40,000
+judgment. Remember, a fluent explanation isn't proof the change is correct. Use Clod to surface
+
+63
+00:06:40,000 --> 00:06:47,000
+more, to explain more, and to review faster but keep a human in the approval loop. Reviewing
+
+64
+00:06:47,000 --> 00:06:55,000
+Clod integration code protects reliability. Classify errors before you retry. Validate responses and
+
+65
+00:06:55,000 --> 00:07:02,000
+re-prompt on failure. Parse output defensively and review prompt and schema diffs like real logic.
+
+66
+00:07:02,000 --> 00:07:06,000
+Keep in mind a confident response is not a correct response.
+
+67
+00:07:07,000 --> 00:07:11,000
+That covers reviewing Clod integration code. I'll see you in the next one.
+

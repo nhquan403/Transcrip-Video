@@ -1,0 +1,328 @@
+1
+00:00:00,000 --> 00:00:04,000
+Here's a problem that bites builders. You write an instruction, it works in one place, and then it
+
+2
+00:00:04,000 --> 00:00:06,000
+behaves differently somewhere else.
+
+3
+00:00:07,000 --> 00:00:10,000
+Nothing errored. The instructions just landed in a different spot.
+
+4
+00:00:10,000 --> 00:00:18,000
+This lesson covers why that happens, starting from one key fact about clod.md, and how to keep your instructions portable.
+
+5
+00:00:19,000 --> 00:00:24,000
+Let's line up the three places an instruction can live, because portability starts with knowing them apart.
+
+6
+00:00:25,000 --> 00:00:27,000
+First, the system prompt.
+
+7
+00:00:27,000 --> 00:00:31,000
+It's the top-level channel for standing behavior. On the raw API,
+
+8
+00:00:31,000 --> 00:00:37,000
+you set it directly, and things like output styles, the clod code feature that swaps the system
+
+9
+00:00:37,000 --> 00:00:38,000
+prompt's style section, and
+
+10
+00:00:38,000 --> 00:00:41,000
+the append option modify it directly, too.
+
+11
+00:00:42,000 --> 00:00:44,000
+Second, clod.md.
+
+12
+00:00:44,000 --> 00:00:50,000
+These are developer-authored rules loaded into context, and here's the key detail.
+
+13
+00:00:50,000 --> 00:00:54,000
+They arrive as a user message alongside whichever system prompt you chose.
+
+14
+00:00:55,000 --> 00:01:00,000
+Third, an in-session message. An instruction you type mid-conversation.
+
+15
+00:01:00,000 --> 00:01:05,000
+It steers the current session, but it persists nowhere once that session ends.
+
+16
+00:01:06,000 --> 00:01:10,000
+Same words, three very different lifespans, and three different homes.
+
+17
+00:01:11,000 --> 00:01:14,000
+This is the key fact this whole lesson hangs on, and
+
+18
+00:01:15,000 --> 00:01:20,000
+Anthropic documents it in both the clod code and agent SDK docs, so let's lock it in.
+
+19
+00:01:21,000 --> 00:01:26,000
+Clod.md isn't part of the system prompt. When it loads, its content is injected into the
+
+20
+00:01:26,000 --> 00:01:28,000
+conversation as a user message,
+
+21
+00:01:29,000 --> 00:01:35,000
+delivered after the system prompt, rather than baked into it. That means it shapes behavior
+
+22
+00:01:35,000 --> 00:01:42,000
+alongside whichever system prompt you happen to choose, and notably, its content doesn't affect the system prompt cache.
+
+23
+00:01:43,000 --> 00:01:49,000
+Contrast that with output styles, and the append option, which do modify the system prompt directly.
+
+24
+00:01:49,000 --> 00:01:55,000
+So if you were picturing clod.md as system-level text, correct the mental model now.
+
+25
+00:01:55,000 --> 00:01:57,000
+It's a user message that rides along.
+
+26
+00:01:58,000 --> 00:02:04,000
+Let's put the two mechanisms side-by-side, because the difference decides where your instruction
+
+27
+00:02:04,000 --> 00:02:06,000
+actually takes effect. On
+
+28
+00:02:06,000 --> 00:02:09,000
+one side, things that write to the system prompt.
+
+29
+00:02:09,000 --> 00:02:13,000
+Output styles and the append option write directly into it.
+
+30
+00:02:13,000 --> 00:02:20,000
+They change the cached prefix and apply as top-level behavior for the whole run. On the other side,
+
+31
+00:02:21,000 --> 00:02:24,000
+clod.md, which rides as a user message.
+
+32
+00:02:24,000 --> 00:02:30,000
+It loads beside your chosen system prompt, not inside it, and it leaves the system prompt cache untouched.
+
+33
+00:02:31,000 --> 00:02:36,000
+Why does this matter to you as a builder? Because if you need something to behave as a genuine system-level rule,
+
+34
+00:02:37,000 --> 00:02:41,000
+append it, or use an output style. If you want portable project rules,
+
+35
+00:02:41,000 --> 00:02:46,000
+clod.md is the right home, as long as you remember it's a user message.
+
+36
+00:02:47,000 --> 00:02:52,000
+So, where does drift actually come from? Not from the model quietly changing its mind,
+
+37
+00:02:52,000 --> 00:02:57,000
+it comes from the same words loading in different places on different surfaces.
+
+38
+00:02:57,000 --> 00:03:05,000
+Picture it. One surface reads a clod.md file off-disk that the next surface never even looks for.
+
+39
+00:03:05,000 --> 00:03:11,000
+A rule you set in a hosted chat app stays locked to that chat app and never travels to your code.
+
+40
+00:03:11,000 --> 00:03:18,000
+The agent SDK's minimal default prompt simply omits the standing guidance you assumed was always there.
+
+41
+00:03:19,000 --> 00:03:22,000
+In every case, the instruction text didn't change. Its placement did, and
+
+42
+00:03:23,000 --> 00:03:28,000
+placement is exactly what determines whether the model ever sees the instruction at all.
+
+43
+00:03:28,000 --> 00:03:31,000
+Same words, different home, different behavior.
+
+44
+00:03:32,000 --> 00:03:37,000
+Let's turn all of this into a short portability checklist you can actually apply.
+
+45
+00:03:37,000 --> 00:03:43,000
+First, state your rules explicitly and put them where the surface will really load them, instead of
+
+46
+00:03:43,000 --> 00:03:45,000
+assuming some autoload will handle it.
+
+47
+00:03:46,000 --> 00:03:52,000
+Second, commit your shared rules. Durable project rules belong in a committed clod.md,
+
+48
+00:03:52,000 --> 00:03:57,000
+so every teammate and every surface reads the exact same thing from version control.
+
+49
+00:03:58,000 --> 00:04:05,000
+Third, never trust defaults. If a rule genuinely matters, set it yourself rather than relying on a
+
+50
+00:04:05,000 --> 00:04:07,000
+surface to supply it for you.
+
+51
+00:04:07,000 --> 00:04:12,000
+Notice the theme running through all of these. You make the instructions home deliberate,
+
+52
+00:04:12,000 --> 00:04:16,000
+so the same behavior shows up no matter which surface loads it.
+
+53
+00:04:17,000 --> 00:04:21,000
+Let's make the surface scoping concrete because it's easy to forget in practice.
+
+54
+00:04:21,000 --> 00:04:24,000
+Say you set a helpful rule in clod.ai.
+
+55
+00:04:25,000 --> 00:04:31,000
+That rule doesn't follow the model into your code. Your profile custom instructions and your project instructions
+
+56
+00:04:31,000 --> 00:04:37,000
+apply only inside that web app. Clod code and the raw API never see them full stop.
+
+57
+00:04:38,000 --> 00:04:42,000
+Each surface keeps its own separate configuration, and there's no shared pool
+
+58
+00:04:42,000 --> 00:04:48,000
+they all draw from. So the practical takeaway is this. If you want a rule to hold
+
+59
+00:04:48,000 --> 00:04:51,000
+everywhere, a chat profile is the wrong place to put it.
+
+60
+00:04:52,000 --> 00:04:57,000
+Portable rules belong in committed config like a project clod.md,
+
+61
+00:04:57,000 --> 00:05:01,000
+where every surface that reads config will pick them up the same way.
+
+62
+00:05:03,000 --> 00:05:06,000
+Let's close the loop with a quick guide to picking a surface for a given task.
+
+63
+00:05:07,000 --> 00:05:13,000
+When you're embedding clod inside an application and you want programmatic control over every request,
+
+64
+00:05:13,000 --> 00:05:17,000
+reach for the raw API or the SDK. When you're doing
+
+65
+00:05:17,000 --> 00:05:23,000
+repository-based development and you want your files, your tools, and your clod.md loaded for you,
+
+66
+00:05:24,000 --> 00:05:27,000
+automatically, clod code is the natural fit.
+
+67
+00:05:27,000 --> 00:05:34,000
+And when you just need quick interactive work, a bit of drafting, or a question, with no code, no files, and no
+
+68
+00:05:34,000 --> 00:05:42,000
+persistent integration, a hosted chat surface is the fastest path. The instruction you write should match the surface.
+
+69
+00:05:43,000 --> 00:05:50,000
+Programmatic rules in code, project rules in clod.md, and throwaway steering in the chat itself.
+
+70
+00:05:51,000 --> 00:05:55,000
+Let's end on a debugging move for when an instruction seems to get ignored.
+
+71
+00:05:55,000 --> 00:06:02,000
+Don't immediately assume the model is disobeying you. More often the rule simply never loaded on that surface.
+
+72
+00:06:02,000 --> 00:06:06,000
+So confirm first that the instruction actually reached the model at all.
+
+73
+00:06:07,000 --> 00:06:12,000
+Then check where it landed, whether it came in a system-level text, or as a user message,
+
+74
+00:06:12,000 --> 00:06:15,000
+because that changes how strongly it steers behavior.
+
+75
+00:06:15,000 --> 00:06:22,000
+Finally, retest the very same rule on a surface you fully control, like the raw API, where you can see
+
+76
+00:06:23,000 --> 00:06:28,000
+exactly what was sent. Almost always, an ignored rule turns out to be an unloaded rule.
+
+77
+00:06:29,000 --> 00:06:32,000
+Fix the loading and the behavior you wanted comes right back.
+
+78
+00:06:32,000 --> 00:06:37,000
+Here's the bottom line. Portable instructions come down to one thing, placement.
+
+79
+00:06:37,000 --> 00:06:42,000
+It matters because the same words behave differently depending on where a surface loads them.
+
+80
+00:06:42,000 --> 00:06:51,000
+Just remember, clod.md rides as a user message, chat app rules stay put, and durable rules belong in committed
+
+81
+00:06:51,000 --> 00:06:57,000
+configuration files. That wraps up portable instructions across interfaces. When you're ready, I'll
+
+82
+00:06:57,000 --> 00:06:58,000
+see you in the next lesson.
+

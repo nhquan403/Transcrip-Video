@@ -1,0 +1,312 @@
+1
+00:00:00,000 --> 00:00:07,000
+Welcome back. On any large team, the plugins that make you productive need to reach your teammates, too.
+
+2
+00:00:07,000 --> 00:00:11,000
+Or, everyone ends up with a slightly different setup.
+
+3
+00:00:11,000 --> 00:00:17,000
+This lesson covers how to scope an install, how to share plugin configuration through version control,
+
+4
+00:00:17,000 --> 00:00:21,000
+and how to audit what's running so the whole team stays aligned.
+
+5
+00:00:21,000 --> 00:00:23,000
+Let's break it down.
+
+6
+00:00:23,000 --> 00:00:28,000
+When you install a plugin, you pick where it applies, and there are four scopes to choose from.
+
+7
+00:00:28,000 --> 00:00:34,000
+User is the default. The plugin becomes available across all of your own projects, but only for you.
+
+8
+00:00:34,000 --> 00:00:40,000
+Project is the shared one. It gets written into the project's settings file, so every collaborator
+
+9
+00:00:40,000 --> 00:00:41,000
+on that repo gets the plugin.
+
+10
+00:00:42,000 --> 00:00:47,000
+Local is narrower, just you and just this one repository, which is handy for trying something
+
+11
+00:00:47,000 --> 00:00:48,000
+without affecting your other work.
+
+12
+00:00:49,000 --> 00:00:52,000
+And Managed is the locked-down scope.
+
+13
+00:00:52,000 --> 00:00:58,000
+Administrators install these through managed settings, and you can't modify or remove them yourself.
+
+14
+00:00:58,000 --> 00:01:04,000
+So the four scopes really answer one question, how widely should this plugin apply?
+
+15
+00:01:04,000 --> 00:01:09,000
+Let's zero in on the project scope, because that's the one that makes team sharing work.
+
+16
+00:01:09,000 --> 00:01:16,000
+When you install a plugin at project scope, the plugin settings get written into the project's settings file.
+
+17
+00:01:16,000 --> 00:01:21,000
+That file lives in the repository, and it's committed to source control right alongside your code.
+
+18
+00:01:21,000 --> 00:01:27,000
+So here's the payoff. When a teammate pulls the latest changes, they don't just get your code updates,
+
+19
+00:01:27,000 --> 00:01:32,000
+they also get the same registered marketplaces and the same plugins already configured.
+
+20
+00:01:32,000 --> 00:01:38,000
+Nobody has to follow a setup document or install things by hand. The environment travels with the repo.
+
+21
+00:01:38,000 --> 00:01:42,000
+That's how you make sure everyone on the team is working with the exact same capabilities,
+
+22
+00:01:42,000 --> 00:01:46,000
+which keeps behavior consistent across the whole project.
+
+23
+00:01:46,000 --> 00:01:54,000
+It helps to group these scopes into two families. On one side, you have the personal scopes, user and local.
+
+24
+00:01:54,000 --> 00:01:59,000
+These stay with you. They never touch source control, so your teammates see nothing.
+
+25
+00:01:59,000 --> 00:02:05,000
+And each person manages their own. On the other side are the shared scopes, project and managed.
+
+26
+00:02:05,000 --> 00:02:09,000
+These reach the whole team, but they get there in very different ways.
+
+27
+00:02:09,000 --> 00:02:15,000
+Project travels through the repository, so sharing is opt-in and visible in your commits.
+
+28
+00:02:15,000 --> 00:02:20,000
+Managed is set centrally by administrators and locked, so individuals can't change it.
+
+29
+00:02:20,000 --> 00:02:27,000
+When you're deciding where to install something, this is the first question. Is this just for me or for everyone?
+
+30
+00:02:27,000 --> 00:02:33,000
+So how does a project actually record all of this? It comes down to a few settings keys, and it's
+
+31
+00:02:33,000 --> 00:02:34,000
+worth knowing their names.
+
+32
+00:02:35,000 --> 00:02:41,000
+The first is enabled plugins. It records which plugins are turned on in a given scope,
+
+33
+00:02:41,000 --> 00:02:47,000
+so the right ones activate when the project loads. The second is extra known marketplaces.
+
+34
+00:02:47,000 --> 00:02:51,000
+This lists the marketplaces a project trusts beyond the official one,
+
+35
+00:02:51,000 --> 00:02:56,000
+which is how a teammate can reach the same non-official plugins you're using.
+
+36
+00:02:56,000 --> 00:03:01,000
+And the third is plugin configs, which holds the per-plugin configuration values,
+
+37
+00:03:01,000 --> 00:03:06,000
+keeping each plugin's options consistent for everyone who shares the file.
+
+38
+00:03:06,000 --> 00:03:13,000
+You rarely edit these by hand, but knowing they exist helps you understand what's actually being shared.
+
+39
+00:03:13,000 --> 00:03:19,000
+Before you trust a project's plugin setup, especially one you just cloned, it's worth taking stock
+
+40
+00:03:19,000 --> 00:03:20,000
+of what's actually there.
+
+41
+00:03:21,000 --> 00:03:26,000
+Start with the list command. It shows you every plugin installed and the state each one is in.
+
+42
+00:03:26,000 --> 00:03:32,000
+From there, filter by enabled or disabled, so you can see at a glance which plugins are actually
+
+43
+00:03:32,000 --> 00:03:34,000
+active versus just sitting there dormant.
+
+44
+00:03:35,000 --> 00:03:42,000
+Then check each plugin's scope, because that tells you who it affects, just you or every collaborator.
+
+45
+00:03:42,000 --> 00:03:48,000
+And finally, and this is the important one, review what each plugin is actually permitted to do
+
+46
+00:03:48,000 --> 00:03:49,000
+before you rely on it.
+
+47
+00:03:50,000 --> 00:03:56,000
+A quick audit like this takes a minute and saves you from running code you never really looked at.
+
+48
+00:03:56,000 --> 00:04:03,000
+This is a good moment for a serious word about trust, because plugins are powerful in a way that cuts both ways.
+
+49
+00:04:03,000 --> 00:04:08,000
+When a plugin runs, it runs with your full privileges. That means a plugin can do anything you can
+
+50
+00:04:08,000 --> 00:04:09,000
+do on your machine,
+
+51
+00:04:10,000 --> 00:04:15,000
+which is exactly why a malicious or careless one is dangerous.
+
+52
+00:04:15,000 --> 00:04:20,000
+So the rule is simple. Install only from marketplaces and authors you actually trust,
+
+53
+00:04:20,000 --> 00:04:27,000
+and give a plugin the same scrutiny you'd give any third-party dependency you pull into a project.
+
+54
+00:04:27,000 --> 00:04:31,000
+For teams and organizations, there's another layer.
+
+55
+00:04:31,000 --> 00:04:37,000
+Administrators can restrict which marketplaces are allowed at all using managed settings,
+
+56
+00:04:37,000 --> 00:04:42,000
+so the whole organization stays inside an approved set of sources.
+
+57
+00:04:42,000 --> 00:04:47,000
+Cleaning up matters just as much as installing, and there's a subtlety here worth catching.
+
+58
+00:04:47,000 --> 00:04:51,000
+When a capability is no longer needed, you have a few ways to handle it.
+
+59
+00:04:51,000 --> 00:04:57,000
+Disabling a plugin pauses it while keeping it installed, which is perfect when you might want it back.
+
+60
+00:04:58,000 --> 00:05:02,000
+Uninstalling deletes the plugin and its files for good.
+
+61
+00:05:02,000 --> 00:05:08,000
+But here's the part people miss. If you remove a marketplace, that also uninstalls every plugin that came from it.
+
+62
+00:05:08,000 --> 00:05:13,000
+So removing a catalog isn't a harmless cleanup, it takes its plugins with it.
+
+63
+00:05:13,000 --> 00:05:19,000
+Whichever change you make, run reload plugins afterward, so the running session reflects it right away,
+
+64
+00:05:19,000 --> 00:05:25,000
+and you don't end up with broken references pointing at something that's no longer there.
+
+65
+00:05:25,000 --> 00:05:28,000
+Let's pull the team practices together into a simple checklist.
+
+66
+00:05:28,000 --> 00:05:33,000
+First, commit the config. Put the project's settings file into source control,
+
+67
+00:05:33,000 --> 00:05:37,000
+so your plugin setup ships right along with the code.
+
+68
+00:05:37,000 --> 00:05:43,000
+Second, document the marketplace. If your project relies on any marketplace beyond the official one,
+
+69
+00:05:43,000 --> 00:05:49,000
+make a note of it so teammates understand where the plugins are coming from and aren't surprised.
+
+70
+00:05:49,000 --> 00:05:52,000
+Third, re-audit on pull.
+
+71
+00:05:52,000 --> 00:05:58,000
+Every time you pull new changes, take a moment to review any new or updated plugins before you run them,
+
+72
+00:05:58,000 --> 00:06:01,000
+because remember, they execute with your privileges.
+
+73
+00:06:01,000 --> 00:06:08,000
+Three small habits and your whole team stays in sync on plugins without anyone getting a nasty surprise.
+
+74
+00:06:08,000 --> 00:06:10,000
+Here's the bottom line.
+
+75
+00:06:10,000 --> 00:06:16,000
+Plugins give a team shared capabilities, but only if you scope and share them deliberately.
+
+76
+00:06:16,000 --> 00:06:22,000
+Personal scopes stay with you, while project scope travels through source control to everyone.
+
+77
+00:06:22,000 --> 00:06:28,000
+Just remember, plugins run with your privileges, so trust and auditing matter.
+
+78
+00:06:28,000 --> 00:06:33,000
+That wraps up managing plugins across a team. I'll see you in the next one.
+

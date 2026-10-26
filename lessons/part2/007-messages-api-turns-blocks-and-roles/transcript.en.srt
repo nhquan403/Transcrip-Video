@@ -1,0 +1,268 @@
+1
+00:00:00,000 --> 00:00:04,000
+Welcome back. Every request you send to Claude runs through a single endpoint,
+
+2
+00:00:04,000 --> 00:00:09,000
+and it always has the same shape. Get that shape wrong, and nothing else works.
+
+3
+00:00:09,000 --> 00:00:14,000
+This lesson walks through the turns, the blocks their content carries,
+
+4
+00:00:14,000 --> 00:00:17,000
+the required fields, and where the system prompt lives.
+
+5
+00:00:18,000 --> 00:00:22,000
+Let's start with the fields you can't leave out, because a request fails without them.
+
+6
+00:00:23,000 --> 00:00:28,000
+The first is model. That's the Claude model that answers, named as a string,
+
+7
+00:00:28,000 --> 00:00:34,000
+and it picks the capability tier your call runs on. The second is max tokens. It caps how many
+
+8
+00:00:34,000 --> 00:00:39,000
+tokens the reply is allowed to use, and the response stops once it hits that ceiling.
+
+9
+00:00:39,000 --> 00:00:46,000
+So size it for the output you actually expect. The third is messages. The ordered array of
+
+10
+00:00:46,000 --> 00:00:52,000
+conversation turns. It carries the full exchange the model reasons over. Miss any one of these
+
+11
+00:00:52,000 --> 00:00:57,000
+three, and the call won't even get off the ground. Everything else you add later is optional on top
+
+12
+00:00:57,000 --> 00:01:04,000
+of them. Now let's look at how those turns line up. The messages array is an ordered list,
+
+13
+00:01:04,000 --> 00:01:10,000
+and each turn is tagged with a role. That role is either user, meaning something you sent,
+
+14
+00:01:10,000 --> 00:01:16,000
+or assistant, meaning something Claude said back. A couple of rules matter here. First,
+
+15
+00:01:16,000 --> 00:01:21,000
+the very first turn always has to be a user turn. If you lead with an assistant turn,
+
+16
+00:01:21,000 --> 00:01:27,000
+the call is rejected. Second, if you stack two turns with the same role back-to-back,
+
+17
+00:01:27,000 --> 00:01:35,000
+the API quietly merges them into one. The model reads this order top to bottom to track who said
+
+18
+00:01:35,000 --> 00:01:41,000
+what and when. Keeping the sequence clean is what lets a multi-turn conversation actually make sense
+
+19
+00:01:41,000 --> 00:01:47,000
+to the model. Content comes in two shapes, and knowing when to reach for each keeps your code
+
+20
+00:01:47,000 --> 00:01:54,000
+simple. The plain string form is the simplest. A turn's content is just text, which is perfect for
+
+21
+00:01:54,000 --> 00:01:59,000
+a quick single message prompt where nothing else is attached. The moment you need more,
+
+22
+00:01:59,000 --> 00:02:04,000
+you switch to a list of content blocks. Now, content is an array of typed blocks,
+
+23
+00:02:04,000 --> 00:02:12,000
+so a single turn can mix text with images and tool results all together. Here's the useful part.
+
+24
+00:02:12,000 --> 00:02:16,000
+Both forms are valid on the same endpoint, so you're never picking a different API,
+
+25
+00:02:16,000 --> 00:02:22,000
+just a richer content field. Start with a string when that's all you need, and reach for blocks
+
+26
+00:02:22,000 --> 00:02:29,000
+the moment one turn has to carry more than words. Let's name the block types you'll actually pass.
+
+27
+00:02:29,000 --> 00:02:35,000
+A text block is plain words in a turn, and it's the most common block on both sides of the
+
+28
+00:02:35,000 --> 00:02:41,000
+conversation. An image block is a picture you attach to a user, turn for the model to look at,
+
+29
+00:02:41,000 --> 00:02:48,000
+alongside your text. Then there are the tool blocks. A tool use block is one Claude emits,
+
+30
+00:02:48,000 --> 00:02:54,000
+naming a tool and the input it wants your code to run. A tool result block is the one you send back,
+
+31
+00:02:54,000 --> 00:03:00,000
+carrying that tool's output, and tied to its original request by a matching ID. The point
+
+32
+00:03:00,000 --> 00:03:05,000
+is that every kind of data rides in the same content list, just under a different block type.
+
+33
+00:03:06,000 --> 00:03:12,000
+This next point trips up a lot of developers, so let's be clear. The Claude API is stateless.
+
+34
+00:03:12,000 --> 00:03:19,000
+It keeps no memory of your past calls. Every bit of conversation state lives in the request you send,
+
+35
+00:03:19,000 --> 00:03:25,000
+which means you resend the full history every single time. The server treats each call as brand
+
+36
+00:03:25,000 --> 00:03:32,000
+new, with no idea what came before, unless you include it. So if you drop earlier turns to save
+
+37
+00:03:32,000 --> 00:03:38,000
+space, you erase what the model knows about the conversation. The transcript is yours to own and
+
+38
+00:03:38,000 --> 00:03:44,000
+carry forward, not something sitting on Anthropic's servers waiting for you. Once this clicks,
+
+39
+00:03:44,000 --> 00:03:50,000
+multi-turn conversations stop feeling mysterious. You're just rebuilding and resending a growing list
+
+40
+00:03:50,000 --> 00:03:58,000
+on every call. So how do you actually preserve that state? You echo prior turns. Each new request,
+
+41
+00:03:58,000 --> 00:04:04,000
+you rebuild the array by appending the last assistant reply and your new user input onto
+
+42
+00:04:04,000 --> 00:04:11,000
+what you already had. The subtle part is how you append. You keep those assistant blocks intact,
+
+43
+00:04:11,000 --> 00:04:17,000
+passing them back as structured blocks, not flattened into a plain string. If you flatten
+
+44
+00:04:17,000 --> 00:04:23,000
+the reply to text, you drop any tool blocks and thinking blocks it contained. Thinking blocks,
+
+45
+00:04:23,000 --> 00:04:29,000
+the extended reasoning you'll meet in the thinking lesson, carry a signature you must pass back
+
+46
+00:04:29,000 --> 00:04:34,000
+untouched. Flatten them away and the very next call breaks because the model goes looking for
+
+47
+00:04:34,000 --> 00:04:40,000
+blocks that are no longer there. So the rule is simple, carry every turn forward in its original
+
+48
+00:04:40,000 --> 00:04:48,000
+block form and the conversation stays coherent. Now, where does the system prompt fit into all this?
+
+49
+00:04:48,000 --> 00:04:53,000
+It sits at the top level of the request, completely separate from the messages array.
+
+50
+00:04:54,000 --> 00:05:00,000
+Think of it as standing instructions. It sets the model's role, its tone, and the rules it should
+
+51
+00:05:00,000 --> 00:05:07,000
+follow for the whole call and it applies to every turn at once. What it isn't is a user or assistant
+
+52
+00:05:07,000 --> 00:05:14,000
+turn. You don't stuff it into the messages list as its own role. You pass it in its own top level
+
+53
+00:05:14,000 --> 00:05:20,000
+field, either as a plain string or as a list of text blocks when you want finer control. Because
+
+54
+00:05:20,000 --> 00:05:26,000
+it lives outside the back and forth, it frames the entire conversation from above rather than
+
+55
+00:05:26,000 --> 00:05:32,000
+being one more message inside it. Let's put the two side by side because the distinction is easy
+
+56
+00:05:32,000 --> 00:05:39,000
+to blur. The system prompt is top level instruction. It persists across the whole request and shapes
+
+57
+00:05:39,000 --> 00:05:45,000
+how Claude behaves, but it's not part of the turn-by-turn exchange itself. Message content
+
+58
+00:05:45,000 --> 00:05:52,000
+is the actual back and forth. Your user turns carry your inputs. The assistant turns carry
+
+59
+00:05:52,000 --> 00:06:00,000
+Claude's replies and each one is made of blocks. The model reads in order. So the system prompt
+
+60
+00:06:00,000 --> 00:06:05,000
+answers, how should you behave? While the message content answers, what are we actually talking
+
+61
+00:06:05,000 --> 00:06:12,000
+about? Both travel in the same request, but they play different roles. Keep the durable rules in
+
+62
+00:06:12,000 --> 00:06:17,000
+the system prompt and keep the live conversation in the message content and your requests stay
+
+63
+00:06:17,000 --> 00:06:25,000
+clean and easy to reason about. Let's recap. A Claude request reduces to one core shape.
+
+64
+00:06:25,000 --> 00:06:30,000
+You set the model, max tokens and messages, order the turns so the first is a user turn,
+
+65
+00:06:30,000 --> 00:06:36,000
+and let content be a string or a list of typed blocks with the system prompt at the top level.
+
+66
+00:06:37,000 --> 00:06:42,000
+Keep in mind the API is stateless, so you resend the full history every single time.
+
+67
+00:06:43,000 --> 00:06:48,000
+That covers the messages API turns, blocks and roles. I'll see you in the next one.
+

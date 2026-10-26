@@ -10,25 +10,39 @@
 <main>
   <h1>Sổ tay học qua video</h1>
   <p class="muted">Mỗi bài gồm video kèm transcript tiếng Anh, phần giải thích dễ hiểu và 30 câu trắc nghiệm ôn tập.</p>
-  <ul class="lesson-list" id="list"></ul>
+  <div id="parts"></div>
   <p><a href="player.html">Mở trình xem video tự do (video + file .srt bất kỳ)</a></p>
 </main>
 <script src="lessons/registry.js"></script>
 <script>
-  const list = document.getElementById('list');
-  for (const l of window.LESSONS) {
-    let progress = '';
-    try {
-      const saved = JSON.parse(localStorage.getItem('quiz:' + l.id) || '{}');
-      if (saved.total) progress = ` · Trắc nghiệm: đúng ${saved.correct}/${saved.total}`;
-    } catch {}
-    const li = document.createElement('li');
-    li.innerHTML = `<a href="lesson.html?id=${l.id}"><div class="card">
-      <div class="muted">Bài ${l.id}${progress}</div>
-      <strong></strong><div class="muted vi"></div></div></a>`;
-    li.querySelector('strong').textContent = l.title;
-    li.querySelector('.vi').textContent = l.titleVi;
-    list.appendChild(li);
+  const root = document.getElementById('parts');
+  function savedScore(lesson) {
+    try { return JSON.parse(localStorage.getItem(window.quizKey(lesson)) || '{}'); } catch { return {}; }
+  }
+  for (const part of window.PARTS) {
+    const lessons = window.LESSONS.filter(l => l.part === part.id);
+    const scores = lessons.map(savedScore);
+    const done = scores.filter(s => s.total && Object.keys(s.answers || {}).length === s.total).length;
+    const section = document.createElement('section');
+    section.className = 'part';
+    section.id = 'part-' + part.id;
+    section.innerHTML = `<details open><summary><span class="part-title"></span>
+      <span class="muted part-meta"></span></summary><ul class="lesson-list"></ul></details>`;
+    section.querySelector('.part-title').textContent = `${part.title} · ${part.name}`;
+    section.querySelector('.part-meta').textContent = `${lessons.length} bài · đã làm xong trắc nghiệm ${done} bài`;
+    const list = section.querySelector('.lesson-list');
+    lessons.forEach((l, i) => {
+      const s = scores[i];
+      const progress = s.total ? ` · Trắc nghiệm: đúng ${s.correct}/${s.total}` : '';
+      const li = document.createElement('li');
+      li.innerHTML = `<a><div class="card"><div class="muted"></div><strong></strong><div class="muted vi"></div></div></a>`;
+      li.querySelector('a').href = window.lessonUrl(l);
+      li.querySelector('.muted').textContent = `Bài ${l.id}${progress}`;
+      li.querySelector('strong').textContent = l.title;
+      li.querySelector('.vi').textContent = l.titleVi;
+      list.appendChild(li);
+    });
+    root.appendChild(section);
   }
 </script>
 </body>

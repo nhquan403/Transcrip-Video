@@ -1,0 +1,348 @@
+1
+00:00:00,000 --> 00:00:05,000
+Real-time and batching sound similar, but they are different territory.
+
+2
+00:00:05,000 --> 00:00:08,000
+One answers you right now, at full price.
+
+3
+00:00:08,000 --> 00:00:12,000
+The other runs in the background at half the cost, on its own schedule.
+
+4
+00:00:12,000 --> 00:00:17,000
+Knowing which one a job needs is the first call you can make to save on tokens.
+
+5
+00:00:17,000 --> 00:00:23,000
+This lesson maps the line and explains the differences between the two. Let's dive in.
+
+6
+00:00:23,000 --> 00:00:26,000
+Let's start with the two surfaces themselves.
+
+7
+00:00:26,000 --> 00:00:29,000
+The Synchronous Messages API is the one you already know.
+
+8
+00:00:29,000 --> 00:00:34,000
+You send a request, your code blocks, and Claude sends back the response.
+
+9
+00:00:34,000 --> 00:00:40,000
+It's built for interactive work, and it's the only surface that streams tokens as they generate.
+
+10
+00:00:40,000 --> 00:00:43,000
+The Message Batches API works completely differently.
+
+11
+00:00:43,000 --> 00:00:49,000
+Instead of one request at a time, you bundle many requests into a single job and submit it.
+
+12
+00:00:49,000 --> 00:00:55,000
+Claude processes that job asynchronously in the background and hands everything back when it's done.
+
+13
+00:00:55,000 --> 00:00:57,000
+The headline difference is price.
+
+14
+00:00:57,000 --> 00:01:02,000
+Batch work bills at 50% of the standard rate, both input and output.
+
+15
+00:01:02,000 --> 00:01:06,000
+You trade an instant answer for a serious discount.
+
+16
+00:01:06,000 --> 00:01:09,000
+Three fundamentals define how a batch works.
+
+17
+00:01:09,000 --> 00:01:11,000
+First, the endpoint.
+
+18
+00:01:11,000 --> 00:01:17,000
+You post your job to the batch's endpoint, and each entry inside pairs a custom ID with params,
+
+19
+00:01:17,000 --> 00:01:20,000
+which is just a normal messages request body.
+
+20
+00:01:20,000 --> 00:01:24,000
+So every item in the batch is a full request you could have sent on its own.
+
+21
+00:01:24,000 --> 00:01:31,000
+Second, the price, that half-rate discount you just met, which is the entire reason the batch's API exists.
+
+22
+00:01:31,000 --> 00:01:33,000
+Third, it's asynchronous.
+
+23
+00:01:33,000 --> 00:01:35,000
+You don't sit and wait on the call.
+
+24
+00:01:35,000 --> 00:01:40,000
+You submit the job, poll to see when it's finished, and then retrieve all the results together.
+
+25
+00:01:40,000 --> 00:01:43,000
+Endpoint, price, asynchronous.
+
+26
+00:01:43,000 --> 00:01:45,000
+Those three frame everything else.
+
+27
+00:01:45,000 --> 00:01:50,000
+Let's sit on that cost tradeoff for a second, because it's the whole reason you'd choose a batch.
+
+28
+00:01:50,000 --> 00:01:55,000
+Both your input tokens and your output tokens bill at half price.
+
+29
+00:01:55,000 --> 00:01:58,000
+On a handful of requests, that's pocket change.
+
+30
+00:01:58,000 --> 00:02:02,000
+On a job with tens of thousands of them, it's real money saved.
+
+31
+00:02:02,000 --> 00:02:04,000
+But nothing's free.
+
+32
+00:02:04,000 --> 00:02:09,000
+In exchange for that discount, you give up a couple of things you'd get from the synchronous API.
+
+33
+00:02:09,000 --> 00:02:12,000
+You don't get an immediate response, and you can't stream.
+
+34
+00:02:12,000 --> 00:02:16,000
+For anything a person is watching in real time, that's a deal-breaker.
+
+35
+00:02:16,000 --> 00:02:23,000
+For a large offline job that runs overnight, giving up speed to half the bill is usually an easy call.
+
+36
+00:02:23,000 --> 00:02:29,000
+Timing is where batches trip people up, so let's get it exact. First, speed.
+
+37
+00:02:29,000 --> 00:02:31,000
+Most batches finish in under an hour.
+
+38
+00:02:31,000 --> 00:02:34,000
+That's great, but it's best effort.
+
+39
+00:02:34,000 --> 00:02:37,000
+Not a guaranteed service level, so never build a hard deadline on it.
+
+40
+00:02:37,000 --> 00:02:40,000
+Second, the processing window.
+
+41
+00:02:40,000 --> 00:02:43,000
+A batch has to complete within 24 hours.
+
+42
+00:02:43,000 --> 00:02:49,000
+Any request that doesn't finish inside that window expires, and expired requests are unbilled, so
+
+43
+00:02:49,000 --> 00:02:51,000
+you're not charged for them.
+
+44
+00:02:52,000 --> 00:02:54,000
+Third, when results land.
+
+45
+00:02:54,000 --> 00:03:01,000
+They become available the moment every request completes, or at the 24-hour mark, whichever comes first.
+
+46
+00:03:01,000 --> 00:03:08,000
+So plan for up to a day of latency, and treat the under-an-hour case as a bonus, not a promise.
+
+47
+00:03:08,000 --> 00:03:11,000
+Here's a distinction developers routinely blur.
+
+48
+00:03:11,000 --> 00:03:15,000
+There are two different windows, and they do completely different jobs.
+
+49
+00:03:15,000 --> 00:03:17,000
+The processing window is 24 hours.
+
+50
+00:03:17,000 --> 00:03:20,000
+That's the deadline for the job to finish.
+
+51
+00:03:20,000 --> 00:03:25,000
+Miss it, and unprocessed requests expire, unbilled.
+
+52
+00:03:25,000 --> 00:03:28,000
+It decides whether your batch completes at all.
+
+53
+00:03:28,000 --> 00:03:31,000
+The retention window is 29 days.
+
+54
+00:03:31,000 --> 00:03:37,000
+That's how long your finished results stay downloadable, counting from when you created the batch.
+
+55
+00:03:37,000 --> 00:03:42,000
+After 29 days, the batch is still viewable, but you can't pull the results anymore.
+
+56
+00:03:42,000 --> 00:03:48,000
+So one window is about getting the work done, and the other is about how long you have to collect it.
+
+57
+00:03:48,000 --> 00:03:51,000
+Don't let them collapse into one number.
+
+58
+00:03:51,000 --> 00:03:55,000
+A couple of hard ceilings shape how big a batch can get.
+
+59
+00:03:55,000 --> 00:04:04,000
+A single batch holds up to 100,000 requests, or 256 megabytes of total payload, whichever you hit first.
+
+60
+00:04:04,000 --> 00:04:08,000
+If your job is bigger than that, you split it across multiple batches.
+
+61
+00:04:08,000 --> 00:04:13,000
+There's one more constraint worth flagging here, and it's about data policy, not size.
+
+62
+00:04:13,000 --> 00:04:16,000
+Batches aren't eligible for zero data retention.
+
+63
+00:04:16,000 --> 00:04:22,000
+So, if your organization requires that stricter retention posture, the Batches API is off the table,
+
+64
+00:04:22,000 --> 00:04:25,000
+and you'd run that work synchronously instead.
+
+65
+00:04:26,000 --> 00:04:33,000
+Keep both facts in mind when you're sizing a job, because they can force your hand on architecture.
+
+66
+00:04:33,000 --> 00:04:38,000
+Let's turn the two surfaces into an actual decision, starting with real-time.
+
+67
+00:04:38,000 --> 00:04:43,000
+You stay on the Synchronous Messages API whenever speed is the requirement.
+
+68
+00:04:43,000 --> 00:04:48,000
+The clearest signal is a user waiting on the response right now, a chat reply, a live coding
+
+69
+00:04:48,000 --> 00:04:50,000
+assistant, anything interactive.
+
+70
+00:04:51,000 --> 00:04:58,000
+It's also your only option when you want to stream tokens as they generate, since batches can't stream at all.
+
+71
+00:04:58,000 --> 00:05:05,000
+And more broadly, any latency-bound work, where the time to answer is part of the product, belongs here.
+
+72
+00:05:05,000 --> 00:05:11,000
+The simple test is this. If a person or a downstream system is blocked, waiting on that answer, you
+
+73
+00:05:11,000 --> 00:05:12,000
+send it in real-time.
+
+74
+00:05:13,000 --> 00:05:16,000
+Don't batch something someone is watching.
+
+75
+00:05:16,000 --> 00:05:21,000
+Batches are the flip side. You reach for them when volume matters more than immediacy.
+
+76
+00:05:21,000 --> 00:05:27,000
+The classic fits are large offline workloads, running an eval suite across thousands of test cases,
+
+77
+00:05:27,000 --> 00:05:34,000
+bulk-classifying a giant backlog, or processing a pile of documents where nobody is waiting on any single result.
+
+78
+00:05:34,000 --> 00:05:41,000
+If the work is latency-insensitive, and there's a lot of it, that 50% discount adds up fast.
+
+79
+00:05:41,000 --> 00:05:44,000
+One caution, because people conflate these.
+
+80
+00:05:44,000 --> 00:05:48,000
+Firing off many parallel real-time calls isn't the same thing as batching.
+
+81
+00:05:48,000 --> 00:05:51,000
+That's still full price, and it leans on your rate limits.
+
+82
+00:05:51,000 --> 00:05:59,000
+The Batches API is a distinct, discounted, asynchronous job, and that's the tool for genuine bulk work.
+
+83
+00:05:59,000 --> 00:06:06,000
+Let's recap. Real-time and batching aren't one API with a toggle. They're different tools.
+
+84
+00:06:06,000 --> 00:06:12,000
+The Synchronous Messages API answers immediately, streams, and bills at full price.
+
+85
+00:06:12,000 --> 00:06:18,000
+The Message Batches API runs asynchronously at half price with no streaming.
+
+86
+00:06:18,000 --> 00:06:23,000
+The implication is simple. Match the surface to the latency the work can tolerate.
+
+87
+00:06:23,000 --> 00:06:28,000
+That covers when to choose real-time versus batch. I'll see you in the next one.
+

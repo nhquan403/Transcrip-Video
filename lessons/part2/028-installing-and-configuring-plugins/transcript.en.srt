@@ -1,0 +1,516 @@
+1
+00:00:00,000 --> 00:00:03,000
+Plugins are how you extend Cloud Code without rebuilding anything.
+
+2
+00:00:04,000 --> 00:00:09,000
+One package can drop in new commands, skills, and integrations at once,
+
+3
+00:00:09,000 --> 00:00:11,000
+but there are a handful of moving parts to understand.
+
+4
+00:00:11,000 --> 00:00:14,000
+This lesson walks through what a plugin contains,
+
+5
+00:00:14,000 --> 00:00:19,000
+how marketplaces feed installation, and the commands you use day-to-day.
+
+6
+00:00:20,000 --> 00:00:25,000
+What actually is a plugin? At its core, it's a self-contained directory
+
+7
+00:00:25,000 --> 00:00:29,000
+that extends Cloud Code with new capabilities,
+
+8
+00:00:29,000 --> 00:00:32,000
+packaged so you install the whole thing as one unit.
+
+9
+00:00:33,000 --> 00:00:38,000
+Inside that directory sits a manifest, the plugin.json file,
+
+10
+00:00:38,000 --> 00:00:42,000
+and that's what identifies the plugin and declares what it provides.
+
+11
+00:00:42,000 --> 00:00:44,000
+You don't handwire anything.
+
+12
+00:00:44,000 --> 00:00:47,000
+The manifest tells Cloud Code what's in the package.
+
+13
+00:00:47,000 --> 00:00:49,000
+And where do plugins come from?
+
+14
+00:00:49,000 --> 00:00:54,000
+A marketplace, which is just a catalog that lists available plugins
+
+15
+00:00:54,000 --> 00:00:58,000
+so you can browse and install from a source you trust.
+
+16
+00:00:58,000 --> 00:00:59,000
+Hold those three ideas together,
+
+17
+00:00:59,000 --> 00:01:03,000
+the directory, the manifest, and the marketplace,
+
+18
+00:01:03,000 --> 00:01:06,000
+and the rest of plugin management falls into place pretty naturally.
+
+19
+00:01:08,000 --> 00:01:11,000
+Let's talk about what a plugin can actually bring to the table,
+
+20
+00:01:11,000 --> 00:01:13,000
+because it's more than just slash commands.
+
+21
+00:01:13,000 --> 00:01:17,000
+A single plugin can bundle several kinds of capability at once.
+
+22
+00:01:17,000 --> 00:01:21,000
+It can add slash commands and skills that give you new workflows.
+
+23
+00:01:21,000 --> 00:01:25,000
+It can bring sub-agents and hooks that run automatically as you work.
+
+24
+00:01:25,000 --> 00:01:31,000
+And it can package MCP servers, LSP servers for language intelligence,
+
+25
+00:01:31,000 --> 00:01:33,000
+and background monitors that watch for things.
+
+26
+00:01:34,000 --> 00:01:36,000
+The point is that these all travel together.
+
+27
+00:01:37,000 --> 00:01:39,000
+Because everything lives in one package,
+
+28
+00:01:39,000 --> 00:01:42,000
+it installs as a set and updates as a set.
+
+29
+00:01:42,000 --> 00:01:45,000
+You're not chasing down five separate pieces.
+
+30
+00:01:45,000 --> 00:01:46,000
+You add the plugin,
+
+31
+00:01:46,000 --> 00:01:50,000
+and every capability it carries comes online at the same time.
+
+32
+00:01:52,000 --> 00:01:55,000
+Here's a distinction that trips people up constantly.
+
+33
+00:01:55,000 --> 00:01:56,000
+So let's nail it down.
+
+34
+00:01:56,000 --> 00:02:00,000
+A marketplace and a plugin aren't the same thing,
+
+35
+00:02:00,000 --> 00:02:02,000
+and the commands treat them separately.
+
+36
+00:02:02,000 --> 00:02:06,000
+A marketplace is the catalog you register first.
+
+37
+00:02:06,000 --> 00:02:10,000
+When you add one, Cloud Code can now see the plugins it offers.
+
+38
+00:02:10,000 --> 00:02:11,000
+But here's the key part.
+
+39
+00:02:12,000 --> 00:02:15,000
+Adding the marketplace installs nothing on its own.
+
+40
+00:02:15,000 --> 00:02:17,000
+It's just registering where plugins live.
+
+41
+00:02:18,000 --> 00:02:20,000
+A plugin is the individual capability,
+
+42
+00:02:21,000 --> 00:02:23,000
+and installing it is a distinct second step.
+
+43
+00:02:24,000 --> 00:02:27,000
+So the flow is always two moves, register the catalog,
+
+44
+00:02:27,000 --> 00:02:29,000
+then install from it.
+
+45
+00:02:29,000 --> 00:02:33,000
+If you add a marketplace and wonder why nothing new showed up,
+
+46
+00:02:33,000 --> 00:02:34,000
+that's expected.
+
+47
+00:02:34,000 --> 00:02:37,000
+You still have to install the specific plugin you want.
+
+48
+00:02:38,000 --> 00:02:41,000
+Let's make that concrete with the actual commands.
+
+49
+00:02:41,000 --> 00:02:44,000
+Getting a plugin in place is a two-step flow,
+
+50
+00:02:44,000 --> 00:02:47,000
+and you run both steps from the plugin commands.
+
+51
+00:02:47,000 --> 00:02:50,000
+First, you add the marketplace.
+
+52
+00:02:50,000 --> 00:02:54,000
+Pointing it at a repo, a URL, or even a local path,
+
+53
+00:02:54,000 --> 00:02:55,000
+and that registers the catalog.
+
+54
+00:02:56,000 --> 00:02:58,000
+Then you install the plugin by name,
+
+55
+00:02:58,000 --> 00:03:01,000
+scoped to the marketplace it came from.
+
+56
+00:03:01,000 --> 00:03:04,000
+So Cloud Code knows exactly which one you mean.
+
+57
+00:03:04,000 --> 00:03:06,000
+One convenience worth knowing,
+
+58
+00:03:06,000 --> 00:03:10,000
+the official marketplace is already available out of the box.
+
+59
+00:03:10,000 --> 00:03:13,000
+So you only add the community or custom ones yourself.
+
+60
+00:03:14,000 --> 00:03:15,000
+Once the install finishes,
+
+61
+00:03:15,000 --> 00:03:19,000
+the plugins, commands, and skills are live and ready for you to use.
+
+62
+00:03:20,000 --> 00:03:22,000
+Once you've got plugins installed,
+
+63
+00:03:22,000 --> 00:03:26,000
+a small set of commands covers day-to-day management.
+
+64
+00:03:26,000 --> 00:03:28,000
+The list command is your inventory.
+
+65
+00:03:28,000 --> 00:03:30,000
+It shows every plugin you have installed
+
+66
+00:03:30,000 --> 00:03:34,000
+and whether each one is currently enabled or disabled.
+
+67
+00:03:34,000 --> 00:03:38,000
+And you can filter to just the enabled or just the disabled ones.
+
+68
+00:03:39,000 --> 00:03:43,000
+Enable and disable let you turn a plugin on or off in place.
+
+69
+00:03:43,000 --> 00:03:47,000
+The nice thing about disabling is that it keeps the plugin installed.
+
+70
+00:03:47,000 --> 00:03:51,000
+So flipping it back on later is instant with no re-download.
+
+71
+00:03:51,000 --> 00:03:54,000
+And when you're genuinely done with a capability,
+
+72
+00:03:54,000 --> 00:03:57,000
+uninstall removes the plugin and its files completely.
+
+73
+00:03:57,000 --> 00:03:59,000
+So think of it as a spectrum.
+
+74
+00:03:59,000 --> 00:04:02,000
+Disable to pause and uninstall to remove for good.
+
+75
+00:04:03,000 --> 00:04:06,000
+There's also a visual way to manage all of this.
+
+76
+00:04:06,000 --> 00:04:10,000
+If you run the plugin command on its own with no arguments,
+
+77
+00:04:10,000 --> 00:04:12,000
+it opens an interactive manager.
+
+78
+00:04:12,000 --> 00:04:14,000
+And it's organized into four tabs.
+
+79
+00:04:14,000 --> 00:04:16,000
+The first is Discover,
+
+80
+00:04:16,000 --> 00:04:20,000
+where you browse plugins you could add from your registered marketplaces.
+
+81
+00:04:20,000 --> 00:04:22,000
+The second is Installed,
+
+82
+00:04:22,000 --> 00:04:25,000
+which shows what you already have and the state each one is in.
+
+83
+00:04:26,000 --> 00:04:28,000
+The third is Marketplaces,
+
+84
+00:04:28,000 --> 00:04:30,000
+listing the catalogs you've registered so far.
+
+85
+00:04:31,000 --> 00:04:32,000
+And the fourth is Errors,
+
+86
+00:04:32,000 --> 00:04:36,000
+which surfaces any plugins that failed to load.
+
+87
+00:04:36,000 --> 00:04:38,000
+So you have one place to go when something isn't working.
+
+88
+00:04:39,000 --> 00:04:40,000
+For a lot of people,
+
+89
+00:04:40,000 --> 00:04:44,000
+this interactive view is easier than remembering every individual command.
+
+90
+00:04:45,000 --> 00:04:48,000
+The word configuring is in the title of this lesson for a reason.
+
+91
+00:04:48,000 --> 00:04:50,000
+So let's touch on it.
+
+92
+00:04:50,000 --> 00:04:52,000
+When you install a plugin,
+
+93
+00:04:52,000 --> 00:04:53,000
+you choose a scope.
+
+94
+00:04:53,000 --> 00:04:55,000
+And that decides who the plugin is for,
+
+95
+00:04:55,000 --> 00:04:58,000
+whether it's just you or the whole project.
+
+96
+00:04:58,000 --> 00:05:02,000
+We'll go deep on scopes in the next lesson. Beyond that,
+
+97
+00:05:02,000 --> 00:05:06,000
+some plugins accept configuration values that tune how they behave.
+
+98
+00:05:06,000 --> 00:05:08,000
+And those get stored.
+
+99
+00:05:08,000 --> 00:05:11,000
+So the settings stick from one session to the next.
+
+100
+00:05:11,000 --> 00:05:16,000
+Now, one command ties all of this together. Reload plugins.
+
+101
+00:05:16,000 --> 00:05:20,000
+Whenever you enable, disable, or install something mid-session,
+
+102
+00:05:20,000 --> 00:05:22,000
+Reload plugins applies the change immediately.
+
+103
+00:05:22,000 --> 00:05:29,000
+So you don't have to restart Cloud Code just to pick up your new setup. Before we wrap,
+
+104
+00:05:29,000 --> 00:05:31,000
+let's clear up a source of confusion.
+
+105
+00:05:31,000 --> 00:05:33,000
+In a Cloud Code project,
+
+106
+00:05:33,000 --> 00:05:35,000
+three different things shape behavior,
+
+107
+00:05:35,000 --> 00:05:36,000
+and it's easy to lump them together.
+
+108
+00:05:37,000 --> 00:05:39,000
+Plugins add new capabilities.
+
+109
+00:05:39,000 --> 00:05:41,000
+The actual commands, skills,
+
+110
+00:05:41,000 --> 00:05:43,000
+and tools you can invoke.
+
+111
+00:05:43,000 --> 00:05:45,000
+Cloud.md is different.
+
+112
+00:05:45,000 --> 00:05:49,000
+It gives natural language instructions that Cloud reads as context,
+
+113
+00:05:49,000 --> 00:05:51,000
+guidance rather than machinery.
+
+114
+00:05:52,000 --> 00:05:55,000
+And settings.json is different again.
+
+115
+00:05:55,000 --> 00:05:59,000
+It sets permissions and other machine-readable options,
+
+116
+00:05:59,000 --> 00:06:00,000
+like what Cloud is allowed to do.
+
+117
+00:06:01,000 --> 00:06:04,000
+So the same project can have all three at once.
+
+118
+00:06:04,000 --> 00:06:06,000
+Plugins for capability.
+
+119
+00:06:06,000 --> 00:06:08,000
+Cloud.md for instruction.
+
+120
+00:06:08,000 --> 00:06:12,000
+And settings.json for configuration.
+
+121
+00:06:12,000 --> 00:06:16,000
+Keeping those roles straight in your head saves a lot of head-scratching
+
+122
+00:06:16,000 --> 00:06:20,000
+when you're deciding where a given change actually belongs.
+
+123
+00:06:21,000 --> 00:06:25,000
+A plugin bundles new capabilities into one installable unit.
+
+124
+00:06:25,000 --> 00:06:28,000
+It matters because registering a marketplace
+
+125
+00:06:28,000 --> 00:06:30,000
+and installing a plugin are separate steps,
+
+126
+00:06:30,000 --> 00:06:34,000
+and adding a catalog installs nothing by itself.
+
+127
+00:06:34,000 --> 00:06:40,000
+Just remember, plugins, Cloud.md, and settings.json each do a different job.
+
+128
+00:06:40,000 --> 00:06:43,000
+That covers installing and configuring plugins.
+
+129
+00:06:43,000 --> 00:06:44,000
+I'll see you in the next one.
+

@@ -1,0 +1,412 @@
+1
+00:00:00,000 --> 00:00:07,000
+Welcome back. A design can look clean on the whiteboard and still fail the requirements it was built for.
+
+2
+00:00:07,000 --> 00:00:12,000
+Solution architecture fit is the check that catches that. It asks a blunt question.
+
+3
+00:00:12,000 --> 00:00:18,000
+Does this proposed design actually satisfy every constraint and requirement that we stated?
+
+4
+00:00:18,000 --> 00:00:24,000
+This lesson covers reliability, failover, and how to judge fit without fooling yourself.
+
+5
+00:00:24,000 --> 00:00:29,000
+Let's be precise about what fit means, because it's stricter than it sounds.
+
+6
+00:00:29,000 --> 00:00:35,000
+Fit is a verdict, not a feeling. Either the design satisfies a given constraint, or it doesn't.
+
+7
+00:00:35,000 --> 00:00:41,000
+So the method is simple. Before you evaluate anything, list every constraint the requirement stated.
+
+8
+00:00:41,000 --> 00:00:47,000
+Then check the design against each one in turn. And here's the part people resist.
+
+9
+00:00:47,000 --> 00:00:52,000
+A single, unmet constraint means the design doesn't fit as specified.
+
+10
+00:00:52,000 --> 00:00:57,000
+You either fix it, or you explicitly renegotiate the constraint and record the tradeoff.
+
+11
+00:00:57,000 --> 00:01:00,000
+What you never do is wave it through on elegance.
+
+12
+00:01:00,000 --> 00:01:06,000
+If it misses the latency target or lands data in the wrong region, it doesn't fit as stated.
+
+13
+00:01:06,000 --> 00:01:11,000
+Fit is measured against the requirement, never against your own taste for a design.
+
+14
+00:01:11,000 --> 00:01:16,000
+That discipline is what keeps a good-looking answer from shipping broken.
+
+15
+00:01:16,000 --> 00:01:21,000
+A lot of fit failures hide in reliability, so let's name the three requirements there.
+
+16
+00:01:21,000 --> 00:01:25,000
+The first is availability, the share of time the application has to be usable.
+
+17
+00:01:25,000 --> 00:01:32,000
+A number here forces you to plan for the moments your primary path is down, because it will be at some point.
+
+18
+00:01:32,000 --> 00:01:38,000
+The second is failover, a defined path to a backup when the primary call fails.
+
+19
+00:01:38,000 --> 00:01:42,000
+Without it, one outage takes the whole feature down with it.
+
+20
+00:01:42,000 --> 00:01:49,000
+The third is degradation, a reduced but still useful experience when full service isn't possible.
+
+21
+00:01:49,000 --> 00:01:54,000
+Instead of throwing a hard error in the user's face, you give them something.
+
+22
+00:01:54,000 --> 00:01:59,000
+These three often go unstated in the requirement, which is exactly why they get missed.
+
+23
+00:01:59,000 --> 00:02:04,000
+If reliability matters, make them explicit and design for them.
+
+24
+00:02:04,000 --> 00:02:10,000
+Failover isn't one thing, it's a small toolkit, and three building blocks cover most cases.
+
+25
+00:02:10,000 --> 00:02:12,000
+The first is a fallback model.
+
+26
+00:02:12,000 --> 00:02:18,000
+When your primary model is unavailable, you root to an alternate one, keeping the feature alive,
+
+27
+00:02:18,000 --> 00:02:20,000
+even if the capability drops a notch.
+
+28
+00:02:20,000 --> 00:02:23,000
+The second is retry with backoff.
+
+29
+00:02:23,000 --> 00:02:29,000
+You resend a failed call after a growing delay, and the next slide pins down exactly which failures
+
+30
+00:02:29,000 --> 00:02:31,000
+deserve that treatment.
+
+31
+00:02:31,000 --> 00:02:34,000
+The third is graceful degradation.
+
+32
+00:02:34,000 --> 00:02:40,000
+Instead of failing outright, you return a cached answer, a simpler answer, or a partial one, so the
+
+33
+00:02:40,000 --> 00:02:42,000
+user still gets something useful.
+
+34
+00:02:43,000 --> 00:02:45,000
+You don't need all three everywhere.
+
+35
+00:02:45,000 --> 00:02:51,000
+You pick the blocks that match the reliability requirement you actually have to meet.
+
+36
+00:02:51,000 --> 00:02:55,000
+Recovery only works when it matches the error, so you have to classify first.
+
+37
+00:02:55,000 --> 00:02:57,000
+Errors fall into two buckets.
+
+38
+00:02:57,000 --> 00:03:03,000
+Transient errors are timeouts, rate limits, server blips, and network hiccups.
+
+39
+00:03:03,000 --> 00:03:09,000
+They're expected to clear on their own, so the correct response is a retry with exponential backoff.
+
+40
+00:03:09,000 --> 00:03:11,000
+Permanent errors are different.
+
+41
+00:03:11,000 --> 00:03:16,000
+A bad request, an invalid schema, an authentication failure.
+
+42
+00:03:16,000 --> 00:03:22,000
+Retrying those changes, nothing, because retrying without changing anything can't fix them.
+
+43
+00:03:22,000 --> 00:03:25,000
+The request, or the credential, is what's wrong.
+
+44
+00:03:25,000 --> 00:03:29,000
+They need a fix, a fallback, or an escalation to a human.
+
+45
+00:03:29,000 --> 00:03:33,000
+The classic mistake is applying retry to everything.
+
+46
+00:03:33,000 --> 00:03:40,000
+Retrying a permanent error just wastes budget and delays the moment you realize something is genuinely broken.
+
+47
+00:03:40,000 --> 00:03:44,000
+So, identify the type first, then choose the strategy.
+
+48
+00:03:44,000 --> 00:03:49,000
+The strategy has to match the type, not the symptom you happen to see.
+
+49
+00:03:49,000 --> 00:03:55,000
+Reliability really lives in what your application does on its worst day, so design that day on purpose.
+
+50
+00:03:55,000 --> 00:04:02,000
+Decide the fallback model before an outage forces the decision under pressure, not during the incident.
+
+51
+00:04:02,000 --> 00:04:06,000
+Give the client a degraded path instead of a blank screen.
+
+52
+00:04:06,000 --> 00:04:13,000
+A cached result, a shorter answer, a clear message with a retry, any of those beats a spinner that never resolves.
+
+53
+00:04:13,000 --> 00:04:20,000
+Then map each recovery to the classification you just made so the right block from the toolkit fires
+
+54
+00:04:20,000 --> 00:04:21,000
+for the right failure.
+
+55
+00:04:21,000 --> 00:04:26,000
+The teams that get burned are the ones who only ever tested the happy path.
+
+56
+00:04:26,000 --> 00:04:29,000
+The bad day always arrives eventually.
+
+57
+00:04:29,000 --> 00:04:35,000
+If you've designed for it in advance, it's a minor event instead of an outage that surprises everyone.
+
+58
+00:04:35,000 --> 00:04:39,000
+Here's how to actually run a fit check.
+
+59
+00:04:39,000 --> 00:04:44,000
+Take each stated requirement and turn it into a question the design has to answer out loud.
+
+60
+00:04:44,000 --> 00:04:51,000
+Latency budget? Count the sequential model calls in the design and see if they fit inside the number.
+
+61
+00:04:51,000 --> 00:04:55,000
+Throughput target? Check it against the rate limits you'll be working under.
+
+62
+00:04:55,000 --> 00:05:00,000
+Residency rule? Confirm where the calls physically run and whether that's allowed.
+
+63
+00:05:00,000 --> 00:05:05,000
+Availability target? Point to the failover path or honestly admit there isn't one yet.
+
+64
+00:05:05,000 --> 00:05:11,000
+The value of phrasing them as questions is that it exposes the gaps.
+
+65
+00:05:11,000 --> 00:05:14,000
+A hand wave doesn't survive a direct question.
+
+66
+00:05:14,000 --> 00:05:20,000
+If any of these has no good answer, the design isn't finished, no matter how complete it looks on the diagram.
+
+67
+00:05:20,000 --> 00:05:23,000
+That's the whole discipline in one habit.
+
+68
+00:05:23,000 --> 00:05:28,000
+Three fit failures show up again and again, so learn to spot them.
+
+69
+00:05:28,000 --> 00:05:30,000
+The first is over-provisioning.
+
+70
+00:05:30,000 --> 00:05:34,000
+You reach for real-time capacity when the work was actually deferrable,
+
+71
+00:05:34,000 --> 00:05:39,000
+so you pay premium latency and premium cost for speed nobody needed.
+
+72
+00:05:39,000 --> 00:05:42,000
+A nightly job doesn't need a streaming response.
+
+73
+00:05:42,000 --> 00:05:44,000
+The second is under-provisioning.
+
+74
+00:05:44,000 --> 00:05:47,000
+You ship with no failover and no headroom,
+
+75
+00:05:47,000 --> 00:05:53,000
+and the first rate limit spike or brief outage takes the entire feature down.
+
+76
+00:05:53,000 --> 00:05:56,000
+It worked in the demo and died under load.
+
+77
+00:05:56,000 --> 00:05:58,000
+The third is wrong placement.
+
+78
+00:05:58,000 --> 00:06:03,000
+A design is technically sound, but it ignores a residency or region constraint,
+
+79
+00:06:03,000 --> 00:06:08,000
+so it's legally or contractually unusable, no matter how well it runs.
+
+80
+00:06:08,000 --> 00:06:10,000
+Notice these are all fit problems.
+
+81
+00:06:10,000 --> 00:06:12,000
+The code might be fine.
+
+82
+00:06:12,000 --> 00:06:15,000
+The match to the requirement is what broke.
+
+83
+00:06:15,000 --> 00:06:18,000
+Let's turn all of this into one repeatable habit.
+
+84
+00:06:18,000 --> 00:06:22,000
+Every time you evaluate a design, walk the same short checklist.
+
+85
+00:06:22,000 --> 00:06:26,000
+First, write down every constraint, both the functional behaviors
+
+86
+00:06:26,000 --> 00:06:32,000
+and the infrastructure requirements, latency, throughput, region, cost, availability.
+
+87
+00:06:32,000 --> 00:06:37,000
+Second, trace the design against each constraint one at a time,
+
+88
+00:06:37,000 --> 00:06:39,000
+no skipping the inconvenient ones.
+
+89
+00:06:39,000 --> 00:06:43,000
+Third, flag anything the design can't clearly satisfy.
+
+90
+00:06:43,000 --> 00:06:47,000
+And fourth, either fix it or consciously record the tradeoff
+
+91
+00:06:47,000 --> 00:06:50,000
+before you declare the design done.
+
+92
+00:06:50,000 --> 00:06:54,000
+The point of the checklist is that fit is easy to fake when you eyeball it
+
+93
+00:06:54,000 --> 00:06:57,000
+and hard to fake when you go item by item.
+
+94
+00:06:57,000 --> 00:07:01,000
+A design fits only when nothing on that list is left unanswered.
+
+95
+00:07:01,000 --> 00:07:08,000
+Make that your finish line, and shaky architectures stop reaching production. Let's recap.
+
+96
+00:07:08,000 --> 00:07:13,000
+Solution architecture fit means the design satisfies every stated constraint,
+
+97
+00:07:13,000 --> 00:07:15,000
+not just most of them.
+
+98
+00:07:15,000 --> 00:07:20,000
+Plan reliability deliberately with availability, failover, and degradation.
+
+99
+00:07:20,000 --> 00:07:25,000
+Retry transient errors, but fix or fall back on permanent ones.
+
+100
+00:07:25,000 --> 00:07:29,000
+Just remember, over-provisioning, under-provisioning, and wrong placement
+
+101
+00:07:29,000 --> 00:07:31,000
+are the misses to watch for.
+
+102
+00:07:31,000 --> 00:07:34,000
+That wraps up matching architecture to the requirement.
+
+103
+00:07:34,000 --> 00:07:36,000
+I'll see you in the next one.
+

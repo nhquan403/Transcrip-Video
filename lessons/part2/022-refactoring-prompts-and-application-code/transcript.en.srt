@@ -1,0 +1,632 @@
+1
+00:00:00,000 --> 00:00:04,000
+Here's a problem every growing Cloud integration hits.
+
+2
+00:00:04,000 --> 00:00:05,000
+The same model name,
+
+3
+00:00:05,000 --> 00:00:06,000
+the same prompt text,
+
+4
+00:00:06,000 --> 00:00:08,000
+and the same retry logic end up
+
+5
+00:00:08,000 --> 00:00:11,000
+copied across dozens of files.
+
+6
+00:00:11,000 --> 00:00:15,000
+Then a single change means editing all of them.
+
+7
+00:00:15,000 --> 00:00:17,000
+This lesson covers refactoring that out,
+
+8
+00:00:17,000 --> 00:00:19,000
+isolating calls, extracting
+
+9
+00:00:19,000 --> 00:00:22,000
+shared prompts, and reducing coupling.
+
+10
+00:00:22,000 --> 00:00:25,000
+Let's define refactoring cleanly
+
+11
+00:00:25,000 --> 00:00:27,000
+because people use the word loosely.
+
+12
+00:00:27,000 --> 00:00:30,000
+Refactoring is restructuring working code
+
+13
+00:00:30,000 --> 00:00:32,000
+to make it more readable and maintainable
+
+14
+00:00:32,000 --> 00:00:34,000
+without changing what it does.
+
+15
+00:00:34,000 --> 00:00:36,000
+Three ideas anchor it.
+
+16
+00:00:36,000 --> 00:00:38,000
+First, it's behavior preserving.
+
+17
+00:00:38,000 --> 00:00:41,000
+The output is the same before and after.
+
+18
+00:00:41,000 --> 00:00:44,000
+You've only reshaped how the code is organized.
+
+19
+00:00:44,000 --> 00:00:47,000
+Nobody using the system should notice a thing.
+
+20
+00:00:47,000 --> 00:00:49,000
+Second, tests are your safety net.
+
+21
+00:00:49,000 --> 00:00:51,000
+They confirm behavior didn't change
+
+22
+00:00:51,000 --> 00:00:53,000
+so you can restructure with confidence.
+
+23
+00:00:53,000 --> 00:00:55,000
+Third, keep it separate.
+
+24
+00:00:55,000 --> 00:00:57,000
+A refactor and a feature change
+
+25
+00:00:57,000 --> 00:00:59,000
+shouldn't share a commit
+
+26
+00:00:59,000 --> 00:01:03,000
+because mixing them makes review and rollback painful.
+
+27
+00:01:03,000 --> 00:01:06,000
+Behavior preserving, test backed, and kept separate.
+
+28
+00:01:06,000 --> 00:01:08,000
+That's a disciplined refactor.
+
+29
+00:01:09,000 --> 00:01:12,000
+The highest value refactor in most Cloud integrations
+
+30
+00:01:12,000 --> 00:01:16,000
+is isolating the API call behind one clean interface.
+
+31
+00:01:16,000 --> 00:01:20,000
+Instead of scattering raw SDK calls all over the code base,
+
+32
+00:01:20,000 --> 00:01:23,000
+you wrap them in a single client module
+
+33
+00:01:23,000 --> 00:01:25,000
+that the rest of your app calls.
+
+34
+00:01:25,000 --> 00:01:28,000
+The model name, the headers, the retry policy,
+
+35
+00:01:28,000 --> 00:01:32,000
+and the error handling all live in that one place.
+
+36
+00:01:32,000 --> 00:01:34,000
+Everything else depends on your interface,
+
+37
+00:01:34,000 --> 00:01:37,000
+not on the raw API.
+
+38
+00:01:37,000 --> 00:01:40,000
+The payoff shows up the moment you need to change something.
+
+39
+00:01:40,000 --> 00:01:42,000
+Swapping to a new model, adjusting a header,
+
+40
+00:01:42,000 --> 00:01:45,000
+or tweaking retry behavior becomes a one module edit
+
+41
+00:01:45,000 --> 00:01:48,000
+instead of a hunt across the whole project.
+
+42
+00:01:48,000 --> 00:01:51,000
+One clean seam is worth a lot.
+
+43
+00:01:52,000 --> 00:01:54,000
+Let's contrast the two states directly
+
+44
+00:01:54,000 --> 00:01:57,000
+because the difference is what sells the refactor.
+
+45
+00:01:57,000 --> 00:02:00,000
+In the scattered version, the model name, the headers,
+
+46
+00:02:00,000 --> 00:02:04,000
+and the retry logic are copy pasted across many files.
+
+47
+00:02:04,000 --> 00:02:06,000
+When you need to pin a new model,
+
+48
+00:02:06,000 --> 00:02:09,000
+you're editing every one of them and you will miss one.
+
+49
+00:02:09,000 --> 00:02:13,000
+That missed spot is a bug waiting to happen.
+
+50
+00:02:13,000 --> 00:02:14,000
+In the consolidated version,
+
+51
+00:02:14,000 --> 00:02:18,000
+every call roots through a single shared client.
+
+52
+00:02:18,000 --> 00:02:20,000
+A model pin, a header change,
+
+53
+00:02:20,000 --> 00:02:23,000
+or a retry adjustment happens exactly once
+
+54
+00:02:23,000 --> 00:02:26,000
+and every caller picks it up automatically.
+
+55
+00:02:26,000 --> 00:02:28,000
+Same behavior either way,
+
+56
+00:02:28,000 --> 00:02:30,000
+but one of them makes change cheap
+
+57
+00:02:30,000 --> 00:02:31,000
+and the other makes it dangerous.
+
+58
+00:02:31,000 --> 00:02:33,000
+That's the whole argument for the seam.
+
+59
+00:02:34,000 --> 00:02:37,000
+Prompts have the same duplication problem as code
+
+60
+00:02:37,000 --> 00:02:38,000
+and the same fix.
+
+61
+00:02:38,000 --> 00:02:40,000
+When the same block of instructions
+
+62
+00:02:40,000 --> 00:02:42,000
+shows up in several call sites,
+
+63
+00:02:42,000 --> 00:02:45,000
+that's duplication waiting to drift.
+
+64
+00:02:45,000 --> 00:02:47,000
+One copy gets updated, the others don't,
+
+65
+00:02:47,000 --> 00:02:50,000
+and now your behavior is inconsistent
+
+66
+00:02:50,000 --> 00:02:52,000
+depending on which path ran.
+
+67
+00:02:52,000 --> 00:02:55,000
+The refactor is to pull that repeated instruction text
+
+68
+00:02:55,000 --> 00:02:58,000
+into one shared named fragment
+
+69
+00:02:58,000 --> 00:03:00,000
+and store reusable system prompts
+
+70
+00:03:00,000 --> 00:03:03,000
+as units you can test on their own.
+
+71
+00:03:03,000 --> 00:03:06,000
+Then each call site references the shared fragment
+
+72
+00:03:06,000 --> 00:03:08,000
+instead of carrying its own copy.
+
+73
+00:03:08,000 --> 00:03:10,000
+Fix the wording once and every caller
+
+74
+00:03:10,000 --> 00:03:14,000
+gets the corrected version at the same time.
+
+75
+00:03:14,000 --> 00:03:16,000
+Treat prompt text as a reusable asset,
+
+76
+00:03:16,000 --> 00:03:19,000
+not as string literals scattered around.
+
+77
+00:03:20,000 --> 00:03:22,000
+When I go looking for refactoring work
+
+78
+00:03:22,000 --> 00:03:23,000
+in a cloud integration,
+
+79
+00:03:23,000 --> 00:03:26,000
+four targets come up again and again.
+
+80
+00:03:26,000 --> 00:03:28,000
+First, duplicated prompts.
+
+81
+00:03:28,000 --> 00:03:32,000
+The same instruction text scattered across files
+
+82
+00:03:32,000 --> 00:03:34,000
+which you extract into one shared fragment.
+
+83
+00:03:34,000 --> 00:03:38,000
+Second, inline config, model names,
+
+84
+00:03:38,000 --> 00:03:41,000
+and settings hard-coded at each call site
+
+85
+00:03:41,000 --> 00:03:43,000
+which belong in one config module.
+
+86
+00:03:43,000 --> 00:03:47,000
+Third, repeated call logic, the same request,
+
+87
+00:03:47,000 --> 00:03:50,000
+retry, and parse code copied everywhere
+
+88
+00:03:50,000 --> 00:03:52,000
+which you wrap behind a single client.
+
+89
+00:03:52,000 --> 00:03:56,000
+And fourth, tangled concerns where prompt building,
+
+90
+00:03:56,000 --> 00:04:00,000
+the API call, and parsing all live in one function
+
+91
+00:04:00,000 --> 00:04:02,000
+which you split apart.
+
+92
+00:04:02,000 --> 00:04:04,000
+Duplicated prompts, inline config,
+
+93
+00:04:04,000 --> 00:04:07,000
+repeated call logic, tangled concerns.
+
+94
+00:04:07,000 --> 00:04:09,000
+Those four cover most of it.
+
+95
+00:04:10,000 --> 00:04:12,000
+All of this rolls up into one principle,
+
+96
+00:04:12,000 --> 00:04:14,000
+reducing coupling.
+
+97
+00:04:14,000 --> 00:04:17,000
+Coupling is how much a change in one place
+
+98
+00:04:17,000 --> 00:04:19,000
+forces changes somewhere else.
+
+99
+00:04:19,000 --> 00:04:22,000
+Tight coupling is why a simple model pin
+
+100
+00:04:22,000 --> 00:04:24,000
+turns into a 20-file edit.
+
+101
+00:04:24,000 --> 00:04:26,000
+When you isolate calls behind a client
+
+102
+00:04:26,000 --> 00:04:28,000
+and extract prompts into shared fragments,
+
+103
+00:04:28,000 --> 00:04:30,000
+you make change local.
+
+104
+00:04:30,000 --> 00:04:32,000
+A model pin update lives in the client.
+
+105
+00:04:32,000 --> 00:04:35,000
+A prompt version bump changes one shared fragment.
+
+106
+00:04:35,000 --> 00:04:38,000
+A config tweak flows out from a single source
+
+107
+00:04:38,000 --> 00:04:42,000
+because the change touches one place instead of many.
+
+108
+00:04:42,000 --> 00:04:44,000
+Swapping a model or rolling a prompt version
+
+109
+00:04:45,000 --> 00:04:46,000
+becomes cheap and low risk.
+
+110
+00:04:46,000 --> 00:04:48,000
+Low coupling is what lets you move fast
+
+111
+00:04:48,000 --> 00:04:51,000
+without breaking the integration every time.
+
+112
+00:04:52,000 --> 00:04:54,000
+Refactoring comes in two sizes
+
+113
+00:04:54,000 --> 00:04:56,000
+and both belong in your workflow.
+
+114
+00:04:56,000 --> 00:04:59,000
+Small refactors are the everyday kind.
+
+115
+00:04:59,000 --> 00:05:02,000
+Rename a confusing variable, extract a helper,
+
+116
+00:05:02,000 --> 00:05:04,000
+delete a duplicated block.
+
+117
+00:05:04,000 --> 00:05:07,000
+They're low risk and you do them continuously
+
+118
+00:05:07,000 --> 00:05:08,000
+as you touch the code.
+
+119
+00:05:08,000 --> 00:05:11,000
+Large refactors reshape bigger structures
+
+120
+00:05:11,000 --> 00:05:13,000
+like redrawing module boundaries
+
+121
+00:05:13,000 --> 00:05:16,000
+or introducing that client layer we talked about.
+
+122
+00:05:16,000 --> 00:05:20,000
+They carry more risk so you lean hard on tests
+
+123
+00:05:20,000 --> 00:05:22,000
+and move in small, reviewable steps
+
+124
+00:05:22,000 --> 00:05:24,000
+rather than one giant rewrite.
+
+125
+00:05:24,000 --> 00:05:26,000
+The rule is the same at both sizes.
+
+126
+00:05:26,000 --> 00:05:29,000
+You preserve behavior and you keep the refactor
+
+127
+00:05:29,000 --> 00:05:33,000
+out of any commit that also changes a feature.
+
+128
+00:05:33,000 --> 00:05:35,000
+Small or large, disciplined refactoring
+
+129
+00:05:35,000 --> 00:05:37,000
+never mixes with new behavior.
+
+130
+00:05:38,000 --> 00:05:40,000
+Just like with review,
+
+131
+00:05:40,000 --> 00:05:42,000
+Clod is a strong refactoring partner
+
+132
+00:05:42,000 --> 00:05:44,000
+and the same boundary applies.
+
+133
+00:05:44,000 --> 00:05:46,000
+It's genuinely good at this.
+
+134
+00:05:46,000 --> 00:05:48,000
+It can spot duplication you've stopped noticing
+
+135
+00:05:48,000 --> 00:05:51,000
+and suggest a clean extraction.
+
+136
+00:05:51,000 --> 00:05:53,000
+It can look at scattered call sites
+
+137
+00:05:53,000 --> 00:05:56,000
+and propose a client interface to pull them behind.
+
+138
+00:05:56,000 --> 00:05:58,000
+It can draft the mechanical parts
+
+139
+00:05:58,000 --> 00:06:00,000
+of a large refactor quickly.
+
+140
+00:06:00,000 --> 00:06:02,000
+But two things keep you safe.
+
+141
+00:06:02,000 --> 00:06:07,000
+Tests still verify that behavior stayed exactly the same
+
+142
+00:06:07,000 --> 00:06:09,000
+because a confident refactor suggestion
+
+143
+00:06:09,000 --> 00:06:12,000
+can still change output in a subtle way
+
+144
+00:06:12,000 --> 00:06:15,000
+and you review each step and approve it before it lands.
+
+145
+00:06:15,000 --> 00:06:17,000
+Clod accelerates the work.
+
+146
+00:06:17,000 --> 00:06:20,000
+It doesn't replace the tests or the human sign-off
+
+147
+00:06:20,000 --> 00:06:22,000
+that make refactoring trustworthy.
+
+148
+00:06:24,000 --> 00:06:25,000
+Here's the bottom line.
+
+149
+00:06:25,000 --> 00:06:29,000
+Refactoring keeps a Clod integration easy to change
+
+150
+00:06:29,000 --> 00:06:31,000
+without changing what it does.
+
+151
+00:06:31,000 --> 00:06:34,000
+Isolate your API calls behind one clean client.
+
+152
+00:06:34,000 --> 00:06:39,000
+Extract shared prompts and config into reusable units
+
+153
+00:06:39,000 --> 00:06:42,000
+and reduce coupling so a model or prompt change
+
+154
+00:06:42,000 --> 00:06:44,000
+touches a single place.
+
+155
+00:06:44,000 --> 00:06:47,000
+Just remember, tests preserve behavior
+
+156
+00:06:47,000 --> 00:06:50,000
+and a human still approves every step.
+
+157
+00:06:50,000 --> 00:06:53,000
+That covers refactoring prompts and application code.
+
+158
+00:06:53,000 --> 00:06:55,000
+I'll see you in the next lesson.
+

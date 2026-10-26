@@ -1,0 +1,560 @@
+1
+00:00:00,000 --> 00:00:01,000
+Welcome back.
+
+2
+00:00:01,000 --> 00:00:02,000
+On plenty of enterprise projects,
+
+3
+00:00:03,000 --> 00:00:05,000
+you can't send data to the first party API.
+
+4
+00:00:05,000 --> 00:00:08,000
+Everything has to run inside your AWS account.
+
+5
+00:00:09,000 --> 00:00:12,000
+That's exactly what Amazon Bedrock solves for Claude.
+
+6
+00:00:12,000 --> 00:00:15,000
+This lesson covers how you invoke Claude on Bedrock,
+
+7
+00:00:15,000 --> 00:00:21,000
+how you authenticate, and which features quietly change. Let's dive in.
+
+8
+00:00:21,000 --> 00:00:23,000
+So here's the reassuring part.
+
+9
+00:00:23,000 --> 00:00:26,000
+When you move to Bedrock, your prompt logic doesn't change.
+
+10
+00:00:27,000 --> 00:00:32,000
+Bedrock accepts the exact same messages API request body,
+
+11
+00:00:32,000 --> 00:00:35,000
+and it streams responses back with the same event format
+
+12
+00:00:35,000 --> 00:00:37,000
+you already handle.
+
+13
+00:00:37,000 --> 00:00:41,000
+What changes is the plumbing around that request.
+
+14
+00:00:41,000 --> 00:00:44,000
+You point at a different endpoint, you use a different client,
+
+15
+00:00:44,000 --> 00:00:49,000
+and you authenticate with AWS instead of an Anthropic key.
+
+16
+00:00:49,000 --> 00:00:52,000
+The current integration is called Bedrock Mantle.
+
+17
+00:00:52,000 --> 00:00:58,000
+And it is the path Anthropic recommends for Opus 4.7 and later.
+
+18
+00:00:58,000 --> 00:01:01,000
+Because the body shape matches your parsing code,
+
+19
+00:01:01,000 --> 00:01:05,000
+your streaming consumer and your tool handling loop
+
+20
+00:01:05,000 --> 00:01:07,000
+all move over untouched.
+
+21
+00:01:07,000 --> 00:01:10,000
+You are really just swapping the front door,
+
+22
+00:01:10,000 --> 00:01:12,000
+not the room behind it.
+
+23
+00:01:12,000 --> 00:01:15,000
+Let's look at that current path a little closer.
+
+24
+00:01:15,000 --> 00:01:18,000
+The Bedrock Mantle integration exposes the messages API
+
+25
+00:01:18,000 --> 00:01:22,000
+at a region scoped endpoint inside AWS.
+
+26
+00:01:22,000 --> 00:01:26,000
+So you route to your own region, rather than to Anthropic's servers.
+
+27
+00:01:27,000 --> 00:01:29,000
+To use it, you install the Bedrock Extra
+
+28
+00:01:29,000 --> 00:01:32,000
+for whatever language SDK you work in,
+
+29
+00:01:32,000 --> 00:01:35,000
+whether that's Python, TypeScript, or one of the others.
+
+30
+00:01:36,000 --> 00:01:39,000
+From there, the request you build looks identical to a first party call.
+
+31
+00:01:40,000 --> 00:01:44,000
+The one habit worth forming early is reading the client name.
+
+32
+00:01:44,000 --> 00:01:48,000
+The client you construct tells you and anyone reviewing your code
+
+33
+00:01:48,000 --> 00:01:50,000
+exactly which integration you are on.
+
+34
+00:01:50,000 --> 00:01:53,000
+That small signal saves a lot of confusion
+
+35
+00:01:53,000 --> 00:01:58,000
+when the current and legacy paths sit side by side in the same code base.
+
+36
+00:01:59,000 --> 00:02:02,000
+This is the single most important distinction to get right,
+
+37
+00:02:02,000 --> 00:02:04,000
+because both paths still work.
+
+38
+00:02:05,000 --> 00:02:07,000
+The current path is Bedrock Mantle,
+
+39
+00:02:07,000 --> 00:02:11,000
+and it pairs a bare Anthropic prefix on model IDs
+
+40
+00:02:11,000 --> 00:02:13,000
+with the Anthropic Bedrock Mantle client.
+
+41
+00:02:14,000 --> 00:02:18,000
+The legacy path is the older invoke model or converse style,
+
+42
+00:02:18,000 --> 00:02:21,000
+and it pairs profile prefixed identifiers,
+
+43
+00:02:21,000 --> 00:02:23,000
+global dot, US dot, EU dot,
+
+44
+00:02:24,000 --> 00:02:27,000
+and friends with the plain Anthropic Bedrock client.
+
+45
+00:02:27,000 --> 00:02:31,000
+Here's the trap. Because the legacy path still functions,
+
+46
+00:02:31,000 --> 00:02:34,000
+it is easy to grab an old snippet and assume it is current.
+
+47
+00:02:35,000 --> 00:02:40,000
+It isn't. For Opus 4.7 and later, reach for Bedrock Mantle.
+
+48
+00:02:41,000 --> 00:02:44,000
+Save invoke model for Opus 4.6 and earlier,
+
+49
+00:02:45,000 --> 00:02:47,000
+or for code you are maintaining,
+
+50
+00:02:47,000 --> 00:02:49,000
+rather than writing fresh.
+
+51
+00:02:50,000 --> 00:02:53,000
+Model identifiers are where that distinction becomes concrete.
+
+52
+00:02:53,000 --> 00:02:55,000
+On the current Bedrock Mantle path,
+
+53
+00:02:55,000 --> 00:02:58,000
+the IDs carry a bare Anthropic prefix.
+
+54
+00:02:59,000 --> 00:03:02,000
+You'll write something like Anthropic dot Claude Opus 4.8,
+
+55
+00:03:03,000 --> 00:03:05,000
+or Anthropic dot Claude SONIC 5.
+
+56
+00:03:06,000 --> 00:03:09,000
+Notice what isn't there. There is no US prefix,
+
+57
+00:03:09,000 --> 00:03:12,000
+no EU prefix, no regional profile wrapper.
+
+58
+00:03:12,000 --> 00:03:15,000
+Those profile prefixed identifiers,
+
+59
+00:03:15,000 --> 00:03:17,000
+the ones that start with global dot,
+
+60
+00:03:17,000 --> 00:03:22,000
+US dot, or EU dot, belong to the legacy invoke model path,
+
+61
+00:03:22,000 --> 00:03:25,000
+where global is the recommended default,
+
+62
+00:03:25,000 --> 00:03:29,000
+and the regional forms are an opt-in at about a 10% premium.
+
+63
+00:03:29,000 --> 00:03:31,000
+So the rule of thumb is simple.
+
+64
+00:03:31,000 --> 00:03:35,000
+If your client is the Mantle client, use the bare Anthropic prefix.
+
+65
+00:03:36,000 --> 00:03:39,000
+If you find yourself reaching for a profile prefixed identifier,
+
+66
+00:03:40,000 --> 00:03:43,000
+you have quietly slipped back onto the legacy surface,
+
+67
+00:03:43,000 --> 00:03:46,000
+and you should ask whether that is really what you want.
+
+68
+00:03:47,000 --> 00:03:51,000
+Now, authentication. Because Bedrock rides on AWS,
+
+69
+00:03:51,000 --> 00:03:53,000
+you never pass an Anthropic key.
+
+70
+00:03:54,000 --> 00:03:57,000
+Instead, the client resolves your AWS credentials
+
+71
+00:03:57,000 --> 00:03:58,000
+through a precedence order,
+
+72
+00:03:58,000 --> 00:04:00,000
+and there are three levels worth knowing.
+
+73
+00:04:01,000 --> 00:04:04,000
+First, anything you pass directly as constructor arguments
+
+74
+00:04:04,000 --> 00:04:06,000
+wins over everything else.
+
+75
+00:04:06,000 --> 00:04:09,000
+Second, if you don't pass credentials in code,
+
+76
+00:04:09,000 --> 00:04:12,000
+the SDK reads them from environment variables.
+
+77
+00:04:12,000 --> 00:04:17,000
+Your AWS access key, secret key, session token, and region.
+
+78
+00:04:17,000 --> 00:04:19,000
+Third, if neither of those is set,
+
+79
+00:04:19,000 --> 00:04:22,000
+it falls back to your AWS config file
+
+80
+00:04:22,000 --> 00:04:24,000
+and the standard credential chain.
+
+81
+00:04:25,000 --> 00:04:28,000
+The practical takeaway is that explicit always beats implicit.
+
+82
+00:04:29,000 --> 00:04:32,000
+So if a request authenticates as the wrong identity,
+
+83
+00:04:32,000 --> 00:04:36,000
+check for stray constructor arguments or environment variables first.
+
+84
+00:04:37,000 --> 00:04:40,000
+Those credentials can come from three different sources,
+
+85
+00:04:40,000 --> 00:04:42,000
+and Anthropic ranks them by preference.
+
+86
+00:04:42,000 --> 00:04:45,000
+The recommended option is a Bedrock service role,
+
+87
+00:04:45,000 --> 00:04:47,000
+where the platform assumes the role for you,
+
+88
+00:04:48,000 --> 00:04:50,000
+and you manage nothing sensitive directly.
+
+89
+00:04:50,000 --> 00:04:53,000
+Next are IAM assumed roles,
+
+90
+00:04:53,000 --> 00:04:56,000
+which work well for cross-account access
+
+91
+00:04:56,000 --> 00:04:58,000
+and cap out at a 12-hour session.
+
+92
+00:04:59,000 --> 00:05:01,000
+The least preferred option is a bearer token,
+
+93
+00:05:01,000 --> 00:05:04,000
+which shares the same 12-hour maximum,
+
+94
+00:05:04,000 --> 00:05:07,000
+but is generated separately and passed like an API key.
+
+95
+00:05:08,000 --> 00:05:10,000
+A static credential your code now has to handle.
+
+96
+00:05:11,000 --> 00:05:12,000
+All three share one property.
+
+97
+00:05:13,000 --> 00:05:15,000
+None of them is an Anthropic key.
+
+98
+00:05:16,000 --> 00:05:18,000
+Your access to Cloud here is entirely governed
+
+99
+00:05:18,000 --> 00:05:22,000
+by AWS identity and access management,
+
+100
+00:05:22,000 --> 00:05:25,000
+which is usually exactly what a security team wants.
+
+101
+00:05:26,000 --> 00:05:28,000
+All right, the gaps.
+
+102
+00:05:28,000 --> 00:05:32,000
+A few features you might rely on with the first party API
+
+103
+00:05:32,000 --> 00:05:34,000
+simply aren't available on Bedrock,
+
+104
+00:05:34,000 --> 00:05:37,000
+and it's better to learn that now than mid-build.
+
+105
+00:05:38,000 --> 00:05:42,000
+First, there is no URL image input and no files API,
+
+106
+00:05:42,000 --> 00:05:47,000
+so any image or document has to be sent inline as base 64,
+
+107
+00:05:47,000 --> 00:05:50,000
+and images are capped at five megabytes each.
+
+108
+00:05:51,000 --> 00:05:54,000
+Second, the server-side tools don't run here,
+
+109
+00:05:54,000 --> 00:05:58,000
+so code execution, web search, and web fetch are off the table.
+
+110
+00:05:59,000 --> 00:06:03,000
+Third, the message batches API and the MCP connector
+
+111
+00:06:03,000 --> 00:06:04,000
+are both unavailable.
+
+112
+00:06:05,000 --> 00:06:08,000
+None of these block a typical request and response app,
+
+113
+00:06:08,000 --> 00:06:12,000
+but if your design leaned on batches or server tools,
+
+114
+00:06:12,000 --> 00:06:14,000
+you'll need a different plan on Bedrock.
+
+115
+00:06:15,000 --> 00:06:17,000
+Let's balance that with the good news,
+
+116
+00:06:17,000 --> 00:06:19,000
+because plenty carries over untouched.
+
+117
+00:06:19,000 --> 00:06:22,000
+Prompt caching works, so your repeated context
+
+118
+00:06:23,000 --> 00:06:24,000
+still earns the discount.
+
+119
+00:06:24,000 --> 00:06:28,000
+Extended thinking works, so reasoning heavy calls behave the same.
+
+120
+00:06:29,000 --> 00:06:31,000
+Client-side tool use is fully supported,
+
+121
+00:06:31,000 --> 00:06:36,000
+including the bash, text editor, memory, and computer use tools.
+
+122
+00:06:37,000 --> 00:06:40,000
+Citations and structured outputs both work as well.
+
+123
+00:06:41,000 --> 00:06:44,000
+On top of that, you get a choice of endpoint types.
+
+124
+00:06:44,000 --> 00:06:46,000
+Global endpoints carry no premium,
+
+125
+00:06:46,000 --> 00:06:51,000
+while regional endpoints add about 10% for tighter data locality.
+
+126
+00:06:51,000 --> 00:06:53,000
+So the honest summary is this.
+
+127
+00:06:54,000 --> 00:06:56,000
+Design your app to the supported feature set,
+
+128
+00:06:56,000 --> 00:07:01,000
+and a Bedrock deployment behaves almost exactly like a first-party one,
+
+129
+00:07:01,000 --> 00:07:03,000
+just with AWS holding the keys.
+
+130
+00:07:05,000 --> 00:07:08,000
+Let's recap. Bedrock serves Claude through AWS
+
+131
+00:07:08,000 --> 00:07:10,000
+with the same messages API,
+
+132
+00:07:10,000 --> 00:07:13,000
+but a different client, credentials, and model IDs.
+
+133
+00:07:13,000 --> 00:07:18,000
+Authentication runs on AWS identity, rather than an entropic key,
+
+134
+00:07:19,000 --> 00:07:21,000
+with a service role as the recommended default.
+
+135
+00:07:22,000 --> 00:07:25,000
+Caching, thinking, and client tools all carry over,
+
+136
+00:07:25,000 --> 00:07:28,000
+while batches and server tools don't.
+
+137
+00:07:28,000 --> 00:07:33,000
+Remember, Bedrock mantle is current, and invoke model is legacy.
+
+138
+00:07:33,000 --> 00:07:35,000
+So that's the old way of doing things.
+
+139
+00:07:35,000 --> 00:07:38,000
+That covers invoking Claude on Amazon Bedrock.
+
+140
+00:07:39,000 --> 00:07:40,000
+I'll meet you in the next lesson.
+

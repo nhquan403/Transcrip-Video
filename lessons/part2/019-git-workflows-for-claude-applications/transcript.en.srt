@@ -1,0 +1,616 @@
+1
+00:00:00,000 --> 00:00:02,000
+Let's talk about version control.
+
+2
+00:00:02,000 --> 00:00:04,000
+If you write code, you already know Git,
+
+3
+00:00:04,000 --> 00:00:06,000
+and a Cloud application is code,
+
+4
+00:00:06,000 --> 00:00:08,000
+so the same moves carry over.
+
+5
+00:00:08,000 --> 00:00:10,000
+This lesson walks through commits,
+
+6
+00:00:10,000 --> 00:00:12,000
+branches, tags, and the review flow,
+
+7
+00:00:12,000 --> 00:00:15,000
+then shows why your prompts and config
+
+8
+00:00:15,000 --> 00:00:17,000
+belong right there in the repository.
+
+9
+00:00:17,000 --> 00:00:20,000
+Let's dig in. Three building blocks
+
+10
+00:00:20,000 --> 00:00:23,000
+carry almost everything you do in Git.
+
+11
+00:00:23,000 --> 00:00:24,000
+The first is a comet.
+
+12
+00:00:24,000 --> 00:00:27,000
+A comet is a saved snapshot of your files,
+
+13
+00:00:27,000 --> 00:00:30,000
+and it's named by a content hash,
+
+14
+00:00:30,000 --> 00:00:35,000
+so the same hash always points to the exact same state. Nothing drifts.
+
+15
+00:00:35,000 --> 00:00:37,000
+The second is a branch.
+
+16
+00:00:37,000 --> 00:00:41,000
+A branch is just a movable pointer to a line of work,
+
+17
+00:00:41,000 --> 00:00:43,000
+which lets you develop a change in isolation
+
+18
+00:00:43,000 --> 00:00:46,000
+and merge it back when it's ready.
+
+19
+00:00:46,000 --> 00:00:47,000
+The third is a tag.
+
+20
+00:00:47,000 --> 00:00:51,000
+A tag is a fixed label pinned to one commit,
+
+21
+00:00:51,000 --> 00:00:53,000
+and you use it to mark a release,
+
+22
+00:00:53,000 --> 00:00:57,000
+so later you can find and rebuild that exact version.
+
+23
+00:00:58,000 --> 00:01:00,000
+Snapshot, pointer, label.
+
+24
+00:01:00,000 --> 00:01:01,000
+Learn those three,
+
+25
+00:01:01,000 --> 00:01:03,000
+and the rest of Git is variations on them.
+
+26
+00:01:04,000 --> 00:01:08,000
+So, why bother putting a Cloud app under version control?
+
+27
+00:01:08,000 --> 00:01:11,000
+Because you get the same safety net any code base gets,
+
+28
+00:01:11,000 --> 00:01:13,000
+and you get it for free.
+
+29
+00:01:13,000 --> 00:01:16,000
+Every change now has an author, a timestamp,
+
+30
+00:01:16,000 --> 00:01:18,000
+and a message explaining why,
+
+31
+00:01:18,000 --> 00:01:21,000
+so you're never guessing who touched what.
+
+32
+00:01:21,000 --> 00:01:24,000
+If a new prompt makes the model behave badly,
+
+33
+00:01:24,000 --> 00:01:27,000
+you roll back to the last good commit in seconds
+
+34
+00:01:27,000 --> 00:01:30,000
+instead of trying to reconstruct it from memory,
+
+35
+00:01:30,000 --> 00:01:33,000
+and the history shows you exactly when behavior shifted,
+
+36
+00:01:33,000 --> 00:01:35,000
+which is priceless when something worked last week
+
+37
+00:01:35,000 --> 00:01:37,000
+and doesn't today.
+
+38
+00:01:37,000 --> 00:01:39,000
+The key thing to notice is that
+
+39
+00:01:39,000 --> 00:01:41,000
+none of this is special to Cloud.
+
+40
+00:01:41,000 --> 00:01:45,000
+A prompt is just text, and Git tracks text beautifully.
+
+41
+00:01:46,000 --> 00:01:47,000
+Once you're branching,
+
+42
+00:01:47,000 --> 00:01:50,000
+you'll hit the choice between merging and rebasing,
+
+43
+00:01:50,000 --> 00:01:51,000
+so let's separate them.
+
+44
+00:01:51,000 --> 00:01:53,000
+A merge combines two branches
+
+45
+00:01:53,000 --> 00:01:56,000
+and records a merge commit that ties them together.
+
+46
+00:01:56,000 --> 00:02:00,000
+Your history keeps every branch exactly as it happened,
+
+47
+00:02:00,000 --> 00:02:01,000
+which is honest,
+
+48
+00:02:01,000 --> 00:02:04,000
+though it can look tangled with lots of parallel work.
+
+49
+00:02:04,000 --> 00:02:06,000
+A rebase does something different.
+
+50
+00:02:06,000 --> 00:02:09,000
+It replays your commits on top of another branch,
+
+51
+00:02:09,000 --> 00:02:12,000
+so the history reads as one straight line.
+
+52
+00:02:12,000 --> 00:02:14,000
+That looks cleaner, but notice what happened.
+
+53
+00:02:14,000 --> 00:02:16,000
+You rewrote those commits.
+
+54
+00:02:16,000 --> 00:02:18,000
+That's fine on your own branch,
+
+55
+00:02:18,000 --> 00:02:20,000
+and it's a problem on a shared one
+
+56
+00:02:20,000 --> 00:02:23,000
+because you're changing history other people already have,
+
+57
+00:02:23,000 --> 00:02:27,000
+so the simple rule is rebase local work,
+
+58
+00:02:27,000 --> 00:02:29,000
+merge shared work.
+
+59
+00:02:29,000 --> 00:02:31,000
+Let me walk you through the everyday flow
+
+60
+00:02:31,000 --> 00:02:33,000
+these pieces add up to.
+
+61
+00:02:33,000 --> 00:02:36,000
+You start by cutting a branch off the main line
+
+62
+00:02:36,000 --> 00:02:38,000
+so your work stays isolated
+
+63
+00:02:38,000 --> 00:02:41,000
+and nobody else is disturbed while you experiment.
+
+64
+00:02:41,000 --> 00:02:45,000
+Then you save small, focused commits with clear messages
+
+65
+00:02:45,000 --> 00:02:47,000
+as you build the change,
+
+66
+00:02:47,000 --> 00:02:49,000
+rather than one giant commit at the end.
+
+67
+00:02:49,000 --> 00:02:51,000
+When it's ready, you push the branch
+
+68
+00:02:51,000 --> 00:02:53,000
+and open a pull request,
+
+69
+00:02:53,000 --> 00:02:54,000
+which is your way of saying,
+
+70
+00:02:54,000 --> 00:02:57,000
+here's a change, please review the diff.
+
+71
+00:02:57,000 --> 00:02:59,000
+Finally, after a teammate reviews it
+
+72
+00:02:59,000 --> 00:03:01,000
+and the automated checks pass,
+
+73
+00:03:01,000 --> 00:03:03,000
+you merge it back into the main line.
+
+74
+00:03:03,000 --> 00:03:06,000
+Branch, commit, request, merge.
+
+75
+00:03:06,000 --> 00:03:08,000
+That loop is the heartbeat of team development,
+
+76
+00:03:08,000 --> 00:03:10,000
+and it works identically,
+
+77
+00:03:10,000 --> 00:03:12,000
+whether the change is code or a prompt.
+
+78
+00:03:13,000 --> 00:03:16,000
+Here's a shift in thinking that matters for Cloud apps.
+
+79
+00:03:16,000 --> 00:03:19,000
+Source isn't just your application code.
+
+80
+00:03:19,000 --> 00:03:23,000
+The prompts that shape every model response are source.
+
+81
+00:03:23,000 --> 00:03:27,000
+The tool schemas and output schemas you define are source.
+
+82
+00:03:27,000 --> 00:03:30,000
+The config files that set the model's behavior
+
+83
+00:03:30,000 --> 00:03:32,000
+and permissions are source too.
+
+84
+00:03:32,000 --> 00:03:34,000
+All of it is plain text,
+
+85
+00:03:34,000 --> 00:03:38,000
+and plain text is exactly what Git was built to track.
+
+86
+00:03:38,000 --> 00:03:40,000
+So the instinct to commit your Python
+
+87
+00:03:40,000 --> 00:03:43,000
+and leave the prompt in a doc somewhere
+
+88
+00:03:43,000 --> 00:03:47,000
+or paste config into a chat is the instinct to break.
+
+89
+00:03:47,000 --> 00:03:50,000
+If it influences how your application behaves,
+
+90
+00:03:50,000 --> 00:03:52,000
+it belongs in the repository,
+
+91
+00:03:52,000 --> 00:03:55,000
+versioned right alongside the code.
+
+92
+00:03:55,000 --> 00:03:56,000
+That's the whole mindset,
+
+93
+00:03:56,000 --> 00:03:58,000
+and the next lesson leans hard on it.
+
+94
+00:03:59,000 --> 00:04:01,000
+Let's put names to the review process,
+
+95
+00:04:01,000 --> 00:04:04,000
+because three terms come up constantly.
+
+96
+00:04:04,000 --> 00:04:07,000
+A pull request is a proposed set of commits
+
+97
+00:04:07,000 --> 00:04:10,000
+opened up for review before it merges.
+
+98
+00:04:10,000 --> 00:04:11,000
+Think of it as the gate
+
+99
+00:04:11,000 --> 00:04:14,000
+where a change has to earn its way in.
+
+100
+00:04:14,000 --> 00:04:16,000
+Inside that request, you read the diff,
+
+101
+00:04:16,000 --> 00:04:19,000
+the line-by-line view of what actually changed.
+
+102
+00:04:19,000 --> 00:04:22,000
+This is the part that's magic for prompts,
+
+103
+00:04:22,000 --> 00:04:24,000
+because a reworded instruction
+
+104
+00:04:24,000 --> 00:04:27,000
+shows up as an exact before and after,
+
+105
+00:04:27,000 --> 00:04:29,000
+not a vague description.
+
+106
+00:04:29,000 --> 00:04:31,000
+And then there's the code review itself,
+
+107
+00:04:31,000 --> 00:04:34,000
+a teammate reading that diff to catch defects,
+
+108
+00:04:34,000 --> 00:04:36,000
+unclear logic, or risky wording
+
+109
+00:04:36,000 --> 00:04:38,000
+before it lands in the main line.
+
+110
+00:04:38,000 --> 00:04:42,000
+Pull request, diff, review.
+
+111
+00:04:42,000 --> 00:04:44,000
+Together, they're how a team keeps quality up
+
+112
+00:04:44,000 --> 00:04:46,000
+without slowing to a crawl.
+
+113
+00:04:47,000 --> 00:04:50,000
+I want to dwell on the single biggest payoff
+
+114
+00:04:50,000 --> 00:04:51,000
+for a Clawed app,
+
+115
+00:04:51,000 --> 00:04:54,000
+which is that prompt edits become reviewable.
+
+116
+00:04:54,000 --> 00:04:56,000
+When you change a system prompt,
+
+117
+00:04:56,000 --> 00:05:00,000
+that reworded instruction shows up as a plain diff,
+
+118
+00:05:00,000 --> 00:05:03,000
+red for what left and green for what arrived.
+
+119
+00:05:03,000 --> 00:05:06,000
+A reviewer can look at it and see the behavior shift coming
+
+120
+00:05:06,000 --> 00:05:08,000
+before it ever ships to users.
+
+121
+00:05:08,000 --> 00:05:11,000
+And because every edit is tied to a commit,
+
+122
+00:05:11,000 --> 00:05:14,000
+the history pins down exactly which change
+
+123
+00:05:14,000 --> 00:05:16,000
+altered a given response.
+
+124
+00:05:16,000 --> 00:05:20,000
+So debugging a regression stops being guesswork.
+
+125
+00:05:20,000 --> 00:05:22,000
+The upshot is that a prompt tweak
+
+126
+00:05:22,000 --> 00:05:25,000
+gets the same scrutiny as a code change.
+
+127
+00:05:25,000 --> 00:05:27,000
+No more silent edits to the text
+
+128
+00:05:27,000 --> 00:05:29,000
+that's steering your whole application.
+
+129
+00:05:29,000 --> 00:05:31,000
+Every word is on the record.
+
+130
+00:05:32,000 --> 00:05:34,000
+Let me drive the comparison home,
+
+131
+00:05:34,000 --> 00:05:36,000
+because it's the habit I most want you to keep.
+
+132
+00:05:36,000 --> 00:05:38,000
+On the application code side,
+
+133
+00:05:38,000 --> 00:05:42,000
+you'd never dream of merging a change without a review.
+
+134
+00:05:42,000 --> 00:05:46,000
+You know bugs slip in when a change lands on red,
+
+135
+00:05:46,000 --> 00:05:49,000
+so the branch and review flow guards it.
+
+136
+00:05:49,000 --> 00:05:50,000
+Now, here's the point.
+
+137
+00:05:50,000 --> 00:05:54,000
+Prompt and config changes deserve identical treatment.
+
+138
+00:05:54,000 --> 00:05:57,000
+It's tempting to think of a prompt as just words
+
+139
+00:05:57,000 --> 00:05:58,000
+and wave it through,
+
+140
+00:05:58,000 --> 00:06:01,000
+but a single reworded line can swing the model's behavior
+
+141
+00:06:01,000 --> 00:06:03,000
+more than a hundred lines of code.
+
+142
+00:06:03,000 --> 00:06:06,000
+So it earns exactly the same review,
+
+143
+00:06:06,000 --> 00:06:08,000
+the same diff, the same second set of eyes,
+
+144
+00:06:08,000 --> 00:06:11,000
+same rigor for both, no exceptions.
+
+145
+00:06:11,000 --> 00:06:13,000
+The moment you exempt prompts from review
+
+146
+00:06:13,000 --> 00:06:16,000
+is the moment behavior starts drifting unnoticed.
+
+147
+00:06:17,000 --> 00:06:19,000
+The version control you use for code
+
+148
+00:06:19,000 --> 00:06:23,000
+carries the whole Cloud app, including its review flow.
+
+149
+00:06:23,000 --> 00:06:26,000
+It matters because prompts and config are source,
+
+150
+00:06:26,000 --> 00:06:29,000
+so they earn the same review as code.
+
+151
+00:06:29,000 --> 00:06:31,000
+Just remember, if it steers behavior,
+
+152
+00:06:31,000 --> 00:06:33,000
+it belongs in the repository.
+
+153
+00:06:33,000 --> 00:06:37,000
+That covers Git workflows for Cloud applications.
+
+154
+00:06:37,000 --> 00:06:38,000
+I'll see you in the next lesson.
+
