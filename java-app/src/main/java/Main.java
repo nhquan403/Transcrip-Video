@@ -38,6 +38,11 @@ public class Main {
         CHECKS.put("p2-03", part2.lesson03.Check::run);
         CHECKS.put("p2-04", part2.lesson04.Check::run);
         CHECKS.put("p2-05", part2.lesson05.Check::run);
+        CHECKS.put("p2-06", part2.lesson06.Check::run);
+        CHECKS.put("p2-07", part2.lesson07.Check::run);
+        CHECKS.put("p2-08", part2.lesson08.Check::run);
+        CHECKS.put("p2-09", part2.lesson09.Check::run);
+        CHECKS.put("p2-10", part2.lesson10.Check::run);
         LIVE.put("p1-01", part1.lesson01.Live::run);
         LIVE.put("p1-02", part1.lesson02.Live::run);
         LIVE.put("p1-04", part1.lesson04.Live::run);
@@ -54,6 +59,11 @@ public class Main {
         LIVE.put("p2-03", part2.lesson03.Live::run);
         LIVE.put("p2-04", part2.lesson04.Live::run);
         LIVE.put("p2-05", part2.lesson05.Live::run);
+        LIVE.put("p2-06", part2.lesson06.Live::run);
+        LIVE.put("p2-07", part2.lesson07.Live::run);
+        LIVE.put("p2-08", part2.lesson08.Live::run);
+        LIVE.put("p2-09", part2.lesson09.Live::run);
+        LIVE.put("p2-10", part2.lesson10.Live::run);
     }
 
     public static void main(String[] args) {

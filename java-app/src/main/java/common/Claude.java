@@ -80,6 +80,15 @@ public final class Claude {
         return message;
     }
 
+    /** Như create, nhưng trả về cả câu trả lời bị cắt vì max tokens (để bài học đọc stop_reason "max_tokens"). */
+    public Message createAllowingTruncation(MessageCreateParams params) {
+        long start = System.nanoTime();
+        Message message = client.messages().create(params);
+        StopReason stop = message.stopReason().orElse(null);
+        record(message.usage(), start, StopReason.MAX_TOKENS.equals(stop) ? null : stop);
+        return message;
+    }
+
     /** Gọi API ở chế độ streaming output: onText nhận từng đoạn text ngay khi Claude viết ra. */
     public Message stream(MessageCreateParams params, Consumer<String> onText) {
         return stream(params, onText, new ArrayList<>());

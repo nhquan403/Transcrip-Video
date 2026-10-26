@@ -21,6 +21,7 @@ Mỗi bài có một mã dùng trên dòng lệnh: `p<phần>-<số bài>`, ví 
 Dùng chung:
 
 - `common/Claude.java`: tạo client từ API key, gọi API, ghi lại token và thời gian mỗi lần gọi.
+- `common/RawApi.java`: gọi thẳng REST endpoint `/v1/messages` bằng `java.net.http` (không qua SDK), dùng ở các bài Phần 2 cần thấy JSON thô hoặc SSE thô.
 - `common/Checker.java`, `common/LiveSection.java`: phần hiển thị kết quả.
 - `part1/lesson01/ClaudeAgentModel.java`: bản cài đặt thật của `Model` trong bài 01, để Claude tự chọn tool trong vòng lặp agent bạn viết.
 - `part1/lesson06/ClaudeQueryModel.java`: model thật cho `query()` thu nhỏ của bài 06 và 07.
@@ -89,6 +90,11 @@ Những gì mỗi bài làm với Claude:
 - **Bài 03:** đo cùng một câu hỏi theo kiểu sync và streaming (thời gian tới chữ đầu tiên so với thời gian chờ trọn câu); `chooseMode()` và `maxSequentialCalls()` của bạn quyết định theo ngân sách độ trễ.
 - **Bài 04:** API key sai cho lỗi 401 thật mà `retryWithBackoff()` của bạn phải ném ngay (không tốn token); model không tồn tại khiến `withFailover()` chuyển sang model dự phòng.
 - **Bài 05:** request HTTP thô do `buildRequest()` của bạn dựng được gửi bằng `java.net.http` (không qua SDK); một key sai cho 401 thật để `onError()` của bạn báo ngay.
+- **Bài 06:** một bộ ví dụ phân loại ticket đóng băng chạy trên model hiện tại và model ứng viên (`CANDIDATE_MODEL`, mặc định `claude-haiku-5-5`); `regressions()` và `safeToCutOver()` của bạn quyết định có chuyển không, `health()` tính p95 độ trễ, token và tỉ lệ lỗi từ log thật.
+- **Bài 07:** body do `toBody()` của bạn dựng được gửi thẳng tới REST endpoint: Claude quên tên bạn khi không gửi lại lịch sử, nhớ khi `appendExchange()` gửi lại; request có lượt đầu là assistant bị chặn.
+- **Bài 08:** vòng đọc, chạy, nối, gọi lại với response JSON thô: `finalText()`, `toolCalls()` và `next()` của bạn đọc từng block và stop_reason, `fullPromptTokens()` đọc usage.
+- **Bài 09:** SSE thô (`stream: true`) đi qua `eventNames()`, `validOrder()` và `assemble()` của bạn, in các mảnh partial JSON thật; một ảnh 5 hình tròn tự vẽ được gửi base64 cho Claude đếm.
+- **Bài 10:** adaptive thinking với display summarized và `output_config.effort`; hai request sai (effort ở gốc, budget_tokens) được gửi thật để xem model hiện tại phản hồi thế nào; `validate()` của bạn kiểm tra trước theo từng model của bài học.
 
 Cấu hình:
 
