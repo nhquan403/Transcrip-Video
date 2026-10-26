@@ -43,6 +43,11 @@ public class Main {
         CHECKS.put("p2-08", part2.lesson08.Check::run);
         CHECKS.put("p2-09", part2.lesson09.Check::run);
         CHECKS.put("p2-10", part2.lesson10.Check::run);
+        CHECKS.put("p2-11", part2.lesson11.Check::run);
+        CHECKS.put("p2-12", part2.lesson12.Check::run);
+        CHECKS.put("p2-13", part2.lesson13.Check::run);
+        CHECKS.put("p2-14", part2.lesson14.Check::run);
+        CHECKS.put("p2-15", part2.lesson15.Check::run);
         LIVE.put("p1-01", part1.lesson01.Live::run);
         LIVE.put("p1-02", part1.lesson02.Live::run);
         LIVE.put("p1-04", part1.lesson04.Live::run);
@@ -64,6 +69,10 @@ public class Main {
         LIVE.put("p2-08", part2.lesson08.Live::run);
         LIVE.put("p2-09", part2.lesson09.Live::run);
         LIVE.put("p2-10", part2.lesson10.Live::run);
+        LIVE.put("p2-11", part2.lesson11.Live::run);
+        LIVE.put("p2-12", part2.lesson12.Live::run);
+        LIVE.put("p2-13", part2.lesson13.Live::run);
+        LIVE.put("p2-15", part2.lesson15.Live::run);
     }
 
     public static void main(String[] args) {
@@ -116,6 +125,10 @@ public class Main {
             return;
         }
         for (String key : picked) {
+            if (!LIVE.containsKey(key)) {
+                System.out.println("\n=== " + label(key) + ": bài này chỉ có bộ chấm offline, không có phần --live ===");
+                continue;
+            }
             System.out.println("\n=== " + label(key) + " với Claude thật (" + Claude.MODEL + ")"
                 + (solution ? ", lời giải mẫu" : ", code của bạn") + " ===");
             LIVE.get(key).accept(solution, claude);

@@ -65,7 +65,7 @@ Nếu tiếng Việt hiện thành dấu `?`, thêm `MAVEN_OPTS=-Dstdout.encodin
    ./mvnw -q compile exec:java -Dexec.args="p2-01 --live --solution"   # lời giải mẫu
    ```
 
-Phần nào bạn chưa làm sẽ báo ⏳ và bỏ qua, không gọi API cho phần đó. Cuối mỗi lần chạy có dòng 💰 tổng kết số lần gọi và số token.
+Phần nào bạn chưa làm sẽ báo ⏳ và bỏ qua, không gọi API cho phần đó. Cuối mỗi lần chạy có dòng 💰 tổng kết số lần gọi và số token qua SDK; các lời gọi REST thô (`common/RawApi.java`) in usage ngay tại chỗ và không cộng vào dòng này.
 
 Những gì mỗi bài làm với Claude:
 
@@ -95,6 +95,11 @@ Những gì mỗi bài làm với Claude:
 - **Bài 08:** vòng đọc, chạy, nối, gọi lại với response JSON thô: `finalText()`, `toolCalls()` và `next()` của bạn đọc từng block và stop_reason, `fullPromptTokens()` đọc usage.
 - **Bài 09:** SSE thô (`stream: true`) đi qua `eventNames()`, `validOrder()` và `assemble()` của bạn, in các mảnh partial JSON thật; một ảnh 5 hình tròn tự vẽ được gửi base64 cho Claude đếm.
 - **Bài 10:** adaptive thinking với display summarized và `output_config.effort`; hai request sai (effort ở gốc, budget_tokens) được gửi thật để xem model hiện tại phản hồi thế nào; `validate()` của bạn kiểm tra trước theo từng model của bài học.
+- **Bài 11:** cùng một system prompt dài có `cache_control` được gửi hai lần để thấy token ghi cache rồi đọc cache; nhét giờ hiện tại vào system để thấy cache bị phá; `worthCaching()` của bạn so 5 phút và 1 giờ.
+- **Bài 12:** vài ticket được phân loại bằng lời gọi đồng bộ thật; `batchCost()` của bạn tính nếu chạy cùng việc qua batch thì tốn bao nhiêu.
+- **Bài 13:** một Message Batch thật gồm 4 ticket được gửi, chờ tối đa 3 phút, tải kết quả JSONL; `writeBack()` của bạn ghép theo custom_id (batch chưa xong thì in id để xem sau).
+- **Bài 14:** chỉ có bộ chấm offline (phần chạy thật cần tài khoản AWS có quyền Bedrock).
+- **Bài 15:** cùng một POST được gửi với header đầy đủ, thiếu key, thiếu version, key sai và body hỏng; `triage()` của bạn đọc từng status thật.
 
 Cấu hình:
 

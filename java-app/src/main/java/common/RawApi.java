@@ -53,6 +53,56 @@ public final class RawApi {
         return send(body, null);
     }
 
+    /** POST một body JSON tới một path khác, ví dụ "/v1/messages/batches". */
+    public Response postTo(String path, Object body) {
+        return exchange("POST", path, body);
+    }
+
+    /** GET một path (ví dụ "/v1/messages/batches/{id}") hoặc một URL đầy đủ mà API trả về (ví dụ results_url). */
+    public Response get(String pathOrUrl) {
+        return exchange("GET", pathOrUrl, null);
+    }
+
+    /**
+     * POST tới /v1/messages với ĐÚNG những header truyền vào (không tự thêm key hay version), để thấy lỗi khi thiếu header.
+     * Giá trị "$KEY" được thay bằng API key thật.
+     */
+    public Response postWithHeaders(java.util.Map<String, String> headers, String jsonBody) {
+        try {
+            HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create(baseUrl + "/v1/messages"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody));
+            headers.forEach((name, value) -> builder.header(name, value.equals("$KEY") ? apiKey : value));
+            long start = System.nanoTime();
+            HttpResponse<String> r = http.send(builder.build(), HttpResponse.BodyHandlers.ofString());
+            return new Response(r.statusCode(), r.body(), (System.nanoTime() - start) / 1_000_000);
+        } catch (IOException e) {
+            throw new IllegalStateException("lỗi mạng: " + e.getMessage(), e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException(e);
+        }
+    }
+
+    private Response exchange(String method, String pathOrUrl, Object body) {
+        try {
+            String url = pathOrUrl.startsWith("http") ? pathOrUrl : baseUrl + pathOrUrl;
+            HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create(url))
+                .header("x-api-key", apiKey)
+                .header("anthropic-version", "2023-06-01")
+                .header("content-type", "application/json");
+            builder = body == null ? builder.GET()
+                : builder.method(method, HttpRequest.BodyPublishers.ofString(body instanceof String s ? s : JSON.writeValueAsString(body)));
+            long start = System.nanoTime();
+            HttpResponse<String> r = http.send(builder.build(), HttpResponse.BodyHandlers.ofString());
+            return new Response(r.statusCode(), r.body(), (System.nanoTime() - start) / 1_000_000);
+        } catch (IOException e) {
+            throw new IllegalStateException("lỗi mạng: " + e.getMessage(), e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException(e);
+        }
+    }
+
     /** POST với "stream": true; onLine nhận từng dòng SSE thô ngay khi tới. */
     public Response stream(Object body, Consumer<String> onLine) {
         return send(body, onLine);
