@@ -42,10 +42,19 @@
     try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
   }
 
+  // A short fingerprint of the questions, so progress saved for an older version of a quiz is ignored.
+  function quizVersion(quiz) {
+    let h = 0;
+    for (const ch of quiz.map(q => q.q + q.options.join('|')).join('\n')) h = (h * 31 + ch.charCodeAt(0)) | 0;
+    return h.toString(36);
+  }
+
   // Answers are stored by the option's original index, so the shuffled display order
   // can change between visits without breaking saved progress.
   function renderQuiz(root, quiz, key) {
-    let answers = load(key).answers || {};
+    const version = quizVersion(quiz);
+    const saved = load(key);
+    let answers = saved.version === version ? saved.answers || {} : {};
 
     root.innerHTML = `
       <div class="card score">
@@ -61,7 +70,7 @@
       const correct = Object.entries(answers).filter(([i, a]) => quiz[i].answer === a).length;
       scoreEl.textContent = `Đã làm ${done}/${quiz.length} · Đúng ${correct}/${done || 0}`
         + (done === quiz.length ? ` · Kết quả: ${Math.round(correct / quiz.length * 100)}%` : '');
-      save(key, { answers, correct, total: quiz.length });
+      save(key, { version, answers, correct, total: quiz.length });
     }
 
     function renderQuestion(q, qi) {
