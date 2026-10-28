@@ -111,6 +111,8 @@ Những gì mỗi bài làm với Claude:
 - **Bài 24:** request do `buildRequest()` của bạn dựng đưa CLAUDE.md thành một lượt user đứng trước câu hỏi; gửi lại khi không nạp CLAUDE.md để thấy quy tắc "bị bỏ qua" thật ra là chưa được nạp.
 - **Bài 25:** một tài liệu có cài lệnh prompt injection được gửi theo cách sai (dán lẫn vào chỉ dẫn) và cách đúng (`buildRequest()` với thẻ, sau khi `redact()` che dữ liệu nhạy cảm); `validateAction()` của bạn kiểm tra đề xuất hành động của Claude trước khi làm.
 - **Bài 35, 36:** chỉ có bộ chấm offline (luật phiên bản và đồ thị phụ thuộc của plugin, không cần gọi Claude).
+- **Bài 37:** chỉ có bộ chấm offline.
+- **Bài 38:** cùng câu hỏi "dự án build bằng gì?" được gửi như agent chính (có lịch sử chat nói Gradle) và như subagent (chỉ có nhiệm vụ), để thấy subagent chỉ biết đúng những gì nó được giao.
 
 Cấu hình:
 
