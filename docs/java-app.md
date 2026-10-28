@@ -105,6 +105,11 @@ Những gì mỗi bài làm với Claude:
 - **Bài 18:** 8 lời gọi fan out với trần 3 cùng lúc qua `gatherBounded()` của bạn (in đỉnh đồng thời đo được), một nhánh lỗi thật được `gatherSettled()` cô lập, và một câu trả lời stream được nối từ delta.
 - **Bài 19:** `diff()` của bạn tạo diff giữa hai phiên bản system prompt, rồi Claude review như một pull request.
 - **Bài 20:** chỉ có bộ chấm offline.
+- **Bài 21:** vòng tạo, kiểm tra, hỏi lại qua `generateValidated()` của bạn với một validator nghiệp vụ thật, rồi Claude làm trợ lý review một đoạn code tích hợp (quyết định duyệt vẫn là của bạn).
+- **Bài 22:** chỉ có bộ chấm offline.
+- **Bài 23:** cùng một câu hỏi gửi qua raw API hai lần, không có quy tắc và có quy tắc trong system, để thấy raw API chỉ biết đúng những gì bạn gửi; `loadedInstructions()` và `reaches()` của bạn giải thích vì sao.
+- **Bài 24:** request do `buildRequest()` của bạn dựng đưa CLAUDE.md thành một lượt user đứng trước câu hỏi; gửi lại khi không nạp CLAUDE.md để thấy quy tắc "bị bỏ qua" thật ra là chưa được nạp.
+- **Bài 25:** một tài liệu có cài lệnh prompt injection được gửi theo cách sai (dán lẫn vào chỉ dẫn) và cách đúng (`buildRequest()` với thẻ, sau khi `redact()` che dữ liệu nhạy cảm); `validateAction()` của bạn kiểm tra đề xuất hành động của Claude trước khi làm.
 
 Cấu hình:
 
