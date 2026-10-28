@@ -110,6 +110,9 @@ Những gì mỗi bài làm với Claude:
 - **Bài 23:** cùng một câu hỏi gửi qua raw API hai lần, không có quy tắc và có quy tắc trong system, để thấy raw API chỉ biết đúng những gì bạn gửi; `loadedInstructions()` và `reaches()` của bạn giải thích vì sao.
 - **Bài 24:** request do `buildRequest()` của bạn dựng đưa CLAUDE.md thành một lượt user đứng trước câu hỏi; gửi lại khi không nạp CLAUDE.md để thấy quy tắc "bị bỏ qua" thật ra là chưa được nạp.
 - **Bài 25:** một tài liệu có cài lệnh prompt injection được gửi theo cách sai (dán lẫn vào chỉ dẫn) và cách đúng (`buildRequest()` với thẻ, sau khi `redact()` che dữ liệu nhạy cảm); `validateAction()` của bạn kiểm tra đề xuất hành động của Claude trước khi làm.
+- **Bài 26:** hỏi Claude một chi tiết của dự án khi gửi lại cả transcript, khi mở phiên mới trống trơn (Claude không biết), và khi phiên mới chỉ mang một bản tóm tắt ngắn.
+- **Bài 27:** bản bàn giao do `planHandoff()` của bạn lập được dùng để mở một "phiên mới" chỉ có các sự thật trong CLAUDE.md và bản tóm tắt; Claude nhắc lại điều đã quyết và bước tiếp theo.
+- **Bài 28:** chỉ có bộ chấm offline.
 - **Bài 29, 30, 31:** chỉ có bộ chấm offline (phạm vi cài plugin, soát CLAUDE.md, thứ tự nạp CLAUDE.md và import).
 - **Bài 32, 33:** chỉ có bộ chấm offline (đọc settings.json, quyết định hook, thứ tự ưu tiên các lớp cấu hình).
 - **Bài 34:** cùng một request gửi có và không có header `anthropic-version` (200 so với 400), rồi một bộ eval đóng băng chạy trên prompt production và prompt ứng viên; `promotionDecision()` của bạn quyết định promote hay giữ ở staging.

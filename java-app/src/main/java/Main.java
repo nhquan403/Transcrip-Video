@@ -58,6 +58,9 @@ public class Main {
         CHECKS.put("p2-23", part2.lesson23.Check::run);
         CHECKS.put("p2-24", part2.lesson24.Check::run);
         CHECKS.put("p2-25", part2.lesson25.Check::run);
+        CHECKS.put("p2-26", part2.lesson26.Check::run);
+        CHECKS.put("p2-27", part2.lesson27.Check::run);
+        CHECKS.put("p2-28", part2.lesson28.Check::run);
         CHECKS.put("p2-29", part2.lesson29.Check::run);
         CHECKS.put("p2-30", part2.lesson30.Check::run);
         CHECKS.put("p2-31", part2.lesson31.Check::run);
@@ -101,6 +104,8 @@ public class Main {
         LIVE.put("p2-23", part2.lesson23.Live::run);
         LIVE.put("p2-24", part2.lesson24.Live::run);
         LIVE.put("p2-25", part2.lesson25.Live::run);
+        LIVE.put("p2-26", part2.lesson26.Live::run);
+        LIVE.put("p2-27", part2.lesson27.Live::run);
         LIVE.put("p2-34", part2.lesson34.Live::run);
         LIVE.put("p2-38", part2.lesson38.Live::run);
     }
