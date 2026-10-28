@@ -58,6 +58,8 @@ public class Main {
         CHECKS.put("p2-23", part2.lesson23.Check::run);
         CHECKS.put("p2-24", part2.lesson24.Check::run);
         CHECKS.put("p2-25", part2.lesson25.Check::run);
+        CHECKS.put("p2-35", part2.lesson35.Check::run);
+        CHECKS.put("p2-36", part2.lesson36.Check::run);
         LIVE.put("p1-01", part1.lesson01.Live::run);
         LIVE.put("p1-02", part1.lesson02.Live::run);
         LIVE.put("p1-04", part1.lesson04.Live::run);
