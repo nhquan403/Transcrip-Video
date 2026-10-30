@@ -1,135 +1,73 @@
 window.LESSON_CONTENT = {
   explanation: `
-<p class="key"><strong>Nói ngắn gọn:</strong> Có hai "cửa" để gọi Claude. <strong>Messages API đồng bộ</strong> trả lời ngay, stream được, tính đủ giá.
-<strong>Message Batches API</strong> nhận cả lô request, chạy nền, trả kết quả sau, và tính <strong>một nửa giá</strong>. Chọn cửa theo câu hỏi:
-<strong>có ai đang chờ câu trả lời này không?</strong></p>
+<p class="key"><strong>Nói ngắn gọn:</strong> <strong>Synchronous Messages API</strong> trả lời ngay, stream được, giá đầy đủ.
+<strong>Message Batches API</strong> chạy <strong>asynchronous</strong>, giá <strong>50%</strong>, không stream. Chọn surface theo độ trễ mà công việc chịu được.</p>
 
-<h3>📌 Từ cần biết</h3>
+<h3>🔑 Keyword cần nhớ</h3>
 <ul class="terms">
-  <li><strong>Synchronous (đồng bộ):</strong> gửi request, code chờ, nhận response.</li>
-  <li><strong>Asynchronous (bất đồng bộ):</strong> gửi việc đi, làm việc khác, quay lại lấy kết quả sau.</li>
-  <li><strong>custom_id:</strong> nhãn duy nhất bạn gắn cho từng request trong batch (học kỹ ở bài 013).</li>
-  <li><strong>Poll:</strong> hỏi lại định kỳ xem batch đã xong chưa.</li>
-  <li><strong>Zero data retention (ZDR):</strong> chế độ lưu dữ liệu nghiêm ngặt mà một số tổ chức bắt buộc.</li>
+  <li><strong>Synchronous Messages API</strong>: gửi request, code block, nhận response; surface duy nhất <strong>stream</strong> token.</li>
+  <li><strong>Message Batches API</strong>: gom nhiều request thành một job, xử lý nền.</li>
+  <li><strong>custom_id + params</strong>: mỗi entry trong batch; params là một messages request body bình thường.</li>
+  <li><strong>50% discount</strong>: cả input và output token; là lý do Batches API tồn tại.</li>
+  <li><strong>Submit → poll → retrieve</strong>: luồng async; lấy tất cả kết quả cùng lúc.</li>
+  <li><strong>Processing window 24h</strong>: hạn để job xong; request chưa xong thì <strong>expire, không tính tiền</strong>.</li>
+  <li><strong>Retention window 29 ngày</strong>: kết quả tải được, tính từ lúc <strong>tạo batch</strong>; sau đó batch vẫn xem được nhưng không lấy được result.</li>
 </ul>
 
-<h3>Hai bề mặt</h3>
+<h3>🎯 Trọng tâm thi</h3>
 <ul>
-  <li><strong>Messages API đồng bộ:</strong> gửi một request, code chờ, Claude trả lời. Dành cho việc tương tác, và là <strong>bề mặt duy nhất stream được</strong>.</li>
-  <li><strong>Message Batches API:</strong> gói nhiều request vào một job, gửi đi; Claude xử lý nền và trả mọi thứ khi xong.</li>
-</ul>
-<p>Khác biệt lớn nhất là <strong>giá</strong>: batch tính <strong>50%</strong> giá chuẩn, cho cả input lẫn output. Bạn đổi câu trả lời tức thì lấy một khoản giảm giá lớn.</p>
-
-<h3>Ba điều cơ bản của batch</h3>
-<ol>
-  <li><strong>Endpoint:</strong> bạn POST job tới endpoint batches; mỗi entry ghép một <strong>custom_id</strong> với <strong>params</strong>, mà params chỉ là một body Messages API bình thường.
-  Mỗi item là một request đầy đủ mà lẽ ra bạn đã có thể gửi riêng.</li>
-  <li><strong>Giá:</strong> nửa giá, lý do tồn tại của Batches API.</li>
-  <li><strong>Bất đồng bộ:</strong> không ngồi chờ lời gọi. Gửi job, <strong>poll</strong> xem xong chưa, rồi lấy toàn bộ kết quả.</li>
-</ol>
-
-<h3>Đánh đổi chi phí</h3>
-<div class="box">🧺 <strong>Hình dung thế này:</strong> Giặt ủi lấy ngay trong 1 giờ thì giá cao; gửi giặt lấy ngày mai thì rẻ một nửa.
-Áo cần mặc tối nay thì phải trả giá lấy ngay. Một túi đồ không cần gấp thì gửi giặt thường cho rẻ.</div>
-<p>Vài request thì tiết kiệm chẳng đáng là bao; hàng chục nghìn request thì là tiền thật. Đổi lại bạn mất: <strong>câu trả lời ngay</strong> và <strong>streaming</strong>.
-Với thứ có người đang xem, đó là không chấp nhận được. Với job lớn chạy qua đêm, đổi tốc độ lấy nửa hóa đơn thường là lựa chọn dễ.</p>
-
-<h3>Thời gian: ba điều phải nắm chắc</h3>
-<ul>
-  <li><strong>Tốc độ:</strong> phần lớn batch xong <strong>dưới một giờ</strong>, nhưng đó là <strong>best effort</strong>, không phải cam kết. Đừng xây hạn chót cứng trên nó.</li>
-  <li><strong>Cửa sổ xử lý:</strong> batch phải xong trong <strong>24 giờ</strong>. Request nào chưa xong trong cửa sổ đó thì <strong>hết hạn</strong>, và request hết hạn <strong>không bị tính tiền</strong>.</li>
-  <li><strong>Khi nào có kết quả:</strong> ngay khi mọi request xong, hoặc tới mốc 24 giờ, cái nào tới trước.</li>
-</ul>
-<p>Lên kế hoạch cho độ trễ tới một ngày; trường hợp dưới một giờ là phần thưởng thêm, không phải lời hứa.</p>
-
-<h3>Hai cửa sổ, đừng gộp làm một</h3>
-<ul>
-  <li><strong>Cửa sổ xử lý: 24 giờ.</strong> Hạn để job chạy xong. Quá hạn thì request chưa xử lý hết hạn, không tính tiền. Nó quyết định batch có xong hay không.</li>
-  <li><strong>Cửa sổ lưu kết quả: 29 ngày</strong>, tính từ lúc tạo batch. Sau 29 ngày batch vẫn xem được, nhưng <strong>không tải kết quả được nữa</strong>.</li>
-</ul>
-<p>Một cái là chuyện làm xong việc, cái kia là chuyện bạn có bao lâu để lấy kết quả về.</p>
-
-<h3>Giới hạn cứng</h3>
-<ul>
-  <li>Một batch tối đa <strong>100.000 request</strong> hoặc <strong>256 MB</strong> tổng dữ liệu, cái nào chạm trước. Lớn hơn thì chia thành nhiều batch.</li>
-  <li>Batch <strong>không đủ điều kiện zero data retention</strong>. Tổ chức bắt buộc ZDR thì không dùng batch được, phải chạy đồng bộ.</li>
+  <li>Người dùng/hệ thống downstream đang chờ, cần stream, latency-bound → <strong>real-time</strong>.</li>
+  <li>Khối lượng lớn, không ai chờ từng kết quả (eval suite, bulk classify, xử lý tài liệu) → <strong>batch</strong>.</li>
+  <li>Đa số batch xong <strong>dưới 1 giờ</strong> nhưng là <strong>best effort</strong>; lên kế hoạch cho tới 24h.</li>
+  <li>Kết quả có khi <strong>mọi request xong</strong> hoặc tới mốc <strong>24h</strong>, cái nào tới trước.</li>
+  <li>Giới hạn 1 batch: <strong>100,000 request</strong> hoặc <strong>256 MB</strong>, cái nào chạm trước → lớn hơn thì chia nhiều batch.</li>
+  <li>Batch <strong>không đủ điều kiện zero data retention</strong> → tổ chức cần ZDR thì chạy synchronous.</li>
 </ul>
 
-<h3>Khi nào ở lại realtime?</h3>
+<h3>⚠️ Bẫy hay gặp</h3>
 <ul>
-  <li>Có <strong>người đang chờ</strong> câu trả lời: chat, trợ lý code trực tiếp, mọi thứ tương tác.</li>
-  <li>Cần <strong>stream</strong> token (batch không stream được).</li>
-  <li>Việc <strong>bị ràng buộc độ trễ</strong>, nơi thời gian trả lời là một phần của sản phẩm.</li>
-</ul>
-<p>Phép thử đơn giản: nếu một người hay một hệ thống phía sau <strong>đang bị chặn chờ</strong> câu trả lời, gửi realtime. Đừng batch thứ có người đang nhìn.</p>
-
-<h3>Khi nào dùng batch?</h3>
-<p>Khi <strong>khối lượng quan trọng hơn sự tức thì</strong>: chạy bộ eval qua hàng nghìn ca, phân loại một đống tồn đọng khổng lồ, xử lý chồng tài liệu mà không ai chờ từng kết quả.
-Việc không nhạy độ trễ và có nhiều, giảm 50% cộng dồn rất nhanh.</p>
-<p>⚠️ Bắn nhiều lời gọi đồng bộ <strong>song song</strong> không phải là batch: vẫn đủ giá và còn đè lên rate limit. Batches API là một job riêng, giảm giá, bất đồng bộ.</p>
-
-<h3>✅ Nhớ 3 điều</h3>
-<ul>
-  <li>Đồng bộ: trả lời ngay, stream được, đủ giá. Batch: bất đồng bộ, nửa giá, không stream.</li>
-  <li>Xử lý trong 24 giờ (phần quá hạn không tính tiền); kết quả tải được trong 29 ngày.</li>
-  <li>Có người chờ thì realtime; khối lượng lớn không ai chờ thì batch. Batch không dùng được khi bắt buộc ZDR.</li>
-</ul>
-
-<h3>🇬🇧 Cụm từ tiếng Anh đáng nhớ trong bài</h3>
-<ul>
-  <li><em class="en">different territory</em>: hai vùng khác hẳn nhau.</li>
-  <li><em class="en">on its own schedule</em>: theo lịch riêng của nó.</li>
-  <li><em class="en">your code blocks</em>: code của bạn bị chặn lại chờ.</li>
-  <li><em class="en">the headline difference</em>: khác biệt nổi bật nhất.</li>
-  <li><em class="en">pocket change</em>: tiền lẻ, không đáng kể.</li>
-  <li><em class="en">nothing's free</em>: chẳng có gì miễn phí.</li>
-  <li><em class="en">a deal-breaker</em>: điều không thể chấp nhận.</li>
-  <li><em class="en">best effort</em>: cố gắng hết sức nhưng không cam kết.</li>
-  <li><em class="en">treat the under-an-hour case as a bonus, not a promise</em>: coi chuyện xong dưới một giờ là phần thưởng, không phải lời hứa.</li>
-  <li><em class="en">Don't let them collapse into one number</em>: đừng gộp chúng thành một con số.</li>
-  <li><em class="en">force your hand</em>: buộc bạn phải chọn.</li>
-  <li><em class="en">people conflate these</em>: người ta hay lẫn lộn hai thứ này.</li>
+  <li>"Nhiều call real-time song song = batching" → <strong>sai</strong>: vẫn full price và tốn rate limit.</li>
+  <li>"Batch đảm bảo xong trong 1 giờ" → <strong>sai</strong>, không phải SLA.</li>
+  <li>"24h và 29 ngày là cùng một window" → <strong>sai</strong>: một là xử lý, một là lưu kết quả.</li>
+  <li>"Request expire vẫn bị tính tiền" → <strong>sai</strong>, unbilled.</li>
 </ul>
 
 <h3>💻 Bài tập Java</h3>
-<p>Mở <code>java-app/src/main/java/part2/lesson12/Lesson12.java</code>. Có 4 bài: chọn realtime hay batch cho một công việc, tính chi phí khi chạy batch,
-chia request thành nhiều batch theo giới hạn số lượng và dung lượng, và xác định trạng thái batch theo hai cửa sổ 24 giờ và 29 ngày.
-Chấm bằng <code>./mvnw -q compile exec:java -Dexec.args="p2-12"</code>.</p>
-<p>Làm xong, chạy với Claude thật bằng <code>-Dexec.args="p2-12 --live"</code>: chương trình phân loại vài ticket bằng lời gọi đồng bộ thật,
-cộng token thật, rồi dùng code của bạn tính nếu chạy cùng việc qua batch thì tốn bao nhiêu (và khi nhân lên 100.000 ticket). Bài 013 sẽ gửi một batch thật.</p>
+<p><code>part2/lesson12/Lesson12.java</code>: chọn realtime hay batch, tính cost batch, chia request theo giới hạn số lượng và dung lượng, xác định trạng thái theo window 24h và 29 ngày.
+Chấm: <code>./mvnw -q compile exec:java -Dexec.args="p2-12"</code>; chạy thật: thêm <code>--live</code>.</p>
 `,
 
-  // answer = index of the correct option in `options` (options are shuffled on screen).
+  // answer = index of the correct option (options are shuffled on screen); an array means "Choose TWO".
   quiz: [
-    { q: 'Message Batches API tính giá thế nào so với chuẩn?', options: ['Bằng giá chuẩn', '50% cho cả input và output', 'Giảm 50% chỉ cho token input, output giữ nguyên giá', '90% cho output'], answer: 1, explain: '"Batch work bills at 50% of the standard rate, both input and output."' },
-    { q: 'Bề mặt nào là bề mặt DUY NHẤT stream được token?', options: ['Message Batches API', 'Files API', 'Messages API đồng bộ', 'Cả hai đều stream được'], answer: 2, explain: '"It\'s built for interactive work, and it\'s the only surface that streams tokens as they generate."' },
-    { q: 'Mỗi entry trong batch gồm những gì?', options: ['custom_id và params', 'Một prompt và một số thứ tự', 'Một model và một callback URL', 'Một file JSONL và một API key'], answer: 0, explain: '"Each entry inside pairs a custom ID with params, which is just a normal messages request body."' },
-    { q: 'Quy trình làm việc với batch là gì?', options: ['Gửi và chờ trên cùng một kết nối', 'Gửi, nhận stream, đóng', 'Gửi từng request một rồi gộp', 'Gửi, poll, rồi lấy kết quả'], answer: 3, explain: '"You submit the job, poll to see when it\'s finished, and then retrieve all the results together."' },
-    { q: 'Khi chọn batch, bạn đánh đổi những gì?', options: ['Chất lượng câu trả lời và tool use', 'Câu trả lời ngay và streaming', 'Vision và thinking', 'System prompt và multi-turn'], answer: 1, explain: '"You don\'t get an immediate response, and you can\'t stream."' },
-    { q: 'Batch thường xong trong bao lâu, và có được đảm bảo không?', options: ['Dưới 1 phút, có đảm bảo', 'Đúng 24 giờ, có đảm bảo', 'Thường dưới một giờ, không đảm bảo', 'Luôn dưới 10 phút'], answer: 2, explain: '"Most batches finish in under an hour. That\'s great, but it\'s best effort. Not a guaranteed service level, so never build a hard deadline on it."' },
-    { q: 'Cửa sổ xử lý của một batch là bao lâu?', options: ['24 giờ', '1 giờ', '29 ngày', '7 ngày'], answer: 0, explain: '"A batch has to complete within 24 hours."' },
-    { q: 'Request trong batch chưa xong khi hết 24 giờ thì sao?', options: ['Được tính tiền gấp đôi', 'Được chạy tiếp trong 24 giờ nữa', 'Chuyển sang API đồng bộ', 'Hết hạn và không bị tính tiền'], answer: 3, explain: '"Any request that doesn\'t finish inside that window expires, and expired requests are unbilled."' },
-    { q: 'Kết quả batch có sẵn khi nào?', options: ['Từng kết quả ngay khi mỗi request xong, qua stream', 'Khi xong hết, hoặc ở mốc 24 giờ', 'Luôn đúng sau 24 giờ', 'Sau 29 ngày'], answer: 1, explain: '"They become available the moment every request completes, or at the 24-hour mark, whichever comes first."' },
-    { q: 'Kết quả của batch tải về được trong bao lâu?', options: ['24 giờ kể từ khi xong', '1 giờ', '29 ngày từ lúc tạo', 'Vĩnh viễn'], answer: 2, explain: '"The retention window is 29 days. That\'s how long your finished results stay downloadable, counting from when you created the batch."' },
-    { q: 'Sau 29 ngày kể từ lúc tạo, chuyện gì xảy ra với batch?', options: ['Xem được, nhưng không tải được kết quả', 'Batch bị xóa hoàn toàn', 'Kết quả được gửi qua email', 'Batch tự chạy lại'], answer: 0, explain: '"After 29 days, the batch is still viewable, but you can\'t pull the results anymore."' },
-    { q: 'Câu nào phân biệt ĐÚNG hai cửa sổ thời gian?', options: ['Cả hai đều là hạn xử lý', 'Cả hai đều là hạn lưu kết quả', '29 ngày là hạn xử lý, 24 giờ là hạn lưu', '24 giờ để xử lý, 29 ngày để tải'], answer: 3, explain: '"One window is about getting the work done, and the other is about how long you have to collect it."' },
-    { q: 'Giới hạn kích thước của một batch là gì?', options: ['1.000 request hoặc 10 MB', '100.000 request hoặc 256 MB', 'Không giới hạn', '1 triệu request hoặc 1 GB'], answer: 1, explain: '"A single batch holds up to 100,000 requests, or 256 megabytes of total payload, whichever you hit first."' },
-    { q: 'Job có 250.000 request. Làm thế nào?', options: ['Gửi một batch duy nhất', 'Chuyển sang API đồng bộ', 'Chia thành nhiều batch', 'Nén dữ liệu cho vừa'], answer: 2, explain: '"If your job is bigger than that, you split it across multiple batches."' },
-    { q: 'Tổ chức của bạn bắt buộc zero data retention. Với job phân loại lớn, bạn làm gì?', options: ['Chạy đồng bộ', 'Dùng batch bình thường', 'Dùng batch với TTL 1 giờ', 'Chia nhỏ batch để được ZDR'], answer: 0, explain: '"Batches aren\'t eligible for zero data retention. So, if your organization requires that stricter retention posture, the Batches API is off the table, and you\'d run that work synchronously."' },
-    { q: 'Phép thử đơn giản để chọn realtime là gì?', options: ['Job có hơn 100 request không?', 'Có dùng tool không?', 'Có dùng ảnh không?', 'Có ai đang chờ câu trả lời không?'], answer: 3, explain: '"If a person or a downstream system is blocked, waiting on that answer, you send it in real-time. Don\'t batch something someone is watching."' },
-    { q: 'Việc nào hợp với batch nhất?', options: ['Trợ lý code trả lời trực tiếp', 'Chạy bộ eval trên hàng nghìn ca kiểm thử', 'Trả lời tin nhắn chat của khách hàng đang mở cửa sổ hỗ trợ', 'Autocomplete khi người dùng gõ'], answer: 1, explain: '"The classic fits are large offline workloads, running an eval suite across thousands of test cases, bulk-classifying a giant backlog..."' },
-    { q: 'Một app chat cần hiện chữ dần dần cho người dùng. Bề mặt nào?', options: ['Batch, vì rẻ hơn', 'Batch với poll mỗi giây', 'API đồng bộ có stream', 'Files API'], answer: 2, explain: 'Có người đang chờ và cần stream: "It\'s also your only option when you want to stream tokens as they generate, since batches can\'t stream at all."' },
-    { q: 'Bắn 10.000 lời gọi đồng bộ song song có phải là "batching" không?', options: ['Không phải', 'Có, và được giảm 50%', 'Có, nếu dùng cùng một API key', 'Có, nếu gửi trong cùng một phút'], answer: 0, explain: '"Firing off many parallel real-time calls isn\'t the same thing as batching. That\'s still full price, and it leans on your rate limits."' },
-    { q: 'Vì sao không nên đặt hạn chót cứng 30 phút dựa trên batch?', options: ['Vì batch luôn mất đúng 24 giờ', 'Vì batch không trả kết quả', 'Vì batch chỉ chạy ban đêm', 'Vì chỉ là best effort'], answer: 3, explain: '"Plan for up to a day of latency, and treat the under-an-hour case as a bonus, not a promise."' },
-    { q: 'Batch tốn 40 USD. Cùng việc đó chạy đồng bộ (không cache) tốn khoảng bao nhiêu?', options: ['20 USD', '80 USD', '40 USD', '60 USD'], answer: 1, explain: 'Batch tính 50% giá chuẩn cho cả input và output, nên giá chuẩn gấp đôi: khoảng 80 USD.' },
-    { q: 'Với job chỉ vài request, giảm giá batch có ý nghĩa không?', options: ['Rất lớn, luôn nên dùng batch', 'Không áp dụng cho job nhỏ', 'Không đáng kể', 'Bị tính phí tối thiểu cao hơn'], answer: 2, explain: '"On a handful of requests, that\'s pocket change. On a job with tens of thousands of them, it\'s real money saved."' },
-    { q: 'Việc nào thuộc nhóm "latency-bound" nên ở lại realtime?', options: ['Nút "Gợi ý" người dùng bấm rồi chờ', 'Tóm tắt toàn bộ kho tài liệu cũ', 'Đánh giá lại 50.000 câu trả lời của model', 'Phân loại log của tháng trước'], answer: 0, explain: '"Any latency-bound work, where the time to answer is part of the product, belongs here."' },
-    { q: 'Câu nào ĐÚNG về params trong mỗi entry batch?', options: ['Là một định dạng riêng chỉ dành cho batch', 'Chỉ được chứa prompt dạng chuỗi', 'Không được có system prompt', 'Một body Messages API đầy đủ'], answer: 3, explain: '"Every item in the batch is a full request you could have sent on its own."' },
-    { q: 'Ba điều cơ bản định nghĩa batch là gì?', options: ['Model, prompt, tool', 'Endpoint, giá và tính bất đồng bộ của job', 'Stream, cache, thinking', 'User, assistant, system'], answer: 1, explain: '"Endpoint, price, asynchronous. Those three frame everything else."' },
-    { q: 'Job phân loại 80.000 ticket tồn đọng, không ai chờ, không yêu cầu ZDR. Lựa chọn hợp lý?', options: ['Messages API đồng bộ chạy song song', 'Một vòng lặp agent', 'Message Batches API', 'Streaming từng ticket'], answer: 2, explain: '"If the work is latency-insensitive, and there\'s a lot of it, that 50% discount adds up fast."' },
-    { q: 'Bạn chuyển code đồng bộ sang batch nhưng vẫn để "stream": true. Theo bài học, bạn mất gì khi dùng batch?', options: ['Streaming', 'Tool use', 'Vision', 'System prompt'], answer: 0, explain: '"For anything a person is watching in real time... you can\'t stream." Batch chạy nền, không có kết nối sống để stream.' },
-    { q: 'Câu tổng kết đúng của bài là gì?', options: ['Realtime và batch là một API với một công tắc', 'Batch luôn tốt hơn vì rẻ', 'Realtime luôn tốt hơn vì nhanh', 'Hai công cụ, chọn theo độ trễ chấp nhận được'], answer: 3, explain: '"Real-time and batching aren\'t one API with a toggle. They\'re different tools... Match the surface to the latency the work can tolerate."' },
-    { q: 'Batch tạo lúc 9 giờ sáng ngày 1. Ngày 20 bạn mới nhớ ra cần tải kết quả. Có tải được không?', options: ['Không, vì đã quá 24 giờ', 'Có, vẫn trong 29 ngày', 'Không, kết quả chỉ giữ 7 ngày', 'Chỉ tải được nếu chạy lại batch'], answer: 1, explain: 'Hạn 24 giờ là cho xử lý; kết quả "stay downloadable" 29 ngày kể từ lúc tạo batch.' },
-    { q: 'Vì sao Batches API tồn tại, theo bài học?', options: ['Để stream nhanh hơn', 'Để vượt rate limit', 'Vì nửa giá', 'Để dùng được nhiều model cùng lúc'], answer: 2, explain: '"The price, that half-rate discount you just met, which is the entire reason the batch\'s API exists."' },
-  ],
+    { q: "A support chat shows replies to customers as they type questions. Which surface is MOST appropriate?", options: ["The Message Batches API", "The Synchronous Messages API", "A nightly batch with polling", "Parallel batches of one request"], answer: 1, explain: "\"You stay on the Synchronous Messages API whenever speed is the requirement. The clearest signal is a user waiting on the response right now.\"" },
+    { q: "A team runs an eval suite of 20,000 test cases overnight. Nobody waits on any single result. Which surface is the BEST fit?", options: ["The Synchronous Messages API with streaming", "Many parallel real-time calls", "A single long real-time request", "The Message Batches API"], answer: 3, explain: "Classic batch fits include \"running an eval suite across thousands of test cases... where nobody is waiting on any single result.\"" },
+    { q: "How are tokens billed in the Message Batches API compared to the standard rate?", options: ["50% for both input and output", "50% for input only", "50% for output only", "25% for both input and output"], answer: 0, explain: "\"Batch work bills at 50% of the standard rate, both input and output.\"" },
+    { q: "A developer wants to stream tokens from a batch job to show progress. What should they know?", options: ["Streaming works after polling", "Streaming needs a custom_id", "Batches cannot stream at all", "Streaming is limited to output"], answer: 2, explain: "The synchronous API is \"your only option when you want to stream tokens as they generate, since batches can't stream at all.\"" },
+    { q: "What does each entry in a batch submission contain?", options: ["A prompt string and a priority", "A custom_id and params", "A model name and a deadline", "A file ID and a callback URL"], answer: 1, explain: "\"Each entry inside pairs a custom ID with params, which is just a normal messages request body.\"" },
+    { q: "What is the correct workflow for a batch job?", options: ["Stream, then retrieve each result", "Submit, block, then read the response", "Poll first, then submit each request", "Submit, poll, then retrieve results"], answer: 3, explain: "\"You submit the job, poll to see when it's finished, and then retrieve all the results together.\"" },
+    { q: "A product manager wants to promise customers batch results within one hour. What is the BEST advice?", options: ["Don't; it is only best effort", "Yes; batches finish within one hour", "Yes, if the batch is under 256 MB", "Yes, if fewer than 1,000 requests"], answer: 0, explain: "\"Most batches finish in under an hour. That's great, but it's best effort. Not a guaranteed service level, so never build a hard deadline on it.\"" },
+    { q: "Some requests in a batch are still unprocessed when the 24-hour window ends. What happens to them?", options: ["They are billed at full price", "They roll into a new batch", "They expire and are not billed", "They keep running for 29 days"], answer: 2, explain: "\"Any request that doesn't finish inside that window expires, and expired requests are unbilled.\"" },
+    { q: "When do batch results become available?", options: ["Only once the 24-hour mark is reached", "When all finish, or at 24 hours if sooner", "Always within one hour of submission", "After the 29-day retention ends"], answer: 1, explain: "\"They become available the moment every request completes, or at the 24-hour mark, whichever comes first.\"" },
+    { q: "A team returns to download batch results 35 days after creating the batch. What should they expect?", options: ["Results are still downloadable", "The batch was deleted after 24 hours", "Results are re-run at full price", "Viewable, but results can't be pulled"], answer: 3, explain: "\"After 29 days, the batch is still viewable, but you can't pull the results anymore.\"" },
+    { q: "From when is the 29-day retention window counted?", options: ["From when the batch is created", "From when the last request finishes", "From the first poll", "From the first result download"], answer: 0, explain: "Results stay downloadable for 29 days, \"counting from when you created the batch.\"" },
+    { q: "Which statement about the two batch windows is accurate?", options: ["Both are 24 hours long", "Retention decides if the batch completes", "Processing is 24 hours, retention is 29 days", "Processing lasts 29 days, retention 24 hours"], answer: 2, explain: "\"The processing window is 24 hours... The retention window is 29 days... one window is about getting the work done, and the other is about how long you have to collect it.\"" },
+    { q: "A job has 250,000 requests. What is the MOST appropriate approach?", options: ["Submit it as one batch", "Split it across multiple batches", "Send them as parallel real-time calls", "Compress it under 256 MB in one batch"], answer: 1, explain: "\"A single batch holds up to 100,000 requests, or 256 megabytes... If your job is bigger than that, you split it across multiple batches.\"" },
+    { q: "A batch of 60,000 requests totals 300 MB. Can it be submitted as one batch?", options: ["Yes, it is under 100,000 requests", "Yes, size limits apply only to output", "No, the limit is 50,000 requests", "No, it exceeds the 256 MB limit"], answer: 3, explain: "The ceiling is \"100,000 requests, or 256 megabytes of total payload, whichever you hit first.\"" },
+    { q: "An organization requires zero data retention for all Claude traffic. It wants to run a large offline classification job. What is the MOST appropriate choice?", options: ["Run it synchronously instead", "Use the Batches API with ZDR enabled", "Split it into small batches", "Use the Batches API overnight"], answer: 0, explain: "\"Batches aren't eligible for zero data retention. So, if your organization requires that stricter retention posture... you'd run that work synchronously instead.\"" },
+    { q: "To save money, a team fires 10,000 parallel real-time calls instead of using a batch. Which statement is accurate?", options: ["It gets the batch discount automatically", "It is the same thing as batching", "It is full price and uses rate limits", "It avoids rate limits"], answer: 2, explain: "\"Firing off many parallel real-time calls isn't the same thing as batching. That's still full price, and it leans on your rate limits.\"" },
+    { q: "A downstream service blocks until it receives Claude's classification of each event. Which surface should be used?", options: ["The Message Batches API", "The Synchronous Messages API", "A nightly batch job", "A batch polled every minute"], answer: 1, explain: "\"If a person or a downstream system is blocked, waiting on that answer, you send it in real-time.\"" },
+    { q: "What is the primary reason the Message Batches API exists?", options: ["To support streaming at scale", "To bypass the 24-hour window", "To enable zero data retention", "The half-rate discount"], answer: 3, explain: "The half-rate discount \"is the entire reason the batch's API exists.\"" },
+    { q: "How long should a team plan for batch latency?", options: ["Up to a day", "Under one minute", "Exactly one hour", "Up to 29 days"], answer: 0, explain: "\"Plan for up to a day of latency, and treat the under-an-hour case as a bonus, not a promise.\"" },
+    { q: "Which statement about real-time versus batching is accurate?", options: ["They are one API with a toggle", "Batches stream tokens at half price", "They are different tools", "Real-time calls bill at half price"], answer: 2, explain: "\"Real-time and batching aren't one API with a toggle. They're different tools.\" Match the surface to the latency the work can tolerate." },
+    { q: "A team must process a backlog of 80,000 support tickets for tagging by next week. Nobody is waiting on any single ticket. What is the MOST cost-effective choice?", options: ["Synchronous calls with streaming", "The Message Batches API", "Parallel real-time calls", "One real-time call per hour"], answer: 1, explain: "\"If the work is latency-insensitive, and there's a lot of it, that 50% discount adds up fast.\" Bulk-classifying a backlog is a classic batch fit." },
+    { q: "Which of the following is NOT a trade-off you accept when choosing the Batches API?", options: ["No immediate response", "No token streaming", "Up to a day of latency", "Paying full input price"], answer: 3, explain: "Batch input and output both bill at 50%. \"You don't get an immediate response, and you can't stream.\"" },
+    { q: "What does the params field of a batch entry contain?", options: ["A normal messages request body", "Only the user prompt text", "The batch's polling interval", "The custom_id and a deadline"], answer: 0, explain: "params \"is just a normal messages request body. So every item in the batch is a full request you could have sent on its own.\"" },
+    { q: "A live coding assistant suggests edits while a developer types. A teammate proposes moving it to batches to halve costs. What is the BEST response?", options: ["Agree, since batches finish in an hour", "Agree, if requests stay under 256 MB", "Disagree; a user is watching live", "Agree, but poll every few seconds"], answer: 2, explain: "\"For anything a person is watching in real time, that's a deal-breaker... Don't batch something someone is watching.\"" },
+    { q: "Which window decides whether a batch completes at all?", options: ["The 29-day retention window", "The 24-hour processing window", "The one-hour typical speed", "The batch's polling interval"], answer: 1, explain: "The 24-hour processing window \"decides whether your batch completes at all.\"" },
+    { q: "Which TWO workloads are good fits for the Message Batches API? (Choose TWO.)", options: ["Bulk-classifying a large backlog", "A live chat reply", "Running a large offline eval suite", "A streaming coding assistant", "A request a user is waiting on"], answer: [0, 2], explain: "Classic batch fits are \"running an eval suite across thousands of test cases, bulk-classifying a giant backlog.\"" },
+    { q: "Which TWO are hard ceilings for a single batch? (Choose TWO.)", options: ["1,000 requests", "100,000 requests", "10 MB of payload", "256 MB of total payload", "One hour of processing"], answer: [1, 3], explain: "\"A single batch holds up to 100,000 requests, or 256 megabytes of total payload, whichever you hit first.\"" },
+    { q: "Which TWO capabilities does the Synchronous Messages API offer that the Batches API does not? (Choose TWO.)", options: ["A 50% discount", "Results kept for 29 days", "Streaming tokens", "Bundling many requests", "An immediate response"], answer: [2, 4], explain: "The synchronous API \"answers immediately, streams, and bills at full price.\" Batches give up both." },
+    { q: "Which TWO statements about expired batch requests and windows are correct? (Choose TWO.)", options: ["Expired requests are unbilled", "Expired requests bill at 50%", "Results stay downloadable for 24 hours", "Results stay downloadable for 29 days", "The batch is deleted after 29 days"], answer: [0, 3], explain: "\"Expired requests are unbilled\", and \"the retention window is 29 days\"; after that the batch \"is still viewable\" but results cannot be pulled." },
+    { q: "Which TWO signals indicate a job should stay on the Synchronous Messages API? (Choose TWO.)", options: ["The job has tens of thousands of items", "A person is waiting on the answer now", "Nobody needs results until tomorrow", "Cost matters more than speed", "Tokens must stream as they generate"], answer: [1, 4], explain: "Real-time fits \"a user waiting on the response right now\", and it is \"your only option when you want to stream tokens.\"" }
+  ]
 };

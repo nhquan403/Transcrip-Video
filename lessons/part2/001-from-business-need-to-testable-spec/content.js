@@ -1,137 +1,73 @@
 window.LESSON_CONTENT = {
   explanation: `
-<p class="key"><strong>Nói ngắn gọn:</strong> Không ai viết code được từ một mong muốn chung chung như "xử lý ticket nhanh gấp đôi".
-Bạn phải đi ba bước: <strong>nhu cầu kinh doanh</strong> → <strong>yêu cầu chức năng</strong> (đầu vào nào, đầu ra nào) →
-<strong>tiêu chí nghiệm thu</strong> (điều kiện cụ thể để kiểm tra đạt hay không). Sau đó chọn cách đơn giản nhất để Claude làm việc đó.</p>
+<p class="key"><strong>Nói ngắn gọn:</strong> Không thể code theo một mục tiêu. Phải đi từ <strong>business need</strong> → <strong>functional requirement</strong> → <strong>acceptance criteria</strong>, rồi chọn <strong>tier đơn giản nhất</strong> đáp ứng được yêu cầu.</p>
 
-<h3>📌 Từ cần biết</h3>
+<h3>🔑 Keyword cần nhớ</h3>
 <ul class="terms">
-  <li><strong>Business need (nhu cầu kinh doanh):</strong> kết quả mà người đặt hàng thật sự muốn, ví dụ giảm một nửa thời gian phân loại ticket. Có giá trị, nhưng chưa nói app phải làm gì.</li>
-  <li><strong>Functional requirement (yêu cầu chức năng):</strong> một hành vi cụ thể của app, viết dưới dạng "đưa vào cái này, nhận lại cái kia".</li>
-  <li><strong>Acceptance criteria (tiêu chí nghiệm thu):</strong> các điều kiện cụ thể chứng minh yêu cầu đã đạt. Lập trình viên code theo chúng, QA kiểm tra từng cái.</li>
-  <li><strong>Capability (năng lực):</strong> một việc người dùng <strong>nhìn thấy</strong> app làm, ví dụ "phân loại ticket".</li>
-  <li><strong>Tier (mức):</strong> cách Claude làm một capability: một lần gọi, workflow, hoặc agent.</li>
+  <li><strong>Business need</strong>: kết quả stakeholder muốn (vd. giảm một nửa thời gian triage ticket); chưa nêu hành vi nên không code được.</li>
+  <li><strong>Functional requirement</strong>: hành vi cụ thể của app, viết dưới dạng <strong>input → output mong đợi</strong>.</li>
+  <li><strong>Acceptance criteria</strong>: điều kiện cụ thể chứng minh requirement đạt; dev code theo, QA kiểm từng cái.</li>
+  <li><strong>Traceability</strong>: mọi functional requirement phải truy về một business need.</li>
+  <li><strong>User-observable capability</strong>: thứ người dùng nhìn thấy app làm (classify, route, draft reply), không phải plumbing nội bộ.</li>
+  <li><strong>Business intent vs functional behavior</strong>: intent là cảm giác (fast, trustworthy); behavior là hợp đồng (trả JSON có name, email, plan).</li>
+  <li><strong>Single call / Workflow / Agent</strong>: 3 tier; workflow = các bước cố định quyết định lúc design time; agent = model tự chọn bước tiếp theo lúc runtime.</li>
+  <li><strong>Infrastructure in disguise</strong>: "trả lời nhanh hơn" thực chất là latency budget / region / throughput.</li>
 </ul>
 
-<h3>Ba bước từ mong muốn đến thứ kiểm tra được</h3>
-<div class="box">🏠 <strong>Hình dung thế này:</strong> Khách nói với kiến trúc sư "tôi muốn một ngôi nhà ấm cúng". Đó là <strong>nhu cầu</strong>.
-Kiến trúc sư chuyển thành "phòng khách 25m², cửa sổ hướng nam". Đó là <strong>yêu cầu</strong>.
-Khi nghiệm thu, người ta đo: "phòng đúng 25m², cửa sổ đúng hướng nam". Đó là <strong>tiêu chí nghiệm thu</strong>.
-Không ai đo được "ấm cúng", nhưng ai cũng đo được 25m².</div>
-<p>Đi từ trái sang phải, mỗi bước lại <strong>dễ kiểm tra hơn</strong> bước trước.</p>
-
-<h3>Đi theo thứ tự: kết quả → capability → lần gọi Claude</h3>
-<ol>
-  <li><strong>Viết ra kết quả</strong> mà doanh nghiệp muốn, bằng lời thường.</li>
-  <li><strong>Tách kết quả thành các capability</strong> người dùng nhìn thấy. Với mục tiêu phân loại ticket: phân loại, chuyển đúng bộ phận, soạn câu trả lời nháp.</li>
-  <li><strong>Gắn mỗi capability với một lần làm việc với Claude</strong>.</li>
-</ol>
-<p>Đi đúng thứ tự này thì mọi yêu cầu đều <strong>truy ngược được về một nhu cầu thật</strong>, và bạn không xây những tính năng "thông minh" mà chẳng ai yêu cầu.</p>
-
-<h3>Cảm giác khác với hành vi</h3>
+<h3>🎯 Trọng tâm thi</h3>
 <ul>
-  <li><strong>Ý định kinh doanh</strong> là cảm giác: nhanh, đáng tin, dễ dùng. Nó định hướng thiết kế nhưng chưa code hay test được.</li>
-  <li><strong>Hành vi chức năng</strong> là hợp đồng: "trả về một object JSON hợp lệ gồm tên, email và gói dịch vụ của người gọi".</li>
-</ul>
-<p>Việc của bạn: <strong>nghe</strong> cảm giác, <strong>tôn trọng</strong> nó, rồi <strong>dịch</strong> nó thành hành vi cụ thể.</p>
-
-<h3>Tách capability thế nào cho đúng?</h3>
-<ul>
-  <li>Đi qua trải nghiệm của người dùng, liệt kê từng việc họ <strong>thấy</strong> app làm.</li>
-  <li>Mỗi mục phải <strong>chỉ tay vào được</strong>, không phải chuyện bên trong như "gọi model nào".</li>
-  <li>Mỗi capability đủ nhỏ để <strong>một lần làm việc với Claude</strong> đáp ứng được. Thấy quá to để test một lần thì tách tiếp.</li>
+  <li>Thứ tự: <strong>outcome trước → capability → interaction sau cùng</strong>; giữ scope gắn với giá trị thật, tránh tính năng thừa.</li>
+  <li>Mỗi capability phải <strong>observable</strong> và vừa với <strong>một interaction với Claude</strong>; quá lớn để test một lần → tách tiếp.</li>
+  <li>Single call đủ cho classification, summarization, extraction, câu hỏi trực tiếp.</li>
+  <li>Luôn chọn <strong>simplest tier</strong>: thử single call → workflow → chỉ lên agent khi cái đơn giản không đủ. Tier đơn giản rẻ hơn, nhanh hơn, dễ test hơn.</li>
+  <li>4 check trước khi dùng agent: <strong>complexity, value, viability, cost of error</strong>. Một check yếu → dùng tier thấp hơn; phải qua cả 4.</li>
+  <li>Yêu cầu nghe như performance, cost, capacity → hỏi: đây là behavior hay <strong>operating constraint</strong>? Sửa ở architecture, không phải prompt.</li>
 </ul>
 
-<h3>Ba mức Claude có thể làm</h3>
+<h3>⚠️ Bẫy hay gặp</h3>
 <ul>
-  <li><strong>Một lần gọi (single call):</strong> một yêu cầu vào, một câu trả lời ra. Đủ cho rất nhiều việc: phân loại, tóm tắt, trích xuất, hỏi đáp.</li>
-  <li><strong>Workflow:</strong> chuỗi bước cố định do bạn viết sẵn trong code. Đường đi được quyết định lúc thiết kế.</li>
-  <li><strong>Agent:</strong> vòng lặp mở, model tự chọn bước tiếp theo lúc đang chạy cho tới khi xong.</li>
-</ul>
-<p>Càng lên cao càng mạnh, nhưng cũng <strong>càng đắt và càng phức tạp</strong>.</p>
-
-<h3>Quy tắc vàng: chọn mức đơn giản nhất đủ dùng</h3>
-<div class="box">🪜 <strong>Hình dung thế này:</strong> Leo thang từ bậc thấp nhất. Một lần gọi làm được chưa? Chưa thì workflow làm được chưa?
-Chỉ khi cả hai thật sự không đủ mới leo lên agent. Hãy để <strong>yêu cầu</strong> đẩy bạn lên, không phải sự hào hứng với agent.</div>
-<p>Mức đơn giản rẻ hơn, nhanh hơn, và dễ test hơn nhiều vì hành vi của nó đoán trước được.</p>
-
-<h3>Bốn câu hỏi trước khi chọn agent</h3>
-<ol>
-  <li><strong>Độ phức tạp:</strong> việc có thật sự nhiều bước và khó viết sẵn kịch bản không, hay workflow cố định làm được?</li>
-  <li><strong>Giá trị:</strong> kết quả có xứng với chi phí cao hơn và phản hồi chậm hơn của agent không?</li>
-  <li><strong>Khả thi:</strong> Claude có thật sự làm được việc mở như bạn tưởng tượng không?</li>
-  <li><strong>Giá của lỗi:</strong> nếu agent đi sai một bước, có sửa lại được không, hay là thảm họa?</li>
-</ol>
-<p>Chỉ cần <strong>một câu yếu</strong> là nên làm ở mức đơn giản hơn. Phải <strong>đạt cả bốn</strong> mới xứng đáng dùng agent.</p>
-
-<h3>Cái bẫy: hạ tầng đội lốt hành vi</h3>
-<p>Người đặt hàng nói "app chậm quá", bạn viết yêu cầu "làm Claude trả lời nhanh hơn". Nghe như hành vi, nhưng <strong>không phải</strong>.
-Thứ thật sự quyết định là <strong>ngân sách độ trễ</strong>, <strong>vùng đặt server</strong>, hoặc <strong>giới hạn thông lượng</strong>.
-Sửa câu chữ trong prompt không giải quyết được những thứ đó; chúng được giải quyết trong <strong>kiến trúc</strong> và thuộc về yêu cầu hạ tầng (bài 003).</p>
-<p>🧪 Khi một yêu cầu có "mùi" tốc độ, chi phí, hay sức chứa, hãy hỏi: "Đây là một hành vi, hay là một ràng buộc vận hành đang đội lốt?"</p>
-
-<h3>✅ Nhớ 3 điều</h3>
-<ul>
-  <li>Nhu cầu → yêu cầu → tiêu chí nghiệm thu; mỗi yêu cầu phải truy ngược được về một nhu cầu.</li>
-  <li>Luôn bắt đầu từ mức đơn giản nhất; agent phải vượt qua cả bốn câu hỏi.</li>
-  <li>Yêu cầu về tốc độ, chi phí, sức chứa thường là hạ tầng đội lốt, không sửa bằng prompt.</li>
-</ul>
-
-<h3>🇬🇧 Cụm từ tiếng Anh đáng nhớ trong bài</h3>
-<ul>
-  <li><em class="en">You can't code against a goal</em>: không thể viết code dựa trên một mục tiêu chung chung.</li>
-  <li><em class="en">trace a business need down to a testable spec</em>: lần từ nhu cầu kinh doanh xuống một đặc tả kiểm thử được.</li>
-  <li><em class="en">keep them straight</em>: phân biệt rõ, không nhầm lẫn.</li>
-  <li><em class="en">keeps a project honest</em>: giữ cho dự án đi đúng hướng, không tự lừa mình.</li>
-  <li><em class="en">user-observable capabilities</em>: những năng lực người dùng quan sát được.</li>
-  <li><em class="en">trips up a lot of specs</em>: làm nhiều bản đặc tả bị vấp.</li>
-  <li><em class="en">One is a feeling, the other is a contract</em>: một bên là cảm giác, bên kia là hợp đồng.</li>
-  <li><em class="en">saves you the most grief</em>: giúp bạn đỡ khổ nhất.</li>
-  <li><em class="en">reach for the simplest tier</em>: dùng tới mức đơn giản nhất.</li>
-  <li><em class="en">hides in plain sight</em>: nằm ngay trước mắt mà không ai để ý.</li>
-  <li><em class="en">wearing a disguise</em>: đang đội lốt.</li>
+  <li>"Agent là mặc định hiện đại" → <strong>sai</strong>; agent chỉ khi qua đủ 4 check.</li>
+  <li>"Fast, trustworthy là requirement" → <strong>sai</strong>, đó là intent; phải dịch thành behavior test được.</li>
+  <li>"Capability = model nào được gọi" → <strong>sai</strong>, đó là plumbing, không observable.</li>
+  <li>"App chậm → sửa prompt để Claude trả lời nhanh hơn" → <strong>sai</strong>, đó là infrastructure requirement.</li>
 </ul>
 
 <h3>💻 Bài tập Java</h3>
-<p>Mở <code>java-app/src/main/java/part2/lesson01/Lesson01.java</code>. Có 4 bài: liệt kê các check agent không đạt, chọn tier đơn giản nhất,
-tìm yêu cầu không truy về được nhu cầu kinh doanh, và nhận ra yêu cầu hạ tầng đội lốt hành vi.
-Chấm bằng <code>./mvnw -q compile exec:java -Dexec.args="p2-01"</code>.</p>
-<p>Làm xong, chạy với Claude thật bằng <code>-Dexec.args="p2-01 --live"</code>: Claude tách nhu cầu "giảm một nửa thời gian phân loại ticket"
-thành các capability kèm hợp đồng đầu vào/đầu ra, code của bạn chọn tier cho từng cái và bắt được tính năng thừa; sau đó so cách bạn
-phân loại các câu của người đặt hàng (hành vi hay hạ tầng) với nhận xét của Claude.</p>
+<p><code>part2/lesson01/Lesson01.java</code>: liệt kê check agent không đạt, chọn tier đơn giản nhất, tìm requirement không truy về need, nhận ra hạ tầng đội lốt hành vi.
+Chấm: <code>./mvnw -q compile exec:java -Dexec.args="p2-01"</code>; chạy thật: thêm <code>--live</code>.</p>
 `,
 
-  // answer = index of the correct option in `options` (options are shuffled on screen).
+  // answer = index of the correct option (options are shuffled on screen); an array means "Choose TWO".
   quiz: [
-    { q: 'Người đặt hàng nói: "Chúng tôi muốn giảm một nửa thời gian phân loại ticket." Câu này thuộc loại nào?', options: ['Functional requirement', 'Business need', 'Acceptance criterion', 'Infrastructure requirement'], answer: 1, explain: 'Đó là kết quả người đặt hàng muốn, có giá trị thật nhưng "names no behavior", nên chưa code được.' },
-    { q: 'Câu nào là functional requirement đúng nghĩa?', options: ['Ứng dụng phải mang lại cảm giác đáng tin cậy cho mọi khách hàng', 'Giảm 50% thời gian xử lý ticket trong quý này', 'Nhận nội dung ticket, trả về một nhãn trong {billing, bug, account}', 'Claude phải trả lời nhanh hơn hẳn so với phiên bản hiện tại'], answer: 2, explain: 'Yêu cầu chức năng là "a specific behavior your application delivers, written as an input and the output you expect back".' },
-    { q: 'Thứ tự đúng để đi từ nhu cầu đến thứ kiểm tra được là gì?', options: ['Tiêu chí nghiệm thu → yêu cầu → nhu cầu', 'Nhu cầu → tiêu chí nghiệm thu → yêu cầu', 'Yêu cầu → nhu cầu → tiêu chí nghiệm thu', 'Nhu cầu → yêu cầu → tiêu chí nghiệm thu'], answer: 3, explain: '"Need, requirement, criteria. You move left to right and each step gets more testable than the last."' },
-    { q: 'Acceptance criteria cần được viết sao cho đạt điều gì?', options: ['Lập trình viên code thẳng theo được và QA kiểm tra được từng cái', 'Người đặt hàng đọc thấy hào hứng và đồng ý ký duyệt', 'Mô tả chi tiết prompt và model sẽ dùng để gọi Claude', 'Ngắn gọn trong một câu để người đặt hàng dễ nhớ'], answer: 0, explain: 'Tiêu chí được viết "so a developer can code straight to them and QA can verify each one".' },
-    { q: 'Theo bài học, sau khi viết ra kết quả kinh doanh bằng lời thường, bước TIẾP THEO là gì?', options: ['Chọn model phù hợp và viết ngay prompt đầu tiên để thử', 'Tách kết quả thành các capability người dùng quan sát được', 'Gắn ngay mỗi kết quả với một agent riêng để tự xử lý', 'Viết test tự động đo kết quả kinh doanh đó hằng tuần'], answer: 1, explain: '"Then break that outcome into user-observable capabilities, the things a user would see the app do." Gắn với lần gọi Claude là bước cuối.' },
-    { q: 'Với mục tiêu phân loại ticket, ví dụ capability nào được nêu trong bài?', options: ['Chọn model rẻ, bật prompt cache, đặt timeout cho API', 'Đọc database, gọi API, ghi log', 'Phân loại ticket, chuyển đúng nơi, soạn câu trả lời nháp', 'Huấn luyện lại model, đánh giá offline, triển khai bản mới'], answer: 2, explain: '"For a triage goal, that might be classify the ticket, route it, and draft a reply."' },
-    { q: 'Đi theo thứ tự "kết quả trước, capability sau, lần gọi Claude cuối" giúp tránh điều gì?', options: ['Tránh phải viết acceptance criteria cho từng capability', 'Tránh phải chọn giữa workflow và agent ở từng bước', 'Tránh trả phí token cho các lần gọi thử nghiệm ban đầu', 'Tránh xây tính năng hay ho mà không ai yêu cầu'], answer: 3, explain: '"Your scope stays tied to real value and you avoid building clever features nobody asked for."' },
-    { q: 'Một danh sách capability có mục "gọi Opus với temperature thấp". Vấn đề là gì?', options: ['Đó là chi tiết bên trong, người dùng không nhìn thấy', 'Thiếu số liệu đo được kèm theo, nên QA chưa kiểm tra được', 'Opus quá đắt cho một việc đơn giản như phân loại ticket', 'Capability phải luôn bắt đầu bằng động từ tiếng Anh'], answer: 0, explain: 'Capability phải "observable, something a person could point at, not internal plumbing like which model you called".' },
-    { q: '"Sản phẩm phải nhanh, đáng tin, dễ dùng." Đây là gì theo bài học?', options: ['Acceptance criteria đầy đủ, chỉ cần giao cho QA kiểm tra', 'Ý định kinh doanh, chưa phải hành vi để build hay test', 'Functional behavior có thể giao cho QA', 'Yêu cầu hạ tầng đã có đủ số liệu đo đạc cụ thể'], answer: 1, explain: '"Business intent is how the product should feel... it doesn\'t yet name a behavior you can build or test."' },
-    { q: 'Câu tóm gọn sự khác nhau giữa ý định và hành vi trong bài là gì?', options: ['Một bên là chi phí, một bên là lợi ích', 'Một bên cho người dùng, một bên cho máy', 'Một bên là cảm giác, một bên là hợp đồng', 'Một bên là bản nháp, một bên là bản cuối'], answer: 2, explain: '"One is a feeling, the other is a contract."' },
-    { q: 'Vai trò của "cảm giác" (fast, trustworthy...) trong đặc tả là gì?', options: ['Bỏ hẳn khỏi đặc tả vì không đo được bằng con số nào', 'Ghi nguyên văn vào acceptance criteria để QA tự đánh giá', 'Chuyển hết sang yêu cầu hạ tầng để đội vận hành xử lý', 'Định hướng thiết kế; hành vi mới là thứ để code và giao QA'], answer: 3, explain: '"Feelings guide the design. Behaviors are what you actually write code against and hand to QA."' },
-    { q: 'Một capability quá lớn để kiểm tra trong một lần. Nên làm gì?', options: ['Tách nhỏ tiếp', 'Chuyển nó sang agent', 'Bỏ acceptance criteria cho capability đó', 'Gộp với capability khác cho gọn'], answer: 0, explain: '"If a capability feels too big to test in one shot, split it further."' },
-    { q: 'Mỗi capability nên có kích cỡ thế nào?', options: ['Đủ lớn để bao trọn một nhu cầu kinh doanh', 'Vừa đúng một lần làm việc với Claude', 'Đúng bằng một màn hình giao diện', 'Đủ để một lập trình viên làm trong một ngày'], answer: 1, explain: '"Size each capability so it maps cleanly to a single interaction with Claude."' },
-    { q: 'Ba mức Claude có thể đáp ứng một capability, theo thứ tự tăng dần sức mạnh, là gì?', options: ['Workflow, single call, agent', 'Agent, workflow, single call', 'Single call, workflow, agent', 'Single call, agent, workflow'], answer: 2, explain: '"Single call, workflow, agent. They climb in power, but they also climb in cost and complexity."' },
-    { q: 'Điểm phân biệt workflow với agent là gì?', options: ['Workflow được dùng tool còn agent thì không bao giờ dùng tool', 'Agent luôn rẻ hơn vì số bước ít hơn và không cần viết code', 'Workflow chỉ được gọi model đúng một lần trong cả quy trình', 'Đường đi của workflow định sẵn lúc thiết kế; agent tự chọn lúc chạy'], answer: 3, explain: 'Workflow là "a fixed sequence of steps you author in code where you decide the path at design time"; agent "chooses each next action at runtime".' },
-    { q: 'Việc nào sau đây thường chỉ cần một lần gọi (single call)?', options: ['Trích xuất các trường từ một email', 'Sửa lỗi trong codebase lạ, chưa biết cần mấy bước', 'Điều tra sự cố qua nhiều hệ thống khác nhau', 'Lên kế hoạch và tự thực hiện chuyến đi nhiều chặng'], answer: 0, explain: 'Một lần gọi "covers a huge amount of real work, classification, summarization, extraction, a direct question".' },
-    { q: 'Vì sao bài học nói agent KHÔNG phải lựa chọn mặc định?', options: ['Vì agent không dùng được tool tùy chỉnh do bạn tự viết', 'Vì mức đơn giản rẻ, nhanh và dễ test hơn do hành vi đoán trước được', 'Vì agent chỉ chạy được trên Agent SDK, không chạy trên API thường', 'Vì agent không bao giờ trả về được JSON đúng schema yêu cầu'], answer: 1, explain: '"Simpler tiers are cheaper to run, faster to respond, and far easier to test because their behavior is predictable."' },
-    { q: 'Theo bài học, điều gì nên đẩy bạn lên mức cao hơn?', options: ['Sự hào hứng của cả team với công nghệ agent mới nhất', 'Độ hiện đại của kiến trúc', 'Yêu cầu, khi mức thấp hơn thật sự không đủ', 'Ngân sách của dự án còn dư nhiều trong quý này'], answer: 2, explain: '"Let the requirement, not your enthusiasm, be the thing that pushes you higher."' },
-    { q: 'Câu nào KHÔNG thuộc bốn câu hỏi kiểm tra trước khi dùng agent?', options: ['Giá trị kết quả có xứng với chi phí và độ chậm không?', 'Claude có thật sự làm được việc mở này không?', 'Bước sai có sửa lại được không?', 'Agent có trông hiện đại hơn workflow không?'], answer: 3, explain: 'Bốn câu là complexity, value, viability và cost of error. "Hiện đại" không phải tiêu chí.' },
-    { q: 'Câu hỏi "complexity" thực chất hỏi điều gì?', options: ['Việc có thật sự nhiều bước, khó viết sẵn kịch bản, hay workflow cố định làm được?', 'Prompt và tài liệu đính kèm có dài vượt quá giới hạn context của model không?', 'Code của vòng lặp agent có quá nhiều dòng để team bảo trì lâu dài không?', 'Người dùng cuối có đọc hiểu được câu trả lời mà agent đưa ra không?'], answer: 0, explain: '"Is the task genuinely multi-step and hard to script in advance, or could a fixed workflow handle it?"' },
-    { q: 'Agent đạt complexity, value và viability, nhưng một bước sai có thể xóa dữ liệu khách hàng không khôi phục được. Kết luận đúng là gì?', options: ['Dùng agent vì đã đạt ba trên bốn', 'Làm ở mức đơn giản hơn, vì cost of error không đạt', 'Dùng agent nhưng tăng max turns', 'Dùng agent và viết lại prompt cho kỹ hơn'], answer: 1, explain: '"If any one of those four comes back weak, the honest answer is to meet the requirement at a simpler tier."' },
-    { q: 'Câu hỏi "viability" kiểm tra điều gì?', options: ['Kết quả mang lại có đáng với số tiền phải trả không', 'Việc này có dễ viết sẵn kịch bản từ trước không', 'Claude có thật sự đủ sức làm việc mở đang hình dung không', 'Nếu đi sai một bước thì có khôi phục lại được không'], answer: 2, explain: '"Third, viability. Is Claude actually capable of the open-ended task you\'re imagining?"' },
-    { q: 'Điều gì "kiếm được" quyền dùng agent?', options: ['Đạt ít nhất hai trong bốn câu', 'Đạt câu value là đủ', 'Có ngân sách dư', 'Đạt cả bốn câu'], answer: 3, explain: '"Passing all four is what earns the agent."' },
-    { q: 'Người đặt hàng nói app có cảm giác chậm. Bạn viết yêu cầu "làm Claude trả lời nhanh hơn". Sai ở đâu?', options: ['Đây là ràng buộc hạ tầng đội lốt hành vi, sửa bằng kiến trúc chứ không phải prompt', 'Thiếu số giây cụ thể, thêm vào là thành yêu cầu chức năng chuẩn', 'Nên viết thành acceptance criterion thay vì requirement', 'Không sai, chỉ cần tối ưu câu chữ của prompt'], answer: 0, explain: '"That reads like functional behavior, but it isn\'t. The real driver is a latency budget, or a hosting region, or a throughput ceiling. None of those get fixed by rewording a prompt."' },
-    { q: 'Yêu cầu nào có khả năng cao là hạ tầng đội lốt?', options: ['Trả về JSON gồm tên, email và gói dịch vụ', 'Xử lý được 300 ticket mỗi phút lúc cao điểm', 'Phân loại ticket vào một trong ba nhãn', 'Soạn câu trả lời có trích dẫn bài viết hỗ trợ'], answer: 1, explain: 'Khi yêu cầu "smells like performance, cost, or capacity", hãy hỏi đó có phải "an operating constraint in disguise" không.' },
-    { q: 'Ràng buộc kiểu độ trễ, vùng hosting, giới hạn thông lượng được giải quyết ở đâu?', options: ['Trong câu chữ của system prompt, viết lại cho rõ ràng hơn', 'Trong acceptance criteria của từng capability', 'Trong kiến trúc, và ghi vào yêu cầu hạ tầng', 'Trong phần mô tả ý định kinh doanh của người đặt hàng'], answer: 2, explain: '"They get fixed in the architecture, and they belong in infrastructure requirements."' },
-    { q: 'Theo phần tóm tắt, ba việc biến nhu cầu kinh doanh thành đặc tả kiểm thử được là gì?', options: ['Viết prompt thật kỹ, chọn model mạnh nhất, rồi đo số token tiêu tốn', 'Phỏng vấn người dùng, thiết kế giao diện, rồi viết test end-to-end', 'Chọn agent, thêm thật nhiều tool, rồi đặt max turns cho an toàn', 'Tách kết quả, phân biệt hành vi với ý định, chọn mức đơn giản nhất'], answer: 3, explain: '"By decomposing the outcome, telling behavior from intent, and picking the simplest tier."' },
-    { q: 'Một requirement "Viết bài thơ động viên đội hỗ trợ mỗi sáng" không gắn với nhu cầu nào. Theo nguyên tắc truy vết, nên làm gì?', options: ['Gắn cờ: nó không truy về được nhu cầu kinh doanh nào', 'Giữ lại vì nó tạo thêm giá trị tinh thần cho đội hỗ trợ khách hàng', 'Chuyển nó sang một agent riêng để linh hoạt hơn', 'Chuyển nó thành yêu cầu hạ tầng cho đội vận hành'], answer: 0, explain: '"Every functional requirement should trace back to a business need." Không truy được là dấu hiệu của tính năng không ai yêu cầu.' },
-    { q: 'Cuối quá trình tách capability, bạn nên có gì?', options: ['Một agent duy nhất đủ mạnh để bao trọn mọi việc của nhu cầu kinh doanh', 'Danh sách ngắn các capability nhỏ, nhìn thấy được, mỗi cái thành một yêu cầu kiểm tra riêng được', 'Một prompt thật dài mô tả toàn bộ sản phẩm để Claude tự hiểu và làm theo', 'Danh sách đầy đủ các model, tool và thư viện sẽ dùng trong từng bước'], answer: 1, explain: '"A short list of small, visible capabilities, and each one becomes a testable requirement you can verify on its own."' },
-    { q: 'Một capability có đường đi cố định 3 bước, đạt cả bốn câu hỏi agent. Nên dùng mức nào?', options: ['Agent, vì đã vượt qua cả bốn câu hỏi kiểm tra', 'Single call, vì một lần gọi luôn rẻ nhất trong mọi trường hợp', 'Workflow, vì đường đi biết trước lúc thiết kế', 'Hai agent chạy song song để chia đôi khối lượng công việc'], answer: 2, explain: 'Luôn chọn mức thấp nhất đủ dùng: "Ask whether a single call gets the job done. If it can\'t, ask whether a fixed workflow can." Đường đi cố định thì workflow đủ.' },
-  ],
+    { q: "A stakeholder says the goal is to cut ticket triage time in half. A developer asks what to code first. What is the BEST response?", options: ["Start an agent prototype that triages tickets end to end", "Break the outcome into observable capabilities", "Write a system prompt asking Claude to triage tickets faster", "Pick the most capable model and benchmark it on tickets"], answer: 1, explain: "A business need is \"real value, but you can't code against it because it names no behavior.\" You first break the outcome into user-observable capabilities." },
+    { q: "Which ordering matches the lesson's decomposition discipline?", options: ["Interaction first, capability second, outcome last", "Capability first, outcome second, interaction last", "Outcome first, interaction second, capability last", "Outcome first, capability second, interaction last"], answer: 3, explain: "\"When you work outcome first, capability second, interaction last, your scope stays tied to real value.\"" },
+    { q: "Which item is a functional requirement rather than business intent?", options: ["Given an email, return JSON with name, email, plan", "The assistant should feel effortless to use", "Users should always trust the answers they get", "Responses should feel fast, friendly and natural"], answer: 0, explain: "Functional behavior is \"what the application actually does with a given input\", such as returning a valid JSON object with name, email and plan. The others are feelings, not contracts." },
+    { q: "What is the role of acceptance criteria in a spec?", options: ["A summary of the stakeholder's desired outcome", "A list of the models the app will call", "Conditions proving a requirement is met", "A description of how the product should feel"], answer: 2, explain: "Acceptance criteria are \"the concrete conditions that prove the requirement is met\", written so a developer can code to them and QA can verify each one." },
+    { q: "A product manager proposes a feature that is clever but does not trace back to any business need. What should the team do?", options: ["Keep it, since extra capability adds value for users", "Question it; every requirement must trace to a need", "Build it as an agent so it can adapt later", "Move it into the acceptance criteria instead"], answer: 1, explain: "\"Every functional requirement should trace back to a business need.\" Working outcome first helps you \"avoid building clever features nobody asked for.\"" },
+    { q: "A developer lists capabilities for a triage app. Which item should NOT be on the list?", options: ["Classify the incoming ticket", "Route the ticket to the right queue", "Draft a reply for the agent to review", "Call the large model for each ticket"], answer: 3, explain: "Capabilities must be observable, \"something a person could point at, not internal plumbing like which model you called.\"" },
+    { q: "A capability feels too big to test in a single shot. What is the recommended action?", options: ["Split it into smaller capabilities", "Promote it to an agent", "Test it only end to end once in production", "Merge it with a neighboring capability"], answer: 0, explain: "\"If a capability feels too big to test in one shot, split it further.\" Each capability should map cleanly to a single interaction with Claude." },
+    { q: "A team needs to extract invoice numbers from emails. Which tier is MOST appropriate to try first?", options: ["An agent that decides each next step", "A multi-step workflow authored in code", "A single call with one response", "A fleet of subagents running in parallel"], answer: 2, explain: "A single call \"covers a huge amount of real work, classification, summarization, extraction, a direct question.\" Always start with the simplest tier." },
+    { q: "Which statement accurately distinguishes a workflow from an agent?", options: ["A workflow uses tools, while an agent never calls any tools", "Workflow paths are set at design time; agents choose at runtime", "A workflow always makes one call; an agent makes several", "A workflow is cheaper because it uses a smaller model"], answer: 1, explain: "A workflow is \"a fixed sequence of steps you author in code where you decide the path at design time\"; an agent is a loop where \"the model itself chooses each next action at runtime.\"" },
+    { q: "Why does the lesson recommend reaching for the simplest tier that meets the need?", options: ["Simpler tiers always produce higher quality output", "Agents are not allowed in production systems", "Simpler tiers avoid the need for acceptance criteria", "Simpler tiers are cheaper, faster and easier to test"], answer: 3, explain: "\"Simpler tiers are cheaper to run, faster to respond, and far easier to test because their behavior is predictable.\"" },
+    { q: "Which TWO are among the four checks a capability must pass before it earns an agent? (Choose TWO.)", options: ["Cost of error", "Team familiarity", "Viability", "Model popularity", "Prompt length"], answer: [0, 2], explain: "The four checks are complexity, value, viability and cost of error. \"Passing all four is what earns the agent.\"" },
+    { q: "A proposed agent passes the complexity, value and viability checks, but a wrong step would be catastrophic and unrecoverable. What should the team do?", options: ["Meet the requirement at a simpler tier", "Build the agent anyway, since three of four checks pass", "Build the agent and add more retries", "Postpone the decision until production data arrives"], answer: 0, explain: "\"If any one of those four comes back weak, the honest answer is to meet the requirement at a simpler tier.\"" },
+    { q: "Which question does the complexity check ask?", options: ["Does the outcome justify the higher cost and slower response?", "Is Claude actually capable of the open-ended task?", "Is the task multi-step and hard to script in advance?", "Is a wrong step recoverable or catastrophic?"], answer: 2, explain: "Complexity asks whether the task is \"genuinely multi-step and hard to script in advance, or could a fixed workflow handle it?\" The other options are value, viability and cost of error." },
+    { q: "A stakeholder says the app feels slow, and a developer writes a requirement to make Claude answer faster. What is the MOST accurate assessment?", options: ["It is a valid functional requirement for the prompt", "It is likely an infrastructure constraint in disguise", "It should be solved by asking Claude for shorter answers", "It belongs in the acceptance criteria of every capability"], answer: 1, explain: "\"That reads like functional behavior, but it isn't. The real driver is a latency budget, or a hosting region, or a throughput ceiling.\"" },
+    { q: "Which TWO statements about business needs are accurate? (Choose TWO.)", options: ["They can be coded against directly", "They describe the outcome a stakeholder wants", "They are written as input and expected output", "They name no specific behavior", "They replace acceptance criteria"], answer: [1, 3], explain: "A business need is \"the outcome a stakeholder actually wants\" and \"you can't code against it because it names no behavior.\"" },
+    { q: "How should a functional requirement be written?", options: ["As a feeling the product should evoke", "As a list of the models and prompts to use", "As a stakeholder's revenue target", "As an input and its expected output"], answer: 3, explain: "A functional requirement is \"a specific behavior your application delivers, written as an input and the output you expect back.\"" },
+    { q: "Moving from need to requirement to criteria, what changes at each step?", options: ["Each step becomes more testable", "Each step becomes less specific", "Each step adds more stakeholders", "Each step adds infrastructure detail"], answer: 0, explain: "\"Need, requirement, criteria. You move left to right and each step gets more testable than the last.\"" },
+    { q: "A designer says the product must feel trustworthy. What is the developer's job with this statement?", options: ["Ignore it, since it is not testable", "Copy it verbatim into the acceptance criteria", "Translate it into concrete behavior", "Hand it to QA as a test case"], answer: 2, explain: "\"Your job as a developer is to hear the intent, respect it, and then translate it into concrete behavior.\" Feelings guide the design; behaviors go to QA." },
+    { q: "Which TWO are signals that a requirement may be an infrastructure constraint rather than a behavior? (Choose TWO.)", options: ["It defines an output JSON schema", "It names a classification label", "It concerns performance or speed", "It describes a reply the user reads", "It concerns capacity or throughput"], answer: [2, 4], explain: "\"When a requirement smells like performance, cost, or capacity, stop and ask whether you're describing a behavior at all, or an operating constraint in disguise.\"" },
+    { q: "Where should a latency budget or hosting region requirement be addressed?", options: ["In the system prompt wording", "In the architecture and infrastructure requirements", "In the acceptance criteria of the reply draft", "In the business need statement"], answer: 1, explain: "These are not \"fixed by rewording a prompt. They get fixed in the architecture, and they belong in infrastructure requirements.\"" },
+    { q: "Why do developers often reach for an agent too early, according to the lesson?", options: ["Agents are required for any kind of tool use", "Agents are cheaper to operate", "Agents are much easier for QA to verify", "They feel powerful and modern"], answer: 3, explain: "\"Developers love reaching straight for an agent because agents feel powerful and modern, but an agent isn't your default.\"" },
+    { q: "Which statement about the three tiers is accurate?", options: ["They climb in power, cost and complexity", "They climb in power but fall in cost", "They climb in cost but fall in power", "They are equal in cost but differ in power"], answer: 0, explain: "\"Single call, workflow, agent. They climb in power, but they also climb in cost and complexity.\"" },
+    { q: "A team asks whether the outcome justifies an agent's higher cost and slower response. Which check is this?", options: ["Complexity", "Viability", "Value", "Cost of error"], answer: 2, explain: "Value asks: \"Does the outcome justify an agent's higher cost and slower response?\"" },
+    { q: "Which TWO activities belong to decomposing a business outcome into capabilities? (Choose TWO.)", options: ["Walk through the user's experience", "Choose the hosting region", "Pick the agent framework first", "List each thing the user would watch the app do", "Write the latency budget"], answer: [0, 3], explain: "\"Walk through the user's experience and list each thing they would actually watch the app do.\" Regions and latency belong to infrastructure." },
+    { q: "Each capability should map cleanly to what?", options: ["A separate microservice", "One Claude interaction", "A dedicated model version", "One stakeholder meeting"], answer: 1, explain: "\"Size each capability so it maps cleanly to a single interaction with Claude.\"" },
+    { q: "A team doubts that Claude can actually perform the open-ended task they imagine for an agent. Which check is weak?", options: ["Value", "Complexity", "Traceability", "Viability"], answer: 3, explain: "Viability asks: \"Is Claude actually capable of the open-ended task you're imagining?\" A weak check means a simpler tier." },
+    { q: "A single call cannot meet a requirement. Per the lesson's rule, what should the team ask NEXT?", options: ["Whether a fixed workflow can meet it", "Which agent framework to adopt", "Whether a larger model fixes it", "Whether to drop the requirement"], answer: 0, explain: "\"Ask whether a single call gets the job done. If it can't, ask whether a fixed workflow can. Only climb to an agent when the simpler options genuinely fall short.\"" },
+    { q: "What should push a capability to a higher tier?", options: ["The team's enthusiasm for agents", "The latest model release", "The requirement itself", "A competitor's architecture"], answer: 2, explain: "\"Start low and let the requirement, not your enthusiasm, be the thing that pushes you higher.\"" },
+    { q: "Which statement BEST describes the difference between business intent and functional behavior?", options: ["Intent is tested by QA; behavior is not", "Intent is a feeling; behavior a contract", "Intent is written as JSON; behavior is prose", "Intent is infrastructure; behavior is the prompt"], answer: 1, explain: "\"See the difference? One is a feeling, the other is a contract.\"" },
+    { q: "Which TWO make a capability well sized for a spec? (Choose TWO.)", options: ["It names the internal model used", "It is visible to a user", "It covers the whole business outcome", "It requires an agent loop", "It can be verified on its own"], answer: [1, 4], explain: "You should end with \"a short list of small, visible capabilities, and each one becomes a testable requirement you can verify on its own.\"" }
+  ]
 };

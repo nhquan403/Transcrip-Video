@@ -1,151 +1,73 @@
 window.LESSON_CONTENT = {
   explanation: `
-<p class="key"><strong>Nói ngắn gọn:</strong> Một thiết kế trông gọn gàng trên bảng trắng vẫn có thể trượt yêu cầu. <strong>Solution architecture fit</strong>
-là phép kiểm tra thẳng thắn: thiết kế này có thỏa <strong>từng</strong> ràng buộc đã nêu không? Trượt một cái là chưa fit.
-Phần lớn lỗi fit nằm ở độ tin cậy, nên bài này nói nhiều về failover, retry và cách xuống cấp nhẹ nhàng.</p>
+<p class="key"><strong>Nói ngắn gọn:</strong> <strong>Solution architecture fit</strong> là một <strong>verdict</strong>, không phải cảm giác: design phải thỏa <strong>mọi</strong> constraint đã nêu. Một constraint không đạt → không fit; sửa hoặc renegotiate và ghi lại tradeoff.</p>
 
-<h3>📌 Từ cần biết</h3>
+<h3>🔑 Keyword cần nhớ</h3>
 <ul class="terms">
-  <li><strong>Fit:</strong> phán quyết có/không: thiết kế thỏa một ràng buộc hay không. Không phải cảm giác "trông ổn".</li>
-  <li><strong>Availability:</strong> tỉ lệ thời gian ứng dụng phải dùng được.</li>
-  <li><strong>Failover:</strong> đường chuyển sang phương án dự phòng đã định sẵn khi lời gọi chính thất bại.</li>
-  <li><strong>Graceful degradation:</strong> trả một trải nghiệm kém hơn nhưng vẫn có ích (bản cache, bản ngắn, một phần) thay vì báo lỗi.</li>
-  <li><strong>Lỗi tạm thời (transient):</strong> timeout, rate limit, lỗi server thoáng qua, mạng chập chờn. Dự kiến tự hết.</li>
-  <li><strong>Lỗi vĩnh viễn (permanent):</strong> request sai, schema sai, xác thực sai. Gửi lại y nguyên không bao giờ hết.</li>
+  <li><strong>Fit</strong>: đo theo requirement, không theo gu thiết kế; không bao giờ "cho qua vì đẹp".</li>
+  <li><strong>Availability</strong>: tỉ lệ thời gian app phải dùng được; buộc bạn plan cho lúc primary path down.</li>
+  <li><strong>Failover</strong>: đường dẫn định sẵn sang backup khi primary call fail.</li>
+  <li><strong>Degradation</strong>: trải nghiệm giảm nhưng vẫn hữu ích thay vì hard error.</li>
+  <li><strong>Fallback model</strong>: route sang model khác khi primary unavailable, chấp nhận giảm capability.</li>
+  <li><strong>Retry with exponential backoff</strong>: gửi lại sau độ trễ tăng dần; chỉ cho transient error.</li>
+  <li><strong>Transient error</strong>: timeout, rate limit, server blip, network hiccup → tự hết.</li>
+  <li><strong>Permanent error</strong>: bad request, invalid schema, authentication failure → cần fix, fallback, hoặc escalate cho người.</li>
 </ul>
 
-<h3>Fit là phán quyết, không phải cảm giác</h3>
-<ol>
-  <li>Trước khi đánh giá, <strong>liệt kê mọi ràng buộc</strong> yêu cầu đã nêu.</li>
-  <li>Kiểm tra thiết kế với <strong>từng cái một</strong>.</li>
-  <li><strong>Một</strong> ràng buộc không đạt nghĩa là thiết kế không fit như đã đặc tả.</li>
-  <li>Khi đó hoặc <strong>sửa</strong>, hoặc <strong>thương lượng lại</strong> ràng buộc một cách công khai và ghi lại đánh đổi.</li>
-</ol>
-<p>Điều không bao giờ làm: cho qua vì thiết kế "đẹp". Fit được đo bằng yêu cầu, không bằng gu của bạn.</p>
-
-<h3>Ba yêu cầu độ tin cậy hay bị bỏ quên</h3>
+<h3>🎯 Trọng tâm thi</h3>
 <ul>
-  <li><strong>Availability:</strong> có một con số buộc bạn lên kế hoạch cho lúc đường chính sập, vì sớm muộn gì nó cũng sập.</li>
-  <li><strong>Failover:</strong> không có nó, một sự cố kéo sập cả tính năng.</li>
-  <li><strong>Degradation:</strong> thay vì ném lỗi vào mặt người dùng, bạn đưa họ một cái gì đó.</li>
-</ul>
-<p>Ba thứ này thường <strong>không được ghi</strong> trong yêu cầu, và đó chính là lý do chúng bị bỏ sót. Nếu độ tin cậy quan trọng, hãy ghi rõ và thiết kế cho chúng.</p>
-
-<h3>Bộ đồ nghề failover: ba viên gạch</h3>
-<ul>
-  <li><strong>Fallback model:</strong> model chính không dùng được thì chuyển sang model khác. Tính năng vẫn sống, dù khả năng có giảm một bậc.</li>
-  <li><strong>Retry với backoff:</strong> gửi lại lời gọi lỗi sau một khoảng chờ <strong>tăng dần</strong>.</li>
-  <li><strong>Graceful degradation:</strong> trả câu trả lời cache, đơn giản hơn, hoặc một phần.</li>
-</ul>
-<p>Không cần cả ba ở mọi nơi. Chọn những viên khớp với yêu cầu độ tin cậy bạn thật sự phải đạt.</p>
-
-<h3>Phân loại lỗi trước, rồi mới chọn cách xử lý</h3>
-<div class="box">🚗 <strong>Hình dung thế này:</strong> Xe không nổ máy vì trời lạnh: chờ chút rồi đề lại là được (lỗi tạm thời).
-Xe không nổ máy vì <strong>hết xăng</strong>: đề bao nhiêu lần cũng vô ích, phải đi đổ xăng (lỗi vĩnh viễn).
-Đề lại liên tục khi hết xăng chỉ làm hỏng ắc quy và phí thời gian.</div>
-<ul>
-  <li><strong>Tạm thời</strong> (timeout, rate limit, lỗi server, mạng): <strong>retry với exponential backoff</strong>.</li>
-  <li><strong>Vĩnh viễn</strong> (request sai, schema sai, xác thực sai): cần <strong>sửa</strong>, <strong>dự phòng</strong>, hoặc <strong>chuyển cho người</strong>.</li>
-</ul>
-<p>⚠️ Lỗi kinh điển: retry <strong>mọi thứ</strong>. Retry lỗi vĩnh viễn chỉ đốt ngân sách và làm chậm lúc bạn nhận ra có thứ thật sự hỏng.
-Cách xử lý phải khớp với <strong>loại</strong> lỗi, không phải với triệu chứng bạn tình cờ thấy.</p>
-
-<h3>Thiết kế cho "ngày tệ nhất" một cách có chủ đích</h3>
-<ul>
-  <li>Chọn fallback model <strong>trước</strong> khi sự cố ép bạn quyết định dưới áp lực.</li>
-  <li>Cho client một <strong>đường xuống cấp</strong> thay vì màn hình trắng: kết quả cache, câu ngắn hơn, thông báo rõ ràng kèm nút thử lại. Cái nào cũng hơn một vòng xoay không bao giờ dừng.</li>
-  <li>Gắn mỗi cách phục hồi với <strong>loại lỗi</strong> đã phân loại, để đúng viên gạch kích hoạt cho đúng lỗi.</li>
-</ul>
-<p>Những team bị "bỏng" là những team chỉ test đường vui. Ngày tệ luôn đến; nếu đã thiết kế trước, nó chỉ là sự kiện nhỏ.</p>
-
-<h3>Chạy fit check: biến mỗi yêu cầu thành một câu hỏi</h3>
-<ul>
-  <li><strong>Ngân sách độ trễ?</strong> Đếm số lời gọi model tuần tự, xem có vừa con số không.</li>
-  <li><strong>Mục tiêu thông lượng?</strong> Đối chiếu với rate limit bạn sẽ chịu.</li>
-  <li><strong>Quy định residency?</strong> Xác nhận lời gọi chạy ở đâu về mặt vật lý và có được phép không.</li>
-  <li><strong>Mục tiêu availability?</strong> Chỉ ra đường failover, hoặc thành thật nhận là chưa có.</li>
-</ul>
-<p>Hỏi thẳng thì lộ lỗ hổng: một câu trả lời lấp lửng không sống sót trước câu hỏi trực diện.</p>
-
-<h3>Ba kiểu trượt fit hay gặp</h3>
-<ul>
-  <li><strong>Over-provisioning:</strong> dùng năng lực thời gian thực cho việc trì hoãn được, trả giá cao cho tốc độ không ai cần. Một job chạy đêm không cần streaming.</li>
-  <li><strong>Under-provisioning:</strong> không failover, không dư địa; đợt tăng rate limit đầu tiên hoặc sự cố ngắn là sập cả tính năng. Chạy tốt lúc demo, chết khi có tải.</li>
-  <li><strong>Wrong placement:</strong> thiết kế đúng kỹ thuật nhưng bỏ qua ràng buộc vùng/residency, nên không dùng được về pháp lý hay hợp đồng.</li>
-</ul>
-<p>Cả ba đều là lỗi fit: code có thể ổn, nhưng sự khớp với yêu cầu thì hỏng.</p>
-
-<h3>Thói quen lặp lại mỗi lần đánh giá thiết kế</h3>
-<ol>
-  <li>Ghi ra mọi ràng buộc: hành vi chức năng lẫn hạ tầng (độ trễ, thông lượng, vùng, chi phí, availability).</li>
-  <li>Dò thiết kế với từng ràng buộc, không bỏ qua cái khó chịu.</li>
-  <li>Gắn cờ những gì thiết kế không thỏa rõ ràng.</li>
-  <li>Sửa, hoặc ghi lại đánh đổi một cách có ý thức, rồi mới tuyên bố xong.</li>
-</ol>
-<p>Fit dễ giả khi nhìn lướt, khó giả khi đi từng mục.</p>
-
-<h3>✅ Nhớ 3 điều</h3>
-<ul>
-  <li>Fit nghĩa là thỏa <strong>mọi</strong> ràng buộc đã nêu, không phải phần lớn.</li>
-  <li>Retry lỗi tạm thời; lỗi vĩnh viễn thì sửa hoặc dự phòng.</li>
-  <li>Cảnh giác over-provisioning, under-provisioning và wrong placement.</li>
+  <li>Phân loại lỗi <strong>trước</strong>, rồi chọn strategy theo <strong>type</strong>, không theo symptom. Retry permanent error → phí budget, chậm phát hiện lỗi thật.</li>
+  <li>Quyết định fallback model <strong>trước</strong> outage; cho client <strong>degraded path</strong> (cached result, câu ngắn hơn, message + retry) thay vì spinner vô tận.</li>
+  <li>Fit check bằng câu hỏi: latency → đếm sequential calls; throughput → so rate limits; residency → call chạy ở đâu; availability → chỉ ra failover path.</li>
+  <li>3 fit failure: <strong>over-provisioning</strong> (real-time cho việc deferrable), <strong>under-provisioning</strong> (không failover, không headroom), <strong>wrong placement</strong> (bỏ qua residency/region).</li>
+  <li>Checklist 4 bước: ghi mọi constraint (functional + latency, throughput, region, cost, availability) → trace từng cái → flag cái không thỏa → fix hoặc ghi tradeoff.</li>
+  <li>Không cần dùng cả 3 block failover ở mọi nơi; chọn theo reliability requirement thật.</li>
 </ul>
 
-<h3>🇬🇧 Cụm từ tiếng Anh đáng nhớ trong bài</h3>
+<h3>⚠️ Bẫy hay gặp</h3>
 <ul>
-  <li><em class="en">look clean on the whiteboard</em>: trông gọn gàng trên bảng trắng.</li>
-  <li><em class="en">It asks a blunt question</em>: nó đặt một câu hỏi thẳng thừng.</li>
-  <li><em class="en">without fooling yourself</em>: không tự lừa mình.</li>
-  <li><em class="en">a verdict, not a feeling</em>: một phán quyết, không phải cảm giác.</li>
-  <li><em class="en">wave it through on elegance</em>: cho qua chỉ vì nó thanh lịch.</li>
-  <li><em class="en">even if the capability drops a notch</em>: dù khả năng giảm đi một bậc.</li>
-  <li><em class="en">the symptom you happen to see</em>: triệu chứng bạn tình cờ thấy.</li>
-  <li><em class="en">a spinner that never resolves</em>: vòng xoay chờ không bao giờ dừng.</li>
-  <li><em class="en">the teams that get burned</em>: những team bị "bỏng".</li>
-  <li><em class="en">A hand wave doesn't survive a direct question</em>: câu trả lời lấp lửng không qua được câu hỏi trực diện.</li>
-  <li><em class="en">It worked in the demo and died under load</em>: chạy tốt lúc demo, chết khi có tải.</li>
-  <li><em class="en">easy to fake when you eyeball it</em>: dễ giả khi chỉ nhìn lướt.</li>
+  <li>"Retry mọi lỗi cho chắc" → <strong>sai</strong>; 401/400/invalid schema retry không đổi gì.</li>
+  <li>"Design đạt hầu hết constraint là fit" → <strong>sai</strong>; phải đạt tất cả hoặc ghi tradeoff.</li>
+  <li>"Fit failure nghĩa là code lỗi" → <strong>sai</strong>; code có thể ổn, cái hỏng là độ khớp với requirement.</li>
+  <li>"Nightly job cần streaming" → <strong>sai</strong>, đó là over-provisioning.</li>
 </ul>
 
 <h3>💻 Bài tập Java</h3>
-<p>Mở <code>java-app/src/main/java/part2/lesson04/Lesson04.java</code>. Có 4 bài: phân loại lỗi theo status HTTP (tạm thời hay vĩnh viễn),
-retry với exponential backoff nhưng ném ngay lỗi vĩnh viễn, chuỗi failover primary → fallback model → bản degraded,
-và fit check trả về danh sách ràng buộc không đạt. Chấm bằng <code>./mvnw -q compile exec:java -Dexec.args="p2-04"</code>.</p>
-<p>Làm xong, chạy với Claude thật bằng <code>-Dexec.args="p2-04 --live"</code>: gọi với một API key sai để thấy lỗi 401 thật bị báo ngay
-(không retry, không tốn token), rồi gọi một model không tồn tại để code của bạn tự chuyển sang model dự phòng.</p>
+<p><code>part2/lesson04/Lesson04.java</code>: phân loại lỗi theo HTTP status, retry backoff nhưng ném ngay lỗi permanent, chuỗi primary → fallback model → degraded, fit check trả về constraint không đạt.
+Chấm: <code>./mvnw -q compile exec:java -Dexec.args="p2-04"</code>; chạy thật: thêm <code>--live</code>.</p>
 `,
 
-  // answer = index of the correct option in `options` (options are shuffled on screen).
+  // answer = index of the correct option (options are shuffled on screen); an array means "Choose TWO".
   quiz: [
-    { q: 'Solution architecture fit đặt ra câu hỏi gì?', options: ['Thiết kế có dùng công nghệ mới nhất và kiến trúc hiện đại nhất hiện nay không?', 'Có thỏa mọi ràng buộc đã nêu không?', 'Thiết kế có rẻ hơn phương án cũ không?', 'Thiết kế có được cả team thích không?'], answer: 1, explain: '"Does this proposed design actually satisfy every constraint and requirement that we stated?"' },
-    { q: 'Thiết kế đạt 4 trên 5 ràng buộc đã nêu, trượt ràng buộc về vùng dữ liệu. Kết luận đúng là gì?', options: ['Fit, vì đạt phần lớn ràng buộc', 'Fit một phần, có thể ship trước rồi sửa ràng buộc còn lại ở bản cập nhật sau', 'Chưa fit: sửa, hoặc thương lượng lại ràng buộc và ghi lại đánh đổi', 'Fit, nếu thiết kế đủ thanh lịch'], answer: 2, explain: '"A single, unmet constraint means the design doesn\'t fit as specified. You either fix it, or you explicitly renegotiate the constraint and record the tradeoff."' },
-    { q: 'Theo bài học, fit được đo bằng gì?', options: ['Bằng yêu cầu', 'Bằng gu thiết kế của kiến trúc sư', 'Bằng số dòng code', 'Bằng ý kiến số đông trong team'], answer: 0, explain: '"Fit is measured against the requirement, never against your own taste for a design."' },
-    { q: 'Bước đầu tiên của phương pháp đánh giá fit là gì?', options: ['Vẽ sơ đồ kiến trúc thật đẹp', 'Chạy thử thiết kế trên production để thu số liệu thật trước khi đánh giá', 'Hỏi ý kiến người đặt hàng', 'Liệt kê mọi ràng buộc mà yêu cầu đã nêu'], answer: 3, explain: '"Before you evaluate anything, list every constraint the requirement stated. Then check the design against each one in turn."' },
-    { q: 'Ba yêu cầu độ tin cậy được nêu trong bài là gì?', options: ['Latency, throughput, cost', 'Availability, failover, degradation', 'Retry, timeout, logging', 'Caching, batching, streaming'], answer: 1, explain: '"Let\'s name the three requirements there": availability, failover và degradation.' },
-    { q: 'Vì sao ba yêu cầu độ tin cậy hay bị bỏ sót?', options: ['Vì chúng quá tốn kém để thực hiện ở giai đoạn đầu của dự án', 'Vì API đã tự lo hết', 'Vì chúng thường không được ghi ra', 'Vì chỉ hệ thống lớn mới cần'], answer: 2, explain: '"These three often go unstated in the requirement, which is exactly why they get missed."' },
-    { q: 'Failover được định nghĩa là gì?', options: ['Một đường định sẵn sang phương án dự phòng khi lời gọi chính lỗi, để một sự cố không kéo sập cả tính năng', 'Gửi lại cùng một request cho model chính cho tới khi nó thành công', 'Giảm chất lượng câu trả lời để nhanh hơn', 'Tắt tính năng khi có sự cố'], answer: 0, explain: '"Failover, a defined path to a backup when the primary call fails. Without it, one outage takes the whole feature down with it."' },
-    { q: 'Degradation (xuống cấp) nghĩa là gì?', options: ['Chuyển sang model mạnh hơn', 'Ném một thông báo lỗi kỹ thuật rõ ràng, đầy đủ chi tiết cho người dùng', 'Xóa cache để làm mới dữ liệu', 'Trải nghiệm kém hơn nhưng vẫn có ích khi không phục vụ đầy đủ được'], answer: 3, explain: '"Degradation, a reduced but still useful experience when full service isn\'t possible. Instead of throwing a hard error in the user\'s face, you give them something."' },
-    { q: 'Viên gạch nào KHÔNG thuộc bộ đồ nghề failover trong bài?', options: ['Fallback model', 'Tăng max tokens khi có lỗi', 'Retry với backoff', 'Graceful degradation'], answer: 1, explain: 'Ba viên gạch là fallback model, retry with backoff và graceful degradation.' },
-    { q: 'Fallback model giữ tính năng sống bằng cách nào?', options: ['Gửi lại request cho model chính sau mỗi giây cho tới khi model đó hoạt động trở lại', 'Lưu mọi câu trả lời cũ vào database', 'Chuyển sang model khác khi model chính không dùng được, dù khả năng có giảm một bậc', 'Tắt các tính năng phụ để giảm tải cho model chính trong lúc sự cố'], answer: 2, explain: '"When your primary model is unavailable, you route to an alternate one, keeping the feature alive, even if the capability drops a notch."' },
-    { q: 'Có cần dùng cả ba viên gạch failover ở mọi nơi không?', options: ['Không, chỉ chọn viên phù hợp', 'Có, luôn dùng cả ba ở mọi lời gọi để đảm bảo an toàn tuyệt đối', 'Chỉ cần retry là đủ ở mọi nơi', 'Chỉ dùng fallback model, không bao giờ degrade'], answer: 0, explain: '"You don\'t need all three everywhere. You pick the blocks that match the reliability requirement you actually have to meet."' },
-    { q: 'Lỗi nào là lỗi TẠM THỜI?', options: ['Request thiếu trường bắt buộc', 'Schema JSON không hợp lệ', 'API key sai', 'Rate limit'], answer: 3, explain: '"Transient errors are timeouts, rate limits, server blips, and network hiccups. They\'re expected to clear on their own."' },
-    { q: 'Cách xử lý đúng cho lỗi tạm thời là gì?', options: ['Chuyển ngay cho người xử lý', 'Retry với exponential backoff', 'Sửa request rồi gửi lại', 'Bỏ qua và trả về kết quả rỗng'], answer: 1, explain: '"They\'re expected to clear on their own, so the correct response is a retry with exponential backoff."' },
-    { q: 'Request bị lỗi vì xác thực sai. Retry y nguyên 5 lần thì sao?', options: ['Lần thứ 5 sẽ thành công', 'Không sao, chỉ tốn thêm vài giây chờ và một chút ngân sách token', 'Không thay đổi gì, chỉ phí ngân sách và chậm phát hiện lỗi', 'Server sẽ tự cấp lại key'], answer: 2, explain: 'Lỗi vĩnh viễn: "retrying without changing anything can\'t fix them." Retry chúng "just wastes budget and delays the moment you realize something is genuinely broken."' },
-    { q: 'Lỗi vĩnh viễn cần được xử lý theo cách nào?', options: ['Sửa, dự phòng, hoặc chuyển người', 'Retry với khoảng chờ dài hơn nhiều so với lỗi tạm thời thông thường', 'Retry ngay lập tức nhiều lần', 'Tăng timeout của client'], answer: 0, explain: '"They need a fix, a fallback, or an escalation to a human."' },
-    { q: '"Lỗi kinh điển" về retry trong bài là gì?', options: ['Retry quá ít lần', 'Dùng backoff tăng dần', 'Ghi log trước khi retry', 'Retry mọi lỗi'], answer: 3, explain: '"The classic mistake is applying retry to everything."' },
-    { q: 'Cách chọn chiến lược phục hồi đúng là gì?', options: ['Theo triệu chứng nhìn thấy đầu tiên', 'Xác định loại lỗi trước, rồi mới chọn chiến lược phục hồi khớp với đúng loại lỗi đó, không theo triệu chứng', 'Luôn thử fallback model trước', 'Theo mức độ khẩn cấp mà người dùng báo cáo trong ticket hỗ trợ'], answer: 1, explain: '"Identify the type first, then choose the strategy. The strategy has to match the type, not the symptom you happen to see."' },
-    { q: 'Khi nào nên quyết định fallback model?', options: ['Trong lúc sự cố đang diễn ra', 'Sau khi sự cố đã xong, trong lúc cả team viết báo cáo rút kinh nghiệm', 'Từ trước, khi chưa có sự cố', 'Chỉ khi người dùng phàn nàn'], answer: 2, explain: '"Decide the fallback model before an outage forces the decision under pressure, not during the incident."' },
-    { q: 'Theo bài học, điều gì tệ hơn mọi phương án xuống cấp?', options: ['Một vòng xoay chờ không bao giờ dừng', 'Một câu trả lời ngắn hơn', 'Một kết quả lấy từ cache', 'Một thông báo rõ ràng kèm nút thử lại'], answer: 0, explain: '"A cached result, a shorter answer, a clear message with a retry, any of those beats a spinner that never resolves."' },
-    { q: 'Những team nào hay "bị bỏng" khi có sự cố?', options: ['Team dùng nhiều model', 'Team có quá nhiều test chậm', 'Team dùng streaming', 'Team chỉ test đường vui'], answer: 3, explain: '"The teams that get burned are the ones who only ever tested the happy path."' },
-    { q: 'Khi chạy fit check, ngân sách độ trễ được kiểm tra bằng câu hỏi nào?', options: ['Prompt có đủ ngắn không?', 'Đếm số lời gọi model tuần tự trong thiết kế và nhân với thời gian mỗi lời gọi, xem tổng có nằm trong con số không', 'Model được chọn có phải là loại nhanh nhất trong danh sách hiện có không?', 'Server có gần người dùng không?'], answer: 1, explain: '"Latency budget? Count the sequential model calls in the design and see if they fit inside the number."' },
-    { q: 'Khi chạy fit check, mục tiêu availability được kiểm tra thế nào?', options: ['Xem uptime của tuần trước', 'Hỏi nhà cung cấp cloud về cam kết uptime trong hợp đồng dịch vụ của họ', 'Chỉ ra đường failover', 'Tính trung bình độ trễ'], answer: 2, explain: '"Availability target? Point to the failover path or honestly admit there isn\'t one yet."' },
-    { q: 'Vì sao nên biến mỗi yêu cầu thành một câu hỏi thiết kế phải trả lời thành tiếng?', options: ['Vì hỏi thẳng làm lộ lỗ hổng', 'Vì như vậy tài liệu thiết kế trông chuyên nghiệp và dễ trình bày cho cấp trên hơn', 'Vì người đặt hàng thích dạng câu hỏi', 'Vì Claude cần câu hỏi để tự kiểm tra'], answer: 0, explain: '"The value of phrasing them as questions is that it exposes the gaps. A hand wave doesn\'t survive a direct question."' },
-    { q: 'Một job tổng hợp chạy mỗi đêm được thiết kế với streaming thời gian thực và tài nguyên cao cấp. Đây là kiểu trượt fit nào?', options: ['Under-provisioning', 'Wrong placement', 'Lỗi tạm thời', 'Over-provisioning'], answer: 3, explain: '"You reach for real-time capacity when the work was actually deferrable... A nightly job doesn\'t need a streaming response."' },
-    { q: 'Tính năng chạy tốt lúc demo, nhưng sập hoàn toàn ở đợt tăng rate limit đầu tiên vì không có failover hay dư địa. Đây là gì?', options: ['Over-provisioning', 'Under-provisioning', 'Wrong placement', 'Graceful degradation'], answer: 1, explain: '"You ship with no failover and no headroom, and the first rate limit spike or brief outage takes the entire feature down. It worked in the demo and died under load."' },
-    { q: 'Thiết kế chạy rất tốt nhưng dữ liệu được xử lý ở vùng mà hợp đồng không cho phép. Đây là kiểu trượt nào?', options: ['Over-provisioning', 'Under-provisioning', 'Wrong placement', 'Lỗi vĩnh viễn'], answer: 2, explain: '"A design is technically sound, but it ignores a residency or region constraint, so it\'s legally or contractually unusable, no matter how well it runs."' },
-    { q: 'Điểm chung của ba kiểu trượt fit là gì?', options: ['Code có thể hoàn toàn ổn, nhưng sự khớp giữa thiết kế và yêu cầu đã nêu thì hỏng', 'Đều do code có bug', 'Đều do chọn sai model', 'Đều sửa được bằng cách viết lại system prompt cho rõ ràng và chặt chẽ hơn'], answer: 0, explain: '"Notice these are all fit problems. The code might be fine. The match to the requirement is what broke."' },
-    { q: 'Trong checklist đánh giá thiết kế, bước nào đúng thứ tự?', options: ['Sửa lỗi trước → ghi lại ràng buộc → kiểm tra từng cái → gắn cờ phần còn lại', 'Gắn cờ → ghi ràng buộc → kiểm tra → sửa', 'Kiểm tra → ghi ràng buộc → sửa → gắn cờ', 'Ghi lại mọi ràng buộc → dò thiết kế với từng cái → gắn cờ chỗ chưa thỏa → sửa hoặc ghi lại đánh đổi'], answer: 3, explain: 'Thứ tự: write down every constraint, trace the design against each one, flag anything it can\'t clearly satisfy, then fix it or consciously record the tradeoff.' },
-    { q: 'Vì sao phải đi từng mục thay vì nhìn lướt cả thiết kế?', options: ['Vì như vậy nhanh hơn', 'Vì fit dễ giả khi nhìn lướt, khó giả khi đi từng mục', 'Vì người duyệt yêu cầu', 'Vì các công cụ kiểm tra tự động cần một danh sách đầy đủ để chạy được từng bước'], answer: 1, explain: '"Fit is easy to fake when you eyeball it and hard to fake when you go item by item."' },
-    { q: 'Một thiết kế được coi là fit khi nào?', options: ['Khi đạt được hầu hết các ràng buộc quan trọng nhất đối với người đặt hàng', 'Khi sơ đồ kiến trúc hoàn chỉnh', 'Khi không còn mục nào bỏ ngỏ', 'Khi chạy được bản demo'], answer: 2, explain: '"A design fits only when nothing on that list is left unanswered."' },
-  ],
+    { q: "A proposed design is elegant and meets every constraint except the data residency rule. What is the MOST appropriate verdict?", options: ["It fits, since it meets most constraints", "It does not fit as specified", "It fits if the code passes review", "It fits once it is deployed to production"], answer: 1, explain: "\"A single, unmet constraint means the design doesn't fit as specified. You either fix it, or you explicitly renegotiate the constraint and record the tradeoff.\"" },
+    { q: "A design misses one stated constraint. Which TWO responses are acceptable? (Choose TWO.)", options: ["Fix the design", "Approve it because the rest is elegant", "Renegotiate and record the tradeoff", "Ignore it until users complain", "Mark it done and revisit next quarter"], answer: [0, 2], explain: "\"You either fix it, or you explicitly renegotiate the constraint and record the tradeoff. What you never do is wave it through on elegance.\"" },
+    { q: "An API call fails with a timeout. What is the MOST appropriate recovery?", options: ["Escalate to a human operator immediately", "Fix the request schema and resend", "Rotate the API key and resend", "Retry with exponential backoff"], answer: 3, explain: "Timeouts are transient: \"They're expected to clear on their own, so the correct response is a retry with exponential backoff.\"" },
+    { q: "A request fails with an authentication error. A developer wraps it in a retry loop. What is the problem?", options: ["Retrying unchanged cannot fix it", "The backoff delay is too short", "The retry count is too low", "Authentication errors need a fallback model"], answer: 0, explain: "Permanent errors such as \"an authentication failure\" cannot be fixed by retrying, \"because retrying without changing anything can't fix them.\"" },
+    { q: "Which TWO are transient errors that deserve a retry with backoff? (Choose TWO.)", options: ["An invalid schema", "Rate limit responses", "A bad request", "A network hiccup", "An authentication failure"], answer: [1, 3], explain: "\"Transient errors are timeouts, rate limits, server blips, and network hiccups.\" The others are permanent." },
+    { q: "What is the classic mistake in error handling described in the lesson?", options: ["Logging every error", "Using exponential backoff", "Applying retry to every error", "Classifying errors before recovery"], answer: 2, explain: "\"The classic mistake is applying retry to everything. Retrying a permanent error just wastes budget and delays the moment you realize something is genuinely broken.\"" },
+    { q: "What should drive the choice of recovery strategy?", options: ["The symptom the user reports", "The error type you classified", "The cost of the model call", "The time of day of the failure"], answer: 1, explain: "\"Identify the type first, then choose the strategy. The strategy has to match the type, not the symptom you happen to see.\"" },
+    { q: "The primary model becomes unavailable. The feature must stay alive even if quality drops a little. Which building block fits BEST?", options: ["Retry the same model forever", "Show a blank error screen", "Rewrite the system prompt", "Route to a fallback model"], answer: 3, explain: "Fallback model: \"When your primary model is unavailable, you route to an alternate one, keeping the feature alive, even if the capability drops a notch.\"" },
+    { q: "Full service is not possible during an outage. Which response reflects graceful degradation?", options: ["A cached, simpler, or partial answer", "A spinner that waits until service returns", "A raw error message from the API", "An automatic logout of the user"], answer: 0, explain: "\"Instead of failing outright, you return a cached answer, a simpler answer, or a partial one, so the user still gets something useful.\"" },
+    { q: "When should the team decide which fallback model to use?", options: ["During the incident, based on symptoms", "After the postmortem is written", "Before an outage forces the decision", "When users first report errors"], answer: 2, explain: "\"Decide the fallback model before an outage forces the decision under pressure, not during the incident.\"" },
+    { q: "Which TWO are reliability requirements named in the lesson? (Choose TWO.)", options: ["Readability of the prompts", "Tone of the replies", "Availability", "Citation accuracy", "Degradation"], answer: [2, 4], explain: "\"Availability\", \"failover\" and \"degradation\" are the three reliability requirements. They \"often go unstated in the requirement, which is exactly why they get missed.\"" },
+    { q: "Why do reliability requirements often get missed?", options: ["They cannot be measured", "They often go unstated", "They are covered by the model provider", "They only matter for batch work"], answer: 1, explain: "\"These three often go unstated in the requirement, which is exactly why they get missed. If reliability matters, make them explicit.\"" },
+    { q: "During a fit check, how should the latency budget be tested against the design?", options: ["Ask the team whether the design feels fast", "Measure only the average response in a demo", "Compare the design to a competitor's latency", "Count sequential calls against the budget"], answer: 3, explain: "\"Latency budget? Count the sequential model calls in the design and see if they fit inside the number.\"" },
+    { q: "During a fit check, the design has an availability target but no one can point to a failover path. What is the MOST honest response?", options: ["Admit there is no failover path yet", "Assume the provider guarantees uptime", "Approve the design and add failover later", "Raise the availability target"], answer: 0, explain: "\"Availability target? Point to the failover path or honestly admit there isn't one yet.\" If a question has no good answer, \"the design isn't finished.\"" },
+    { q: "Why does the lesson recommend phrasing each requirement as a direct question to the design?", options: ["It shortens the review meeting", "It replaces load testing entirely", "It exposes gaps a hand wave hides", "It lets the model answer for you"], answer: 2, explain: "\"The value of phrasing them as questions is that it exposes the gaps. A hand wave doesn't survive a direct question.\"" },
+    { q: "A nightly report job was built with real-time streaming capacity. Which fit failure is this?", options: ["Under-provisioning", "Over-provisioning", "Wrong placement", "Transient failure"], answer: 1, explain: "Over-provisioning: \"You reach for real-time capacity when the work was actually deferrable... A nightly job doesn't need a streaming response.\"" },
+    { q: "A feature works in the demo but goes down at the first rate limit spike because it has no failover or headroom. Which fit failure is this?", options: ["Over-provisioning", "Wrong placement", "Graceful degradation", "Under-provisioning"], answer: 3, explain: "Under-provisioning: \"You ship with no failover and no headroom... It worked in the demo and died under load.\"" },
+    { q: "A technically sound design runs calls in a region that violates the contract's residency rule. Which fit failure is this?", options: ["Wrong placement", "Under-provisioning", "Over-provisioning", "A transient error"], answer: 0, explain: "Wrong placement: the design \"ignores a residency or region constraint, so it's legally or contractually unusable, no matter how well it runs.\"" },
+    { q: "Which statement about the three common fit failures is accurate?", options: ["They always mean the code has bugs", "They only occur in agent architectures", "The code may be fine; the fit broke", "They are solved by retrying failed calls"], answer: 2, explain: "\"Notice these are all fit problems. The code might be fine. The match to the requirement is what broke.\"" },
+    { q: "What is the FIRST step of the fit checklist?", options: ["Trace the design against each constraint", "Write down all constraints", "Flag anything the design cannot satisfy", "Fix it or record the tradeoff"], answer: 1, explain: "\"First, write down every constraint, both the functional behaviors and the infrastructure requirements.\"" },
+    { q: "Which TWO belong to the fit checklist? (Choose TWO.)", options: ["Trace each constraint one at a time", "Skip constraints that are inconvenient", "Approve when the diagram looks complete", "Flag what the design cannot satisfy", "Rely on an overall impression of the design"], answer: [0, 3], explain: "The checklist: write down every constraint, trace the design \"one at a time, no skipping the inconvenient ones\", flag what it can't satisfy, then fix or record the tradeoff." },
+    { q: "Why does the lesson insist on going item by item instead of eyeballing a design?", options: ["Item lists are required by auditors", "Eyeballing is slower than a checklist", "Checklists reduce the model's cost", "Eyeballing makes fit easy to fake"], answer: 3, explain: "\"Fit is easy to fake when you eyeball it and hard to fake when you go item by item.\"" },
+    { q: "Which is NOT one of the three failover building blocks?", options: ["Raising the max_tokens limit", "A fallback model", "Retry with backoff", "Graceful degradation"], answer: 0, explain: "\"Three building blocks cover most cases\": a fallback model, retry with backoff, and graceful degradation." },
+    { q: "A request fails because its JSON schema is invalid. What should the system do?", options: ["Retry it with exponential backoff", "Retry it immediately without delay", "Fix, fall back, or escalate", "Wait for the rate limit window to reset"], answer: 2, explain: "Permanent errors such as \"an invalid schema\" \"need a fix, a fallback, or an escalation to a human.\"" },
+    { q: "A team asks whether every feature needs all three failover blocks. What is the BEST answer?", options: ["Yes, all three are mandatory everywhere", "Pick blocks matching the requirement", "Only retry is ever needed", "Only a fallback model is ever needed"], answer: 1, explain: "\"You don't need all three everywhere. You pick the blocks that match the reliability requirement you actually have to meet.\"" },
+    { q: "What does a stated availability number force the team to do?", options: ["Choose the largest model tier", "Disable streaming responses", "Remove all retry logic", "Plan for primary path downtime"], answer: 3, explain: "\"A number here forces you to plan for the moments your primary path is down, because it will be at some point.\"" },
+    { q: "Which TWO are permanent errors that need a fix, fallback or escalation rather than a retry? (Choose TWO.)", options: ["A brief server-side blip", "A bad request", "A timeout on a slow network", "A rate limit response at peak", "An authentication failure"], answer: [1, 4], explain: "\"Permanent errors are different. A bad request, an invalid schema, an authentication failure.\"" },
+    { q: "What should fit be measured against?", options: ["The stated requirement", "The architect's taste for a design", "The most popular reference architecture", "The size of the team"], answer: 0, explain: "\"Fit is measured against the requirement, never against your own taste for a design.\"" },
+    { q: "Which teams does the lesson say get burned by outages?", options: ["Teams that classify errors first", "Teams that use fallback models", "Teams testing only the happy path", "Teams that record tradeoffs"], answer: 2, explain: "\"The teams that get burned are the ones who only ever tested the happy path. The bad day always arrives eventually.\"" },
+    { q: "During a fit check, how should a throughput target be verified?", options: ["Count the number of prompt templates", "Compare it to the rate limits", "Measure the response length", "Ask the model to estimate its capacity"], answer: 1, explain: "\"Throughput target? Check it against the rate limits you'll be working under.\"" }
+  ]
 };

@@ -1,141 +1,73 @@
 window.LESSON_CONTENT = {
   explanation: `
-<p class="key"><strong>Nói ngắn gọn:</strong> Ứng dụng Claude nào cũng đi qua bốn giai đoạn: <strong>develop</strong>, <strong>implement</strong>, <strong>operate</strong>, <strong>maintain</strong>.
-Bài này đi sâu vào hai giai đoạn đầu. Develop là chứng minh ý tưởng chạy được (nhanh, chấp nhận thô). Implement là làm cho nó
-<strong>bền</strong>: bí mật an toàn, xử lý lỗi, triển khai, và cấu hình đưa vào Git để chạy giống nhau ở mọi nơi.</p>
+<p class="key"><strong>Nói ngắn gọn:</strong> App Claude đi qua 4 phase: <strong>develop → implement → operate → maintain</strong>. Develop chứng minh ý tưởng trên <strong>Messages API</strong>; implement gắn <strong>auth/secrets, error handling, deployment</strong> để chạy bền, không cần người.</p>
 
-<h3>📌 Từ cần biết</h3>
+<h3>🔑 Keyword cần nhớ</h3>
 <ul class="terms">
-  <li><strong>Prototype:</strong> bản thử nhanh để xem ý tưởng có chạy được không.</li>
-  <li><strong>Hardening (gia cố):</strong> thêm kiểm tra input, xử lý lỗi, retry, cấu hình ổn định để chạy tốt cả ngày xấu.</li>
-  <li><strong>Secret manager:</strong> nơi lưu bí mật (API key) an toàn; app nạp key lúc chạy.</li>
-  <li><strong>x-api-key / anthropic-version:</strong> hai header bắt buộc. Một cái xác thực bạn, một cái ghim phiên bản API theo ngày.</li>
-  <li><strong>Model ID cố định (pinned):</strong> tên model chỉ đúng một snapshot, không âm thầm đổi khi có model mới.</li>
+  <li><strong>Develop</strong>: prototype prompt và integration với Messages API; mục tiêu là <strong>learning, not polishing</strong>.</li>
+  <li><strong>Implement</strong>: auth, secrets, error handling, deployment; chủ đề là <strong>durability</strong>.</li>
+  <li><strong>Operate</strong>: theo dõi latency, token usage, error rates, refusal/failure signatures.</li>
+  <li><strong>Maintain</strong>: migrate model, version prompt và schema, regression test mỗi upgrade.</li>
+  <li><strong>POST /v1/messages</strong>: REST API thuần, gửi JSON nhận JSON.</li>
+  <li><strong>x-api-key</strong>: header xác thực; key để trong <strong>secret manager</strong>, load lúc runtime, không commit.</li>
+  <li><strong>anthropic-version</strong>: header <strong>bắt buộc</strong>, pin hành vi request/response vào một API version có ngày.</li>
+  <li><strong>Pinned model ID</strong>: trước 4.6 dùng dated snapshot thay vì floating alias; từ 4.6 ID không có ngày đã là snapshot cố định.</li>
 </ul>
 
-<h3>Bản đồ bốn giai đoạn</h3>
+<h3>🎯 Trọng tâm thi</h3>
 <ul>
-  <li><strong>Develop:</strong> thử prompt và tích hợp với Messages API, chỉ để chứng minh ý tưởng chạy được.</li>
-  <li><strong>Implement:</strong> gắn xác thực, bí mật, xử lý lỗi, triển khai, để prototype chạy trong môi trường thật.</li>
-  <li><strong>Operate:</strong> app đang chạy; theo dõi độ trễ, token, tỉ lệ lỗi, các dấu hiệu từ chối hay thất bại.</li>
-  <li><strong>Maintain:</strong> chuyển model, quản lý phiên bản prompt và schema, chạy regression test cho mỗi lần nâng cấp.</li>
+  <li>3 thứ mỗi request: <strong>endpoint, key, version</strong>.</li>
+  <li>Prototype hỏi "can this work?" (test cả input thật và adversarial; một output may mắn không phải bằng chứng). Harden hỏi "will this keep working under load?" (validation, error handling, retries, stable config).</li>
+  <li>Develop <strong>chưa</strong> hardening; để dành cho implement.</li>
+  <li>Lỗi ở integration edge: <strong>429</strong> và <strong>5xx</strong> → back off và retry. <strong>401</strong> → key thiếu/sai, retry vô ích → <strong>surface ngay</strong>, sửa credentials.</li>
+  <li>Mọi bước thủ công lúc prototype (export key bằng tay, chạy lại khi lỗi) phải thành việc hệ thống tự làm; staging và production hành xử như nhau.</li>
+  <li>Commit: <strong>CLAUDE.md</strong>, project <strong>settings.json</strong>, pinned model ID. Git-ignore: <strong>settings.local.json</strong> (override riêng từng máy).</li>
 </ul>
 
-<h3>Develop: học là chính, chưa đánh bóng</h3>
+<h3>⚠️ Bẫy hay gặp</h3>
 <ul>
-  <li>Gửi prompt thẳng tới Messages API và xem Claude thật sự trả về gì.</li>
-  <li>Nối một tích hợp thô, vừa đủ để xác nhận <strong>hình dạng</strong> câu trả lời đúng thứ app cần.</li>
-  <li>Thử prompt với input thật, kể cả input <strong>lộn xộn và cố tình phá</strong>: một lần ra kết quả may mắn không chứng minh được gì.</li>
-</ul>
-<p>Cố ý <strong>chưa</strong> làm: xử lý lỗi cầu kỳ, cấu hình production. Tốc độ học quan trọng hơn sự bóng bẩy. Gia cố để dành cho implement.</p>
-
-<h3>Ba thứ trên mọi lời gọi</h3>
-<ol>
-  <li><strong>Endpoint:</strong> mọi lời gọi là HTTP <code>POST</code> tới <code>/v1/messages</code>, gửi JSON, nhận JSON. Bên dưới chỉ là REST API bình thường.</li>
-  <li><strong>Header x-api-key:</strong> xác thực bạn. Giữ key trong <strong>secret manager</strong>, không bao giờ dán vào code.</li>
-  <li><strong>Header anthropic-version:</strong> bắt buộc. Ghim hành vi request/response vào một phiên bản API có ngày, để tích hợp không bị xê dịch khi API thay đổi.</li>
-</ol>
-
-<h3>Hai tư duy cho cùng một đoạn code</h3>
-<div class="box">🧪 <strong>Hình dung thế này:</strong> Đầu bếp thử món mới trong bếp nhà: nêm thử, đổi công thức liên tục, bày đĩa xấu cũng được. Đó là <strong>prototype</strong>.
-Khi đưa món vào nhà hàng: công thức cố định, định lượng chuẩn, xử lý được lúc thiếu nguyên liệu, phục vụ 200 suất giờ cao điểm. Đó là <strong>hardening</strong>.</div>
-<ul>
-  <li><strong>Prototype</strong> hỏi: "Cái này có chạy được không?"</li>
-  <li><strong>Harden</strong> hỏi: "Nó có <strong>tiếp tục</strong> chạy được khi tải cao, vào một ngày xấu trên production không?"</li>
-</ul>
-<p>Cần cả hai, chỉ là không cùng lúc.</p>
-
-<h3>Implement: từ "chạy được một lần" đến "chạy bền"</h3>
-<p>Trên máy bạn, API key nằm trong biến môi trường bạn tự export; lời gọi lỗi thì bạn chạy lại. Trên production <strong>không ai ở đó</strong> để chạy lại.
-App phải tự nạp thông tin xác thực, sống sót qua rate limit lúc 2 giờ sáng, và chạy ở staging giống hệt production.
-<strong>Mọi bước thủ công</strong> bạn làm lúc prototype phải trở thành việc hệ thống tự làm.</p>
-
-<h3>Ba thứ gần như lần nào cũng phải nối</h3>
-<ol>
-  <li><strong>Xác thực và bí mật:</strong> key nằm trong secret manager, nạp lúc chạy, không bao giờ commit vào repo. Lộ key là một sự cố thật.</li>
-  <li><strong>Xử lý lỗi:</strong> bắt lỗi rate limit và lỗi server, chờ rồi thử lại, để một trục trặc không làm sập cả request.</li>
-  <li><strong>Triển khai:</strong> đóng gói app, đặt cấu hình cho từng môi trường, triển khai lên nền tảng đích.</li>
-</ol>
-
-<h3>Lỗi ở rìa tích hợp</h3>
-<ul>
-  <li><strong>429</strong> và nhóm <strong>5xx</strong>: thuộc nhóm retry. Chờ (backoff) rồi gửi lại.</li>
-  <li><strong>401</strong>: xác thực hỏng (thiếu hoặc sai key). Retry bao nhiêu cũng không sửa được; mọi lời gọi sẽ lỗi y như vậy cho tới khi bạn sửa key.</li>
-</ul>
-<p>Rìa tích hợp được làm tốt sẽ <strong>báo lỗi xác thực ngay</strong>, không để nó trốn trong vòng retry.
-Kỹ năng vẫn là phân loại: retry cái tự hết, báo và sửa cái không tự hết.</p>
-
-<h3>Thói quen với Git: cái gì commit, cái gì không</h3>
-<ul>
-  <li><strong>Commit:</strong> cấu hình chung như <code>CLAUDE.md</code> và <code>.claude/settings.json</code> của dự án, để mọi đồng đội và mọi môi trường có cùng hành vi.</li>
-  <li><strong>Không commit</strong> (gitignore): <code>.claude/settings.local.json</code>, vì chứa cấu hình riêng của máy bạn.</li>
-  <li><strong>Ghim model ID chính xác và commit nó.</strong> Với model trước 4.6, nghĩa là dùng snapshot có ngày thay vì alias ngắn trôi nổi.
-  Từ 4.6 trở đi, ID không có ngày (ví dụ Claude Opus 4.8) <strong>đã là</strong> snapshot cố định, không có alias nào phải tránh.</li>
-</ul>
-<p>Nhờ vậy lần chạy của đồng đội và của production giống lần chạy của bạn, thay vì âm thầm trôi đi khi có model mới.</p>
-<p>📝 Transcript tự động ghi nhầm vài từ: "off" là <em class="en">auth</em>, "XAPI key" là <em class="en">x-api-key</em>, "Claw.md" là <em class="en">CLAUDE.md</em>, "cloud" là <em class="en">Claude</em>.</p>
-
-<h3>✅ Nhớ 3 điều</h3>
-<ul>
-  <li>Develop chứng minh ý tưởng với Messages API; implement thêm bí mật, xử lý lỗi, triển khai.</li>
-  <li>Retry 429 và 5xx; 401 thì báo ngay và sửa key.</li>
-  <li>Commit cấu hình chung và một model ID cố định; không commit cấu hình cá nhân và bí mật.</li>
-</ul>
-
-<h3>🇬🇧 Cụm từ tiếng Anh đáng nhớ trong bài</h3>
-<ul>
-  <li><em class="en">where an idea becomes shipped software</em>: nơi ý tưởng thành phần mềm đã giao.</li>
-  <li><em class="en">Let's get the whole map in view before we go deep</em>: nhìn toàn cảnh trước khi đi sâu.</li>
-  <li><em class="en">learning, not polishing</em>: học, không phải đánh bóng.</li>
-  <li><em class="en">one lucky output isn't proof it works</em>: một kết quả may mắn không chứng minh nó chạy được.</li>
-  <li><em class="en">pull in opposite directions</em>: kéo về hai hướng ngược nhau.</li>
-  <li><em class="en">accept rough edges</em>: chấp nhận chỗ còn thô.</li>
-  <li><em class="en">on a bad day in production</em>: vào một ngày xấu trên production.</li>
-  <li><em class="en">survive a rate limit at two in the morning</em>: sống sót qua rate limit lúc 2 giờ sáng.</li>
-  <li><em class="en">None of it is glamorous</em>: chẳng có gì hào nhoáng.</li>
-  <li><em class="en">hide inside a retry loop</em>: trốn trong vòng retry.</li>
-  <li><em class="en">silently drifting</em>: âm thầm trôi đi.</li>
+  <li>"Hardening ngay từ develop" → <strong>sai</strong>; develop ưu tiên tốc độ và học.</li>
+  <li>"Retry 401 vài lần cho chắc" → <strong>sai</strong>; mọi call sẽ fail y hệt đến khi sửa key.</li>
+  <li>"anthropic-version là tùy chọn" → <strong>sai</strong>, nó bắt buộc.</li>
+  <li>"Dùng floating alias để luôn có model mới" → <strong>sai</strong>; hành vi trôi khi model mới ra.</li>
 </ul>
 
 <h3>💻 Bài tập Java</h3>
-<p>Mở <code>java-app/src/main/java/part2/lesson05/Lesson05.java</code>. Có 5 bài: dựng HTTP request thô tới <code>/v1/messages</code> với đủ header,
-nạp API key từ môi trường (báo lỗi rõ nếu thiếu), quyết định retry hay báo ngay theo status, chọn file cấu hình nào được commit,
-và nhận biết model ID cố định hay alias trôi nổi. Chấm bằng <code>./mvnw -q compile exec:java -Dexec.args="p2-05"</code>.</p>
-<p>Làm xong, chạy với Claude thật bằng <code>-Dexec.args="p2-05 --live"</code>: chương trình gửi request bạn dựng bằng <code>java.net.http</code>
-(không qua SDK) và in JSON thô trả về, rồi thử một key sai để thấy 401 thật và code của bạn phải báo ngay thay vì retry.</p>
+<p><code>part2/lesson05/Lesson05.java</code>: dựng HTTP request thô tới <code>/v1/messages</code> đủ header, load API key từ môi trường, retry hay báo ngay theo status, chọn file config được commit, nhận biết model ID cố định hay alias.
+Chấm: <code>./mvnw -q compile exec:java -Dexec.args="p2-05"</code>; chạy thật: thêm <code>--live</code>.</p>
 `,
 
-  // answer = index of the correct option in `options` (options are shuffled on screen).
+  // answer = index of the correct option (options are shuffled on screen); an array means "Choose TWO".
   quiz: [
-    { q: 'Thứ tự đúng của bốn giai đoạn trong vòng đời ứng dụng Claude là gì?', options: ['Implement, develop, maintain, operate', 'Develop, operate, implement, maintain', 'Develop, implement, operate, maintain', 'Operate, develop, implement, maintain'], answer: 2, explain: '"Every Claude application moves through the same four phases. Development, implementation, operation, and maintenance."' },
-    { q: 'Việc nào thuộc giai đoạn MAINTAIN?', options: ['Chuyển sang model mới, quản lý phiên bản prompt và schema, chạy regression test cho mỗi lần nâng cấp', 'Thử prompt với Messages API', 'Gắn secret manager và deploy', 'Theo dõi độ trễ, token và tỉ lệ lỗi hằng ngày trên dashboard production'], answer: 0, explain: '"And in maintain, you migrate models, version your prompts and schemas, and regression test every upgrade."' },
-    { q: 'Theo dõi độ trễ, token, tỉ lệ lỗi và dấu hiệu từ chối là việc của giai đoạn nào?', options: ['Develop', 'Implement', 'Maintain', 'Operate'], answer: 3, explain: '"In operate, the app is live, and you\'re watching latency, token usage, error rates, and any refusal or failure signatures."' },
-    { q: 'Mục tiêu chính của giai đoạn develop là gì?', options: ['Đạt độ ổn định và hiệu năng ngang bản chạy production', 'Học và chứng minh ý tưởng chạy được', 'Tối ưu chi phí token', 'Viết tài liệu hướng dẫn chi tiết cho người dùng cuối'], answer: 1, explain: '"Develop phase, where the whole point is learning, not polishing."' },
-    { q: 'Vì sao trong develop vẫn phải thử cả input lộn xộn và cố tình phá?', options: ['Để tăng số token tiêu thụ', 'Vì QA yêu cầu có đủ bộ input khó trước khi bắt đầu giai đoạn develop', 'Vì một kết quả may mắn không chứng minh được nó chạy', 'Để Claude học từ các input đó'], answer: 2, explain: '"Testing it against real inputs and the messy adversarial ones too, because one lucky output isn\'t proof it works."' },
-    { q: 'Việc nào bạn CỐ Ý chưa làm trong develop?', options: ['Xử lý lỗi cầu kỳ, retry, và toàn bộ cấu hình cho môi trường production', 'Gửi prompt thử nghiệm thẳng tới Messages API để xem kết quả trả về', 'Kiểm tra hình dạng câu trả lời', 'Thử nhiều cách viết prompt'], answer: 0, explain: '"What you\'re deliberately not doing yet is hardening. No elaborate error handling, no production configuration."' },
-    { q: 'Mọi lời gọi tới Messages API có dạng gì?', options: ['GET tới /v1/models kèm query string chứa model và nội dung tin nhắn', 'HTTP POST tới /v1/messages, gửi và nhận JSON', 'WebSocket tới /v1/chat', 'PUT tới /v1/messages/{id}'], answer: 1, explain: '"Every call is an HTTP post to the V1 messages endpoint, and you send JSON and get JSON back. So this is a plain REST API underneath."' },
-    { q: 'Header nào dùng để xác thực?', options: ['anthropic-version', 'content-type', 'authorization-model', 'x-api-key'], answer: 3, explain: '"Second, the x-api-key header. That\'s what authenticates you."' },
-    { q: 'Header anthropic-version có vai trò gì?', options: ['Chọn model trả lời', 'Bật tự động mọi tính năng beta mới nhất mà API vừa phát hành', 'Ghim hành vi request/response vào một phiên bản API có ngày', 'Báo cho server biết phiên bản SDK đang dùng để tương thích ngược'], answer: 2, explain: '"It\'s required, and it pins the request and response behavior to a dated API version, so your integration doesn\'t shift under you when the API evolves."' },
-    { q: 'API key nên được lưu ở đâu?', options: ['Trong secret manager', 'Trong code, ở một hằng số riêng được mã hóa base64 cho an toàn', 'Trong CLAUDE.md để cả team dùng', 'Trong file README của repo'], answer: 0, explain: '"Store your API key in a secret manager and load it at runtime and never commit it to the repo because a leaked key is a real incident."' },
-    { q: 'Câu hỏi của tư duy "harden" là gì?', options: ['Ý tưởng này có chạy được không?', 'Prompt nào cho kết quả đẹp nhất trên bộ input thử nghiệm của team?', 'Model nào rẻ nhất?', 'Nó có tiếp tục chạy được khi tải cao vào ngày xấu không?'], answer: 3, explain: '"Prototype asks, can this work? Harden asks, will this keep working under load on a bad day in production?"' },
-    { q: 'Câu nào ĐÚNG về prototype và harden?', options: ['Phải làm cả hai cùng lúc ngay từ đầu', 'Cần cả hai, nhưng không cùng lúc', 'Chỉ cần harden, bỏ qua prototype', 'Chỉ cần prototype nếu code tốt'], answer: 1, explain: '"Same code, two mindsets... You need both, just not at the same moment."' },
-    { q: 'Việc nào thuộc về hardening khi chuyển sang implement?', options: ['Đổi cách viết prompt liên tục để thử', 'Chấp nhận các chỗ còn thô để đi nhanh, sửa sau khi người dùng phàn nàn', 'Thêm kiểm tra input, xử lý lỗi, retry và cấu hình ổn định', 'Chỉ chạy trên máy cá nhân'], answer: 2, explain: '"You add input validation, real error handling, retries for flaky calls, and stable configuration, so the same request behaves predictably every time you run it."' },
-    { q: 'Chủ đề của giai đoạn implement là gì?', options: ['Độ bền: chạy ổn định, không người trông, ở mọi nơi cần', 'Tốc độ học', 'Sự sáng tạo và linh hoạt trong cách viết prompt cho từng trường hợp', 'Giảm số tính năng'], answer: 0, explain: '"The theme of this phase is durability, taking something that worked once on your machine and making it run reliably, unattended, everywhere it needs to."' },
-    { q: 'Điều gì thay đổi khi code rời máy bạn lên production?', options: ['Không còn rate limit', 'Không cần xác thực nữa vì server production đã nằm trong mạng nội bộ', 'Model trả lời nhanh hơn', 'Không ai ở đó để chạy lại lời gọi lỗi'], answer: 3, explain: '"In production, nobody is there to rerun anything. The app has to load its own credentials, survive a rate limit at two in the morning..."' },
-    { q: 'Bài học nói gì về các bước thủ công lúc prototype?', options: ['Ghi vào tài liệu runbook để đội vận hành làm tay mỗi khi có sự cố', 'Hệ thống phải tự làm hết', 'Bỏ qua vì production không cần', 'Giữ nguyên để linh hoạt'], answer: 1, explain: '"Every manual step you performed while prototyping has to become something the system does for itself."' },
-    { q: 'Ba thứ gần như lần nào cũng phải nối trong implement là gì?', options: ['Prompt, model, temperature', 'Streaming, prompt caching và batching cho mọi lời gọi tới API', 'Xác thực và bí mật, xử lý lỗi rate limit và lỗi server, đóng gói và triển khai lên nền tảng đích', 'UI, database, logging'], answer: 2, explain: '"Auth errors deployment... this is the plumbing that turns a working prototype into something you can actually put in front of users."' },
-    { q: 'Vì sao không bao giờ commit API key vào repo?', options: ['Vì key lộ ra là một sự cố thật', 'Vì Git không lưu được chuỗi dài', 'Vì key sẽ hết hạn khi commit', 'Vì SDK không đọc được key từ file'], answer: 0, explain: '"Never commit it to the repo because a leaked key is a real incident."' },
-    { q: 'Gặp lỗi 429 hoặc 5xx ở rìa tích hợp, nên làm gì?', options: ['Sửa body request', 'Đổi API key', 'Báo ngay cho người dùng và dừng', 'Chờ một khoảng (backoff) rồi gửi lại request'], answer: 3, explain: '"The 429 and the 500 series errors... Both sit in the retry bucket, so back off and resend."' },
-    { q: 'Gặp lỗi 401, điều gì ĐÚNG?', options: ['Retry vài lần với exponential backoff là lỗi sẽ tự hết sau vài giây', 'Key thiếu hoặc sai; retry không sửa được, phải sửa key', 'Server đang quá tải, chờ một lúc', 'Request quá lớn, cần cắt bớt'], answer: 1, explain: '"The 401. That means your authentication is bad, a missing or wrong key, and no amount of retrying will fix it."' },
-    { q: 'Một rìa tích hợp "được làm tốt" xử lý lỗi xác thực thế nào?', options: ['Retry vô hạn với backoff tăng dần cho tới khi lời gọi thành công', 'Ghi log rồi im lặng bỏ qua', 'Báo ngay', 'Tự động tạo key mới'], answer: 2, explain: '"A well-built edge surfaces an auth failure immediately instead of letting it hide inside a retry loop."' },
-    { q: 'Câu tóm gọn kỹ năng xử lý lỗi trong bài là gì?', options: ['Retry cái tự hết; cái không tự hết thì báo ngay và sửa nguyên nhân gốc, ví dụ sai key, sai body', 'Retry mọi lỗi tối đa ba lần', 'Không bao giờ retry để tiết kiệm token', 'Mọi lỗi, dù tạm thời hay vĩnh viễn, đều chuyển ngay cho người xử lý'], answer: 0, explain: '"Triage stays the skill. Retry what clears, surface, and fix what doesn\'t."' },
-    { q: 'File nào nên được commit vào Git?', options: ['.claude/settings.local.json', '.env chứa API key', 'File log chi tiết của lần chạy trước để đồng đội tham khảo', '.claude/settings.json'], answer: 3, explain: '"Your shared config, your CLAUDE.md, and the project settings.json gets committed, so every teammate and every environment picks up the same behavior."' },
-    { q: 'Vì sao .claude/settings.local.json được gitignore?', options: ['Vì file đó quá lớn', 'Vì nó chứa cấu hình riêng của máy bạn, chỉ dành cho bạn, không áp dụng cho đồng đội và các môi trường khác', 'Vì Claude Code không bao giờ đọc file đó khi chạy trong CI', 'Vì nó chứa API key bắt buộc'], answer: 1, explain: '"Your personal config, the settings.local.json stays Git-ignored because it holds machine-specific overrides that are yours alone."' },
-    { q: 'Điều "hay bị quên" về cấu hình trong bài là gì?', options: ['Viết CLAUDE.md thật dài, liệt kê mọi quy tắc có thể nghĩ ra cho dự án', 'Commit file .env', 'Ghim một model ID chính xác và commit nó', 'Đặt temperature bằng 0'], answer: 2, explain: '"And here\'s the one people forget, pin an exact model ID and commit that too."' },
-    { q: 'Với model trước 4.6, "ghim model" nghĩa là gì?', options: ['Dùng snapshot có ngày thay vì alias ngắn trôi nổi', 'Dùng alias ngắn vì nó luôn tự trỏ tới bản mới nhất và tốt nhất', 'Dùng tên có chữ "latest"', 'Không cần ghim vì model không đổi'], answer: 0, explain: '"On pre-4.6 models, that means the dated snapshot rather than the shorter floating alias."' },
-    { q: 'Với model từ 4.6 trở đi, ID không có ngày như "Claude Opus 4.8" là gì?', options: ['Một alias trôi nổi cần tránh', 'Một ID không hợp lệ', 'Một ID chỉ dùng được trên Bedrock', 'Đã là snapshot cố định'], answer: 3, explain: '"From 4.6 on, the dateless ID like Claude Opus 4.8 already is the pinned snapshot, so there is no alias to avoid."' },
-    { q: 'Ghim và commit model ID giúp tránh điều gì?', options: ['Rate limit khi có nhiều người dùng truy cập cùng lúc vào giờ cao điểm', 'Âm thầm trôi hành vi', 'Lỗi 401 khi đổi máy', 'Chi phí ghi cache'], answer: 1, explain: '"A teammate\'s run and production\'s run behave like yours instead of silently drifting when a new model ships."' },
-    { q: 'Hành vi tái lập được (reproducible) bắt đầu từ đâu theo bài học?', options: ['Từ việc dùng model mạnh nhất', 'Từ việc viết prompt thật dài và chi tiết cho mọi trường hợp có thể xảy ra', 'Từ việc đưa đúng cấu hình vào source control', 'Từ việc tắt streaming'], answer: 2, explain: '"Reproducible behavior starts with putting the right configuration under source control."' },
-    { q: 'Câu nào là phần tổng kết đúng của bài?', options: ['Develop chứng minh ý tưởng bằng Messages API; implement thêm xác thực, bí mật, xử lý lỗi, triển khai, và xử lý lỗi ở rìa tích hợp', 'Develop là lúc tối ưu chi phí token; implement là lúc thử nghiệm nhiều cách viết prompt', 'Develop và implement là cùng một việc', 'Implement chỉ là bước copy code lên server'], answer: 0, explain: '"Develop proves it against the messages API. Implement wires in auth, secrets, error handling, and deployment, and handles failures at the edge."' },
-  ],
+    { q: "A team is in the develop phase of a new Claude feature. What should they focus on?", options: ["Adding elaborate error handling and retries", "Proving the idea works against the Messages API", "Configuring production deployment for every environment", "Migrating to the newest model and regression testing"], answer: 1, explain: "In develop, \"the whole point is learning, not polishing.\" Hardening is saved \"for the implement phase that follows.\"" },
+    { q: "Which ordering of the four lifecycle phases is correct?", options: ["Implement, develop, maintain, operate", "Develop, operate, implement, maintain", "Operate, develop, implement, maintain", "Develop, implement, operate, maintain"], answer: 3, explain: "\"Every Claude application moves through the same four phases. Development, implementation, operation, and maintenance.\"" },
+    { q: "In which phase do you watch latency, token usage, error rates and refusal signatures?", options: ["Operate", "Develop", "Implement", "Maintain"], answer: 0, explain: "\"In operate, the app is live, and you're watching latency, token usage, error rates, and any refusal or failure signatures.\"" },
+    { q: "Which activities belong to the maintain phase?", options: ["Prototyping prompts against the Messages API", "Wiring in auth and secrets for deployment", "Migrating models and regression tests", "Watching live error rates and latency"], answer: 2, explain: "\"In maintain, you migrate models, version your prompts and schemas, and regression test every upgrade.\"" },
+    { q: "A developer gets one great output from a prototype prompt and wants to move on. What does the lesson advise?", options: ["Ship it, since the idea is now proven", "Test real and adversarial inputs first", "Add production configuration right away", "Switch to a larger model to be safe"], answer: 1, explain: "You iterate \"testing it against real inputs and the messy adversarial ones too, because one lucky output isn't proof it works.\"" },
+    { q: "Which TWO headers are set on every request to the Messages API? (Choose TWO.)", options: ["x-api-key", "x-model-alias", "anthropic-version", "x-region-pin", "x-retry-count"], answer: [0, 2], explain: "The three pieces are the endpoint, \"the x-api-key header\" that authenticates you, and \"the anthropic-version header\", which is required." },
+    { q: "What is the purpose of the anthropic-version header?", options: ["It selects the model for the request", "It sets the region where calls run", "It enables streaming responses for the call", "It pins behavior to a dated API version"], answer: 3, explain: "\"It's required, and it pins the request and response behavior to a dated API version, so your integration doesn't shift under you when the API evolves.\"" },
+    { q: "A developer hardcodes the API key in source code to speed up a demo. What is the MOST appropriate guidance?", options: ["Keep it in a secret manager instead", "Fine during develop, since hardening comes later", "Encrypt the source file before committing", "Commit it only to a private repository"], answer: 0, explain: "\"You keep that key in a secret manager. Never paste it into your code.\" \"A leaked key is a real incident.\"" },
+    { q: "Which statement about the Messages API transport is accurate?", options: ["It requires a persistent WebSocket session", "It accepts only form-encoded payloads", "It is plain REST: HTTP POST with JSON", "It needs an SDK; raw HTTP is not supported"], answer: 2, explain: "\"Every call is an HTTP post to the v1 messages endpoint, and you send JSON and get JSON back. So this is a plain REST API underneath.\"" },
+    { q: "A production integration receives a 401 response. What should it do?", options: ["Retry with exponential backoff", "Surface it so credentials get fixed", "Switch to a fallback model at once", "Queue the request to send later"], answer: 1, explain: "A 401 means \"a missing or wrong key, and no amount of retrying will fix it.\" A well-built edge \"surfaces an auth failure immediately instead of letting it hide inside a retry loop.\"" },
+    { q: "Which TWO response statuses belong in the retry bucket? (Choose TWO.)", options: ["401", "429", "400", "500-series", "403"], answer: [1, 3], explain: "\"The 429 and the 500 series errors... Both sit in the retry bucket, so back off and resend.\"" },
+    { q: "What is the central theme of the implement phase?", options: ["Speed of experimentation", "Prompt creativity", "Model selection", "Durability"], answer: 3, explain: "\"The theme of this phase is durability, taking something that worked once on your machine and making it run reliably, unattended, everywhere it needs to.\"" },
+    { q: "On a laptop, a developer exported the API key by hand and reran failed calls. What must change in production?", options: ["The system must do each manual step for itself", "Nothing; the same steps work in production", "An operator should rerun failed calls each night", "The key should be pasted into the config file"], answer: 0, explain: "\"In production, nobody is there to rerun anything... Every manual step you performed while prototyping has to become something the system does for itself.\"" },
+    { q: "Which TWO are among the three things wired up in the implement phase? (Choose TWO.)", options: ["Prompt brainstorming", "Adversarial red teaming", "Auth and secrets", "Model migration", "Deployment"], answer: [2, 4], explain: "\"Auth, errors, deployment.\" Model migration belongs to maintain." },
+    { q: "Which question does the hardening mindset ask?", options: ["Can this idea work at all?", "Which prompt wording reads best to users?", "Will it keep working under load?", "Which model is the newest available?"], answer: 2, explain: "\"Prototype asks, can this work? Harden asks, will this keep working under load on a bad day in production?\"" },
+    { q: "A team adds input validation, real error handling, retries and stable configuration. Which phase does this describe?", options: ["Develop", "Implement", "Operate", "Maintain"], answer: 1, explain: "\"As you move toward implement, you harden... You add input validation, real error handling, retries for flaky calls, and stable configuration.\"" },
+    { q: "A team wants every teammate and environment to get the same Claude Code behavior. Which file should be committed?", options: ["settings.local.json", "A personal shell profile", "An exported environment variable", "The project settings.json"], answer: 3, explain: "\"Your shared config, your CLAUDE.md, and the project settings.json gets committed, so every teammate and every environment picks up the same behavior.\"" },
+    { q: "Why should settings.local.json stay Git-ignored?", options: ["It holds personal machine overrides", "It contains the model ID", "It is regenerated on every run", "It is too large for version control"], answer: 0, explain: "\"The settings.local.json stays Git-ignored because it holds machine-specific overrides that are yours alone.\"" },
+    { q: "Which TWO items should be committed to version control for reproducible behavior? (Choose TWO.)", options: ["CLAUDE.md", "settings.local.json", "The API key", "A pinned exact model ID", "Personal machine overrides"], answer: [0, 3], explain: "Commit shared config (CLAUDE.md, project settings.json) and \"pin an exact model ID and commit that too.\"" },
+    { q: "A team uses a pre-4.6 model through a short floating alias. A teammate's results start differing after a new model ships. What is the BEST fix?", options: ["Switch to settings.local.json for the model", "Raise the temperature to match outputs", "Pin the dated snapshot ID and commit it", "Ask each teammate to update weekly"], answer: 2, explain: "\"On pre-4.6 models, that means the dated snapshot rather than the shorter floating alias... That way, a teammate's run and production's run behave like yours instead of silently drifting.\"" },
+    { q: "Which statement about model IDs from version 4.6 onward is accurate?", options: ["They must always carry a date suffix", "The dateless ID is the pinned snapshot", "They are floating aliases that change", "They cannot be committed to Git at all"], answer: 1, explain: "\"From 4.6 on, the dateless ID... already is the pinned snapshot, so there is no alias to avoid.\"" },
+    { q: "What should be deliberately avoided during the develop phase?", options: ["Testing adversarial inputs early", "Calling the Messages API", "Iterating on the prompt", "Production hardening"], answer: 3, explain: "\"What you're deliberately not doing yet is hardening. No elaborate error handling, no production configuration.\"" },
+    { q: "Why does a well-built integration edge surface auth failures instead of retrying them?", options: ["Every call fails until credentials change", "Auth failures clear after a short wait", "Retries count against the rate limit", "The API blocks all retries after a 401"], answer: 0, explain: "\"You have to correct the credentials, and until you do, every call fails the same way.\"" },
+    { q: "Which is NOT one of the three pieces set on every Messages API call?", options: ["The endpoint", "The API key header", "The model alias header", "The version header"], answer: 2, explain: "\"Endpoint, key, version. Get those three right, and you're talking to Claude.\"" },
+    { q: "A production app is hit by a rate limit at 2 a.m. with nobody watching. What should the implemented system do?", options: ["Stop and wait for an operator", "Back off and retry on its own", "Fail the request and rotate the key", "Switch the deployment region"], answer: 1, explain: "The app must \"survive a rate limit at two in the morning\". For rate limit errors, \"back off and retry so a single hiccup doesn't crash the whole request.\"" },
+    { q: "What does the deployment step of the implement phase include?", options: ["Prototyping prompts against real inputs", "Migrating to a new model version safely", "Watching error rates and latency", "Packaging, env config and deploying"], answer: 3, explain: "\"Package the app, set its configuration for each environment, and deploy it to your target platform.\"" },
+    { q: "Which TWO statements about develop versus implement are accurate? (Choose TWO.)", options: ["Implement skips error handling", "Develop accepts rough edges to move fast", "Develop requires production configuration", "Develop and implement should run at the same moment", "Implement makes the same request behave predictably"], answer: [1, 4], explain: "\"When you prototype, you move fast and accept rough edges.\" In implement you harden \"so the same request behaves predictably every time you run it.\" \"You need both, just not at the same moment.\"" },
+    { q: "A service behaves differently in staging and production. Which implement-phase goal is being missed?", options: ["Same behavior in every environment", "Prompt iteration speed in develop", "Adversarial testing of the prompt", "Regression testing of model upgrades"], answer: 0, explain: "The app has to \"behave the same in staging as it does in production.\"" },
+    { q: "Where should the API key be stored for a deployed app?", options: ["In the committed project settings.json", "In CLAUDE.md for the whole team to share", "In a secret manager, at runtime", "In a comment at the top of the source"], answer: 2, explain: "\"Store your API key in a secret manager and load it at runtime and never commit it to the repo.\"" },
+    { q: "What does a 401 response indicate?", options: ["The server is temporarily overloaded", "A missing or wrong API key", "The request went over the rate limit", "The model refused the request"], answer: 1, explain: "\"The new case in the implement phase is the 401. That means your authentication is bad, a missing or wrong key.\"" }
+  ]
 };

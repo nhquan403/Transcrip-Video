@@ -1,139 +1,73 @@
 window.LESSON_CONTENT = {
   explanation: `
-<p class="key"><strong>Nói ngắn gọn:</strong> Trước khi bàn tính năng, hãy hỏi: thiết kế này có đạt được <strong>độ trễ</strong>, <strong>thông lượng</strong>,
-<strong>vùng đặt dữ liệu</strong> và <strong>chi phí</strong> mục tiêu không? Đó là yêu cầu hạ tầng, và chúng quyết định kiến trúc.
-Biến từng cái thành <strong>một con số</strong>, rồi để con số đó chọn thiết kế giúp bạn.</p>
+<p class="key"><strong>Nói ngắn gọn:</strong> <strong>Infrastructure requirements</strong> (latency, throughput, region, cost) là những <strong>con số</strong> mà architecture phải thỏa, không phải feature. Chúng quyết định kiến trúc nhiều hơn câu chữ của prompt.</p>
 
-<h3>📌 Từ cần biết</h3>
+<h3>🔑 Keyword cần nhớ</h3>
 <ul class="terms">
-  <li><strong>Infrastructure requirement (yêu cầu hạ tầng):</strong> những gì kiến trúc phải cung cấp để hành vi chạy được: tốc độ, sức chứa, nơi chạy, ngân sách.</li>
-  <li><strong>Latency budget (ngân sách độ trễ):</strong> số mili giây tối đa người dùng chịu chờ.</li>
-  <li><strong>Throughput (thông lượng):</strong> số request mỗi phút hệ thống phải chịu được lúc cao điểm.</li>
-  <li><strong>Data residency:</strong> quy định dữ liệu chỉ được nằm trong một vùng địa lý nhất định.</li>
-  <li><strong>Rate limit:</strong> trần số request và số token API cho phép trong một khoảng thời gian.</li>
-  <li><strong>Backpressure:</strong> khi việc đến nhiều hơn sức xử lý, xếp hàng phần dư thay vì bắn hết vào model.</li>
+  <li><strong>Functional vs infrastructure requirement</strong>: app phải <em>làm gì</em> vs architecture phải <em>cung cấp gì</em> (compute, latency, throughput, hosting).</li>
+  <li><strong>Latency budget</strong>: worst-case response time user chịu được <strong>trừ</strong> overhead (network hops, auth, xử lý trước/sau) = phần còn lại cho lời gọi Claude.</li>
+  <li><strong>Sync / Streaming / Batch</strong>: chờ trọn response; token trả dần trên một connection; gửi nhiều request, lấy kết quả sau với giá rẻ hơn.</li>
+  <li><strong>Rate limits</strong>: giới hạn số request và token trong một khoảng thời gian; vượt → rate limit response, chờ rồi thử lại.</li>
+  <li><strong>Back pressure</strong>: demand vượt capacity → <strong>queue</strong> phần dư, không bắn hết vào model.</li>
+  <li><strong>Data residency</strong>: hợp đồng/quy định buộc dữ liệu ở một vùng địa lý.</li>
+  <li><strong>Prompt caching</strong>: cache prefix ổn định; cache read rẻ hơn nhiều, cache write tính giá cao hơn; giảm cost và time to first token.</li>
+  <li><strong>Message Batches</strong>: chạy async, <strong>nửa giá</strong>, kết quả trong vòng một ngày, <strong>không theo thứ tự</strong> → ghép theo id.</li>
 </ul>
 
-<h3>Hai loại yêu cầu, đừng trộn</h3>
+<h3>🎯 Trọng tâm thi</h3>
 <ul>
-  <li><strong>Functional:</strong> app phải <strong>làm gì</strong>. "Tóm tắt tài liệu này", "trả lời theo định dạng này".</li>
-  <li><strong>Infrastructure:</strong> kiến trúc phải <strong>cung cấp gì</strong> để hành vi đó chạy: compute, độ trễ, thông lượng, nơi host.</li>
-</ul>
-<p>Cái bẫy kinh điển: "trả lời trong dưới 2 giây" <strong>không phải tính năng</strong>. Đó là ngân sách độ trễ, và nó định hình kiến trúc nhiều hơn mọi câu chữ trong prompt.</p>
-
-<h3>Bốn nhóm yêu cầu hạ tầng</h3>
-<ol>
-  <li><strong>Độ trễ:</strong> người gọi chờ bao lâu thì coi như thiết kế đã thất bại?</li>
-  <li><strong>Thông lượng:</strong> bao nhiêu request mỗi phút lúc cao điểm?</li>
-  <li><strong>Vùng và residency:</strong> lời gọi chạy ở đâu, dữ liệu được phép nằm ở đâu?</li>
-  <li><strong>Chi phí:</strong> hóa đơn phải nằm dưới trần nào?</li>
-</ol>
-<p>Việc chọn <strong>model tier</strong> chạm vào hai nhóm: model nặng hơn cho chất lượng tốt hơn nhưng chậm hơn và đắt hơn.
-<strong>Availability</strong> (cam kết uptime) quay lại ở bài sau như một yêu cầu về độ tin cậy.
-Con số mơ hồ thì kiến trúc phải đoán; con số rõ ràng thì thiết kế gần như tự hiện ra.</p>
-
-<h3>Ngân sách độ trễ: làm ngược từ con số</h3>
-<div class="box">⏱️ <strong>Hình dung thế này:</strong> Bạn có 2,5 giây trước khi người dùng mất kiên nhẫn. Mạng, xác thực và phần xử lý của bạn đã ăn mất 0,5 giây.
-Còn lại <strong>2 giây</strong> cho lời gọi Claude. Nếu mỗi lời gọi mất 0,7 giây, bạn chỉ gọi tuần tự được 2 lần. Một agent 5 bước tuần tự đã bị loại ngay từ phép tính.</div>
-<p>Cách làm: quyết định thời gian chờ tệ nhất người dùng chịu được, <strong>trừ đi overhead</strong> của bạn, phần còn lại là ngân sách cho lời gọi Claude.
-Để con số đó cho bạn biết được phép bao nhiêu lời gọi và bao nhiêu context, thay vì phát hiện ra trên production.</p>
-
-<h3>Ba cách trả kết quả</h3>
-<ul>
-  <li><strong>Synchronous:</strong> một request, một response, người gọi chờ trọn câu trả lời. Dễ làm nhất, nhưng người dùng cảm nhận từng mili giây.</li>
-  <li><strong>Streaming:</strong> token gửi dần qua một kết nối, chữ xuất hiện gần như ngay lập tức. Thường là cách đạt <strong>độ trễ cảm nhận</strong> mà model không cần nhanh hơn.</li>
-  <li><strong>Batch:</strong> gửi nhiều request một lúc, lấy kết quả sau. Đổi tốc độ lấy giá rẻ cho việc không ai đang ngồi chờ.</li>
-</ul>
-<p>Ngân sách chọn cách: trả lời chat thì streaming, báo cáo chạy đêm thì batch.</p>
-
-<h3>Thông lượng: va vào giới hạn thật</h3>
-<p>API có <strong>rate limit</strong> về số request và số token trong một khung thời gian. Vượt thì nhận phản hồi rate limit: tín hiệu chậm lại và thử lại sau.
-Mẫu sâu hơn là <strong>backpressure</strong>: khi nhu cầu vượt sức chứa, <strong>xếp hàng</strong> phần dư thay vì bắn hết vào model rồi bị bóp.
-Định cỡ số request chạy song song theo rate limit, và luôn tính cho <strong>phút cao điểm</strong>, vì phút trung bình không bao giờ làm sập hệ thống.</p>
-
-<h3>Vùng và residency</h3>
-<ul>
-  <li><strong>API first-party</strong> (endpoint của chính nhà cung cấp): tích hợp đơn giản nhất, nhưng bạn nhận các vùng mà endpoint đó phục vụ.</li>
-  <li><strong>Chạy Claude trong một cloud platform lớn</strong> bạn đang dùng: có thể ghim traffic vào một vùng cụ thể, thường chính là điều quy định residency đòi hỏi.</li>
-</ul>
-<p>Không cách nào tốt hơn về lý thuyết. Nhưng nếu residency là yêu cầu cứng, nó có thể thắng sự tiện lợi.</p>
-
-<h3>Chi phí cũng là một ngân sách</h3>
-<p>Chi phí token tăng theo <strong>kích thước context</strong> và <strong>số lượt</strong>. Một vòng lặp gửi lại lịch sử ngày càng dài sẽ đắt rất nhanh,
-nên trần chi phí chặt có thể <strong>cấm hẳn</strong> một thiết kế, giống như ngân sách độ trễ chặt.
-Khi lưu lượng đủ lớn, cache prefix ổn định không còn là "tối ưu thêm" mà thành <strong>yêu cầu</strong>; việc không ai chờ chạy batch cũng vậy.</p>
-
-<h3>Ba cần gạt để vừa ngân sách</h3>
-<ul>
-  <li><strong>Prompt caching:</strong> phần đầu prompt giống nhau giữa các lần gọi thì cache lại. Đọc từ cache chỉ tốn một phần nhỏ giá input; <strong>ghi</strong> cache tốn thêm,
-  nên chỉ có lời khi prefix <strong>được dùng lại</strong>. Dùng lại nhiều thì giảm cả chi phí lẫn thời gian ra token đầu tiên.</li>
-  <li><strong>Message Batches:</strong> việc trì hoãn được chạy bất đồng bộ với <strong>nửa giá</strong>, kết quả có trong vòng một ngày.
-  Kết quả về <strong>không theo thứ tự</strong>, nên ghép bằng <strong>id</strong>, không bằng vị trí.</li>
-  <li><strong>Right-sizing:</strong> chọn model tier vừa với việc, đừng trả tiền cho khả năng suy luận mà việc nhẹ không cần.</li>
+  <li>4 family: <strong>latency, throughput, region/residency, cost</strong>. Model tier ảnh hưởng latency và cost; availability là reliability requirement (bài sau).</li>
+  <li>"Respond in under 2 seconds" → không phải feature, là <strong>latency budget</strong>. Budget loại thiết kế: còn 1.5s → agent loop 5 lời gọi tuần tự bị loại.</li>
+  <li>Budget chọn mode: chat reply → <strong>streaming</strong> (đạt perceived latency mà model không nhanh hơn); overnight report → <strong>batch</strong>.</li>
+  <li>Throughput: size concurrency theo rate limit; plan cho <strong>peak minute</strong>, không phải average.</li>
+  <li>Residency là hard requirement → chạy Claude trên <strong>cloud platform</strong> để pin region; first-party API đơn giản nhưng thừa hưởng region của endpoint đó.</li>
+  <li>Cost tăng theo <strong>context size × turn count</strong>. Volume cao → caching là <strong>requirement</strong>; việc không ai chờ → batch. 3 lever: <strong>caching, batches, right-sizing</strong> model tier.</li>
 </ul>
 
-<h3>✅ Nhớ 3 điều</h3>
+<h3>⚠️ Bẫy hay gặp</h3>
 <ul>
-  <li>Yêu cầu hạ tầng là ràng buộc kiến trúc phải thỏa, không phải tính năng.</li>
-  <li>Đặt một con số độ trễ thật, rồi để nó chọn sync, streaming hay batch; tính thông lượng theo rate limit và backpressure.</li>
-  <li>Khi trần chi phí chặt, caching và batching là yêu cầu, không phải trang trí.</li>
-</ul>
-
-<h3>🇬🇧 Cụm từ tiếng Anh đáng nhớ trong bài</h3>
-<ul>
-  <li><em class="en">shape a cloud application before features</em>: định hình ứng dụng trước cả tính năng.</li>
-  <li><em class="en">mixing them is a classic mistake</em>: trộn chúng là lỗi kinh điển.</li>
-  <li><em class="en">the design almost falls out of them</em>: thiết kế gần như tự hiện ra từ chúng.</li>
-  <li><em class="en">a specific number, not a wish</em>: một con số cụ thể, không phải một mong ước.</li>
-  <li><em class="en">quietly rules designs in or out</em>: âm thầm giữ lại hoặc loại bỏ các thiết kế.</li>
-  <li><em class="en">off the table</em>: bị loại khỏi lựa chọn.</li>
-  <li><em class="en">work backward from the number</em>: làm ngược từ con số.</li>
-  <li><em class="en">the user feels every millisecond</em>: người dùng cảm nhận từng mili giây.</li>
-  <li><em class="en">collides with real limits</em>: va vào giới hạn thật.</li>
-  <li><em class="en">the average minute never breaks anything</em>: phút trung bình không bao giờ làm hỏng gì.</li>
-  <li><em class="en">the budget that binds hardest</em>: ngân sách ràng buộc chặt nhất.</li>
-  <li><em class="en">not optional polish</em>: không phải phần đánh bóng tùy chọn.</li>
+  <li>"Streaming làm model nhanh hơn" → <strong>sai</strong>; chỉ giảm perceived latency.</li>
+  <li>"Batch results trả đúng thứ tự gửi" → <strong>sai</strong>; match theo identifier.</li>
+  <li>"Caching luôn có lợi" → <strong>sai</strong>; cache write đắt hơn, chỉ lời khi prefix được reuse.</li>
+  <li>"First-party API luôn tốt hơn cloud platform" → <strong>sai</strong>; không cái nào tốt hơn tuyệt đối, residency có thể quyết định.</li>
 </ul>
 
 <h3>💻 Bài tập Java</h3>
-<p>Mở <code>java-app/src/main/java/part2/lesson03/Lesson03.java</code>. Có 8 bài: tính ngân sách cho Claude sau overhead, số lời gọi tuần tự vừa ngân sách,
-chọn sync/streaming/batch, định cỡ concurrency theo rate limit, xếp hàng phần vượt cao điểm, chọn cách triển khai theo residency,
-so chi phí có và không có prompt caching, và ghép kết quả batch theo id. Chấm bằng <code>./mvnw -q compile exec:java -Dexec.args="p2-03"</code>.</p>
-<p>Làm xong, chạy với Claude thật bằng <code>-Dexec.args="p2-03 --live"</code>: chương trình đo cùng một câu hỏi theo kiểu sync và streaming
-(thời gian tới chữ đầu tiên so với thời gian chờ trọn câu), rồi code của bạn quyết định cách trả kết quả và số lời gọi vừa ngân sách.</p>
+<p><code>part2/lesson03/Lesson03.java</code>: tính budget sau overhead, số lời gọi tuần tự vừa budget, chọn sync/streaming/batch, concurrency theo rate limit, queue peak, chọn deployment theo residency, cost có/không caching, ghép batch theo id.
+Chấm: <code>./mvnw -q compile exec:java -Dexec.args="p2-03"</code>; chạy thật: thêm <code>--live</code>.</p>
 `,
 
-  // answer = index of the correct option in `options` (options are shuffled on screen).
+  // answer = index of the correct option (options are shuffled on screen); an array means "Choose TWO".
   quiz: [
-    { q: 'Câu nào là yêu cầu hạ tầng (infrastructure requirement)?', options: ['Tóm tắt tài liệu trong 5 gạch đầu dòng', 'Trả lời theo định dạng JSON đã thống nhất', 'Chịu 400 request/phút lúc cao điểm', 'Phân loại ticket vào một trong ba nhãn'], answer: 2, explain: 'Yêu cầu hạ tầng nói "what the solution architecture has to provide to support that behavior. Compute, latency, throughput, hosting."' },
-    { q: '"Trả lời trong dưới 2 giây" là gì theo bài học?', options: ['Một ngân sách độ trễ, định hình kiến trúc', 'Một tính năng, ghi vào functional requirements', 'Một acceptance criterion cho câu chữ prompt', 'Một yêu cầu về chất lượng nội dung trả lời'], answer: 0, explain: '"Respond in under two seconds isn\'t a feature. It\'s a latency budget and it will shape your whole architecture more than the wording of the prompt ever will."' },
-    { q: 'Bốn nhóm yêu cầu hạ tầng được nêu là gì?', options: ['Bảo mật, giao diện, logging, testing', 'Model, prompt, bộ tool, và bộ nhớ của agent', 'Input, output, schema, và tín hiệu đo cho từng yêu cầu', 'Độ trễ, thông lượng, vùng/residency và chi phí'], answer: 3, explain: '"Infrastructure requirements group into four families": latency, throughput, region and residency, cost.' },
-    { q: 'Việc chọn model tier ảnh hưởng tới hai nhóm nào?', options: ['Vùng và thông lượng', 'Độ trễ và chi phí', 'Residency và availability', 'Thông lượng và residency'], answer: 1, explain: '"Your model tier choice threads through two of these since a heavier tier buys quality at the price of latency and cost."' },
-    { q: 'Availability (cam kết uptime) được xử lý thế nào trong chuỗi bài?', options: ['Không cần quan tâm vì API của Claude luôn sẵn sàng', 'Gộp chung với thông lượng thành một con số duy nhất', 'Quay lại ở bài sau như yêu cầu về độ tin cậy', 'Coi như một phần của ngân sách chi phí hằng tháng'], answer: 2, explain: '"And availability, the uptime commitment, returns in the next lesson as its own reliability requirement."' },
-    { q: 'Điều gì xảy ra khi các con số hạ tầng còn mơ hồ?', options: ['Kiến trúc phải đoán', 'Thiết kế tự tối ưu theo thời gian', 'Model chọn giúp cấu hình phù hợp', 'Không ảnh hưởng gì nếu prompt tốt'], answer: 0, explain: '"When they\'re vague, the architecture is guessing. When they\'re concrete, the design almost falls out of them."' },
-    { q: 'Người dùng chịu chờ tối đa 2.000ms. Mạng 150ms, xác thực 100ms, xử lý trước và sau 250ms. Ngân sách cho lời gọi Claude là bao nhiêu?', options: ['2.000ms', '1.750ms', '1.850ms', '1.500ms'], answer: 3, explain: 'Lấy thời gian chịu được trừ mọi overhead: 2.000 − (150 + 100 + 250) = 1.500ms. "Whatever is left is the budget the Claude call itself has to fit inside."' },
-    { q: 'Ngân sách cho Claude còn khoảng 1,5 giây. Thiết kế nào bị loại ngay từ phép tính?', options: ['Một lời gọi duy nhất trả lời trong 1 giây', 'Agent 5 lời gọi tuần tự', 'Streaming với chữ đầu tiên sau 300ms', 'Một lời gọi có cache prefix'], answer: 1, explain: '"If you\'ve got a second and a half of headroom, a multi-step agent loop that makes five sequential calls is already off the table."' },
-    { q: 'Theo bài học, nên dùng ngân sách độ trễ thế nào?', options: ['Đo trên production rồi điều chỉnh dần', 'Để model tự cân đối giữa chất lượng và tốc độ lúc chạy', 'Làm ngược từ con số để biết được phép mấy lời gọi, bao nhiêu context', 'Chỉ dùng để báo cáo cho quản lý sau khi sản phẩm ra mắt'], answer: 2, explain: '"Let the latency budget tell you how many calls and how much context you can afford instead of discovering it in production."' },
-    { q: 'Cách trả kết quả nào giúp đạt độ trễ CẢM NHẬN mà model không cần nhanh hơn?', options: ['Streaming', 'Synchronous', 'Batch', 'Gọi lại nhiều lần'], answer: 0, explain: '"That\'s often how you meet a perceived latency target without making the model any faster."' },
-    { q: 'Nhược điểm của cách synchronous là gì?', options: ['Không trả về được JSON đúng schema đã thống nhất', 'Tốn gấp đôi số token so với streaming cùng nội dung', 'Không dùng được với tool, chỉ trả về được văn bản thuần', 'Người dùng phải chờ trọn câu trả lời, cảm nhận từng mili giây'], answer: 3, explain: '"Synchronous is the simplest. One request, one response. And the caller waits for the whole thing. Easy to build, but the user feels every millisecond."' },
-    { q: 'Một báo cáo tổng hợp chạy lúc 2 giờ sáng, không ai ngồi chờ. Nên dùng cách nào?', options: ['Streaming', 'Batch', 'Synchronous', 'Agent loop nhiều lượt'], answer: 1, explain: 'Batch "trading real-time speed for lower cost on work nobody is sitting and waiting for... An overnight report wants batch."' },
-    { q: 'Khi vượt rate limit, phản hồi rate limit nghĩa là gì?', options: ['Request có lỗi trong body, cần sửa trước khi gửi lại', 'Tài khoản đã bị khóa vĩnh viễn vì gửi quá nhiều', 'Tín hiệu chậm lại, chờ rồi thử lại', 'Model không hỗ trợ request đó'], answer: 2, explain: '"When you exceed one, you get a rate limit response, which is a signal to slow down and try again after a wait."' },
-    { q: 'Backpressure là gì?', options: ['Xếp hàng phần việc dư thay vì bắn hết vào model', 'Tăng max tokens khi tải cao', 'Giảm chất lượng câu trả lời để nhanh hơn', 'Gửi lại mọi request bị lỗi ngay lập tức'], answer: 0, explain: '"When incoming demand outruns the capacity you have, you queue the excess work instead of firing it all at the model and getting throttled."' },
-    { q: 'Nên định cỡ số request chạy song song (concurrency) theo gì?', options: ['Số nhân CPU của máy chủ đang chạy ứng dụng', 'Tổng số người dùng đã đăng ký tài khoản', 'Số tính năng dùng Claude trong ứng dụng', 'Rate limit của API, để luồng gọi đều và êm'], answer: 3, explain: '"Size your concurrency to the rate limit so the integration edge stays smooth."' },
-    { q: 'Rate limit 120 request/phút, mỗi request mất khoảng 3 giây. Tối đa bao nhiêu request nên bay cùng lúc?', options: ['3', '6', '40', '120'], answer: 1, explain: '120 request/phút tức 2 request mỗi giây; mỗi request giữ chỗ 3 giây, nên khoảng 2 × 3 = 6 request cùng lúc.' },
-    { q: 'Vì sao phải tính thông lượng theo phút cao điểm?', options: ['Vì giá token vào phút cao điểm rẻ hơn bình thường', 'Vì rate limit chỉ áp dụng lúc cao điểm', 'Vì phút trung bình không bao giờ làm sập hệ thống', 'Vì người dùng chỉ đến vào giờ cao điểm'], answer: 2, explain: '"Always plan for the busy minute at peak because the average minute never breaks anything."' },
-    { q: 'Hợp đồng yêu cầu dữ liệu người dùng phải ở trong EU, nhưng endpoint first-party bạn dùng không phục vụ vùng EU. Hướng đi hợp lý là gì?', options: ['Chạy Claude trong cloud platform, ghim vào vùng EU', 'Giữ API first-party vì tích hợp đơn giản hơn', 'Mã hóa dữ liệu rồi gửi sang vùng nào cũng được', 'Viết prompt yêu cầu Claude không lưu dữ liệu'], answer: 0, explain: 'Cloud platform "can pin traffic to a specific region... If residency is a hard requirement, it can outweigh convenience."' },
-    { q: 'Điểm yếu của API first-party về mặt vùng là gì?', options: ['Không hỗ trợ streaming cho các câu trả lời dài', 'Không công bố rate limit rõ ràng cho từng tài khoản', 'Không trả về usage', 'Bị giới hạn ở vùng endpoint phục vụ'], answer: 3, explain: '"The simplest integration, but you inherit whichever regions that endpoint serves."' },
-    { q: 'Câu nào ĐÚNG về API first-party so với chạy trên cloud platform?', options: ['Cloud platform luôn tốt hơn vì có nhiều vùng để lựa chọn', 'Tùy: residency cứng có thể quyết định', 'API first-party luôn tốt hơn vì đơn giản', 'Hai cách giống hệt nhau về vùng'], answer: 1, explain: '"Neither is better in the abstract. If residency is a hard requirement, it can outweigh convenience."' },
-    { q: 'Chi phí token tăng theo những gì?', options: ['Số người dùng và số tính năng', 'Độ dài system prompt và ngôn ngữ', 'Kích thước context và số lượt gọi', 'Vùng triển khai và giờ trong ngày'], answer: 2, explain: '"Token cost scales with your context size and your turn count. A loop that resends a growing history gets expensive fast."' },
-    { q: 'Một trần chi phí chặt có thể làm gì với một thiết kế?', options: ['Có thể cấm hẳn thiết kế đó ngay từ đầu', 'Không ảnh hưởng, chỉ cần tối ưu sau', 'Chỉ làm chậm tiến độ dự án một chút', 'Bắt buộc phải chuyển sang dùng agent cho linh hoạt'], answer: 0, explain: '"A tight cost envelope can forbid a design outright, the same way a tight latency budget can."' },
-    { q: 'Khi lưu lượng đủ cao, cache prefix ổn định trở thành gì?', options: ['Một tối ưu đẹp nhưng không cần thiết', 'Một rủi ro bảo mật cần tránh khi có nhiều người dùng', 'Một tính năng thử nghiệm chỉ nên bật cho nhóm nhỏ', 'Một yêu cầu, vì thiếu nó con số không vừa'], answer: 3, explain: '"Caching a stable prompt prefix stops being a nice optimization and becomes a requirement, because without it, the numbers simply don\'t work."' },
-    { q: 'Câu nào ĐÚNG về giá prompt caching?', options: ['Cả ghi và đọc cache đều miễn phí với mọi model', 'Đọc cache rẻ hơn hẳn giá input, còn ghi thì tốn thêm', 'Đọc cache đắt hơn giá input thường', 'Ghi cache rẻ hơn đọc cache vì chỉ làm một lần'], answer: 1, explain: '"Repeated reads bill at a fraction of the base input price. Cache writes bill at a premium, so this only pays off when the prefix is actually reused."' },
-    { q: 'Một prefix dài chỉ được dùng đúng MỘT lần. Bật prompt caching cho nó thì sao?', options: ['Rẻ hơn hẳn vì đọc cache giá thấp', 'Không đổi gì về chi phí, chỉ tốn thêm bộ nhớ phía server', 'Đắt hơn, vì trả phí ghi mà không có lần đọc nào', 'Nhanh hơn nhưng không ảnh hưởng chi phí'], answer: 2, explain: 'Ghi cache tốn thêm, "so this only pays off when the prefix is actually reused."' },
-    { q: 'Ngoài chi phí, prompt caching (khi dùng lại nhiều) còn giúp gì?', options: ['Giảm thời gian tới token đầu tiên', 'Tăng rate limit của tài khoản', 'Giảm số token output mà model phải sinh ra', 'Cho phép streaming trong batch'], answer: 0, explain: '"Reused often, it cuts cost and time to first token, so it helps latency too."' },
-    { q: 'Message Batches có những đặc điểm nào?', options: ['Nhanh hơn API sync nhưng giữ nguyên giá', 'Có streaming và giá gấp đôi', 'Chỉ dùng cho model nhỏ nhất', 'Nửa giá, trong một ngày, không theo thứ tự'], answer: 3, explain: '"Deferrable work runs asynchronously at half the standard price collected within a day. The catch is results come back in any order."' },
-    { q: 'Kết quả batch về lộn xộn. Ghép với input thế nào cho đúng?', options: ['Theo vị trí trong danh sách gửi', 'Theo identifier của từng request', 'Theo thời gian hoàn thành của từng request trong batch', 'Theo độ dài câu trả lời'], answer: 1, explain: '"Results come back in any order, so you match them by identifier, not position."' },
-    { q: 'Right-sizing nghĩa là gì?', options: ['Luôn dùng model lớn nhất cho chắc', 'Cắt bớt system prompt cho ngắn nhất có thể để tiết kiệm', 'Chọn model tier vừa sức với từng việc', 'Giảm max tokens xuống thấp nhất'], answer: 2, explain: '"The third is right sizing. Match the model tier to the task, so you never pay for reasoning a light job doesn\'t need."' },
-    { q: 'Câu chốt của bài về trần chi phí chặt là gì?', options: ['Caching và batching là yêu cầu', 'Hãy chuyển sang model đắt hơn', 'Hãy bỏ streaming đi để tiết kiệm chi phí kết nối', 'Chỉ cần thương lượng lại ngân sách'], answer: 0, explain: '"Just remember, when the cost ceiling is tight, caching and batching are requirements, not optional polish."' },
-  ],
+    { q: "A stakeholder writes \"respond in under two seconds\" in the feature list. How should the architect classify it?", options: ["A functional requirement for the prompt", "An infrastructure latency budget", "An acceptance criterion for output format", "A business need with no measurable target"], answer: 1, explain: "\"Respond in under two seconds isn't a feature. It's a latency budget and it will shape your whole architecture more than the wording of the prompt ever will.\"" },
+    { q: "Which TWO are among the four families of infrastructure requirements? (Choose TWO.)", options: ["Throughput", "Output format", "Region and residency", "Tone of voice", "Citation accuracy"], answer: [0, 2], explain: "The four families are latency, throughput, region and residency, and cost. Format, tone and citations are functional concerns." },
+    { q: "A user tolerates 3 seconds worst case. Network hops, auth and post-processing take 1 second. How should the latency budget for the Claude call be set?", options: ["3 seconds, the full user tolerance", "1 second, matching the overhead", "4 seconds, the tolerance plus overhead", "2 seconds, left after overhead"], answer: 3, explain: "\"Subtract your own overhead... Whatever is left is the budget the Claude call itself has to fit inside.\"" },
+    { q: "A design has about 1.5 seconds of headroom for model calls. Which option is MOST likely ruled out?", options: ["A five-call sequential agent loop", "A single synchronous call", "A streamed single response", "A short prompt with a cached prefix"], answer: 0, explain: "\"If you've got a second and a half of headroom, a multi-step agent loop that makes five sequential calls is already off the table.\"" },
+    { q: "A chat feature must feel responsive, but full answers still take several seconds. What is the BEST delivery mode?", options: ["Batch, to lower the cost per answer overall", "Synchronous, to keep the code simple", "Streaming, so output starts at once", "Switch to a larger model for faster output"], answer: 2, explain: "Streaming is \"often how you meet a perceived latency target without making the model any faster.\" \"A chat reply wants streaming.\"" },
+    { q: "A team generates an overnight report that nobody waits on in real time. Which delivery mode fits BEST?", options: ["Streaming over one connection", "Batch, trading speed for cost", "Synchronous calls in a tight loop", "An agent loop with parallel tools"], answer: 1, explain: "Batch trades \"real-time speed for lower cost on work nobody is sitting and waiting for.\" \"An overnight report wants batch.\"" },
+    { q: "Which statement about streaming is accurate?", options: ["It makes the model generate tokens faster", "It reduces the total token cost of a reply", "It returns results in any order", "It sends tokens incrementally"], answer: 3, explain: "\"Streaming sends tokens incrementally over one connection, so output starts appearing almost right away, even if the complete answer still takes a while.\"" },
+    { q: "An integration receives a rate limit response from the API. What does this signal?", options: ["Slow down, then retry after a wait", "The request is malformed and must be rewritten", "The model refused the request for safety reasons", "The API key is invalid or expired"], answer: 0, explain: "\"When you exceed one, you get a rate limit response, which is a signal to slow down and try again after a wait.\"" },
+    { q: "During a traffic spike, incoming demand exceeds the capacity allowed by the rate limit. What is the MOST appropriate pattern?", options: ["Send everything at once and rely on throttling", "Drop every request above the average rate", "Queue excess work; size concurrency to the limit", "Switch all traffic to a larger model tier"], answer: 2, explain: "Back pressure: \"you queue the excess work instead of firing it all at the model and getting throttled. Size your concurrency to the rate limit.\"" },
+    { q: "Which load should throughput planning be based on?", options: ["The average minute of the day", "The busy minute at peak", "The quietest hour overnight", "The first week after launch"], answer: 1, explain: "\"Always plan for the busy minute at peak because the average minute never breaks anything.\"" },
+    { q: "A regulation requires user data to stay inside a specific geography. The team uses the first-party API today. What is the MOST appropriate consideration?", options: ["Residency never affects the architecture", "The first-party API always offers every region", "Data residency is solved by prompt caching", "A cloud platform deployment can pin the region"], answer: 3, explain: "A major cloud platform \"can pin traffic to a specific region, which is often exactly what a data residency rule requires.\" With the first-party API \"you inherit whichever regions that endpoint serves.\"" },
+    { q: "Which TWO statements about deployment paths for residency are accurate? (Choose TWO.)", options: ["A cloud platform is always better in the abstract", "The first-party API is the simplest integration", "The first-party API lets you pick any region", "A hard residency rule can outweigh convenience", "Residency only matters for batch jobs"], answer: [1, 3], explain: "The first-party API \"is the simplest integration\", but \"if residency is a hard requirement, it can outweigh convenience.\" \"Neither is better in the abstract.\"" },
+    { q: "A multi-turn loop resends a growing conversation history on every call. What is the MOST likely consequence?", options: ["Token cost grows quickly", "Latency drops as the history grows", "Rate limits stop applying", "Batch pricing applies automatically"], answer: 0, explain: "\"Token cost scales with your context size and your turn count. A loop that resends a growing history gets expensive fast.\"" },
+    { q: "An app sends the same large instructions on every request at high volume, and the cost ceiling is tight. What does the lesson say about prompt caching here?", options: ["It is optional polish to add later", "It only helps latency, not cost", "It becomes a requirement at this volume", "It should be avoided, since writes cost more"], answer: 2, explain: "\"When volume is high enough, caching a stable prompt prefix stops being a nice optimization and becomes a requirement, because without it, the numbers simply don't work.\"" },
+    { q: "When does prompt caching NOT pay off?", options: ["When the prefix is reused across many calls", "When the prefix is rarely reused", "When the prompt is large and stable", "When request volume is high"], answer: 1, explain: "\"Cache writes bill at a premium, so this only pays off when the prefix is actually reused.\"" },
+    { q: "Which TWO benefits does prompt caching provide when a prefix is reused often? (Choose TWO.)", options: ["Higher rate limits", "Guaranteed data residency", "Lower cost on repeated reads", "Ordered batch results", "Faster time to first token"], answer: [2, 4], explain: "Repeated reads \"bill at a fraction of the base input price\" and \"reused often, it cuts cost and time to first token, so it helps latency too.\"" },
+    { q: "A team uses Message Batches and maps results to inputs by their position in the result list. What problem will they hit?", options: ["Batches cost more than synchronous calls", "Batches cannot exceed a few requests", "Batches require streaming to be enabled", "Results may come back in any order"], answer: 3, explain: "\"Results come back in any order, so you match them by identifier, not position.\"" },
+    { q: "Which statement about Message Batches is accurate?", options: ["They run async at half the standard price", "They return results instantly in order", "They cost the same as standard calls", "They only work for streaming responses"], answer: 0, explain: "\"Deferrable work runs asynchronously at half the standard price collected within a day.\"" },
+    { q: "A light classification task runs on the heaviest model tier. Which cost lever addresses this?", options: ["Prompt caching", "Message batching", "Right-sizing the model tier", "Streaming output"], answer: 2, explain: "Right-sizing: \"Match the model tier to the task, so you never pay for reasoning a light job doesn't need.\"" },
+    { q: "Which TWO are among the three cost levers named in the lesson? (Choose TWO.)", options: ["Prompt caching", "Streaming responses", "Longer system prompts", "Right-sizing the model", "More sequential calls"], answer: [0, 3], explain: "\"Three levers do most of the work\": prompt caching, message batches, and right-sizing." },
+    { q: "How does the model tier choice relate to the four infrastructure families?", options: ["It only affects region", "Heavier tiers trade latency and cost for quality", "It only affects throughput and capacity", "It has no infrastructure impact"], answer: 1, explain: "\"A heavier tier buys quality at the price of latency and cost.\"" },
+    { q: "What happens when infrastructure requirements are left vague?", options: ["The model compensates automatically", "Rate limits are relaxed", "Costs fall by default", "The architecture is guessing"], answer: 3, explain: "\"When they're vague, the architecture is guessing. When they're concrete, the design almost falls out of them.\"" },
+    { q: "Which is NOT one of the three response delivery shapes?", options: ["Speculative", "Synchronous", "Streaming", "Batch"], answer: 0, explain: "\"There are three shapes\": synchronous, streaming and batch." },
+    { q: "A tight latency budget is known before design starts. How should it be used?", options: ["Discover the limit during production load tests", "Ignore it until the prompt is finalized", "Work backward to the calls and context that fit", "Use it only for choosing the hosting region"], answer: 2, explain: "\"Let the latency budget tell you how many calls and how much context you can afford instead of discovering it in production.\"" },
+    { q: "Which statement about the synchronous delivery mode is accurate?", options: ["It lowers cost for deferrable work", "The caller waits for the whole response", "It starts showing output immediately", "It requires matching results by identifier"], answer: 1, explain: "\"Synchronous is the simplest. One request, one response. And the caller waits for the whole thing. Easy to build, but the user feels every millisecond.\"" },
+    { q: "A large context takes longer to process. In a tight latency budget, what should the architect consider?", options: ["Large context never affects latency", "Context size only affects throughput", "Streaming removes processing time", "It may be ruled out by the budget"], answer: 3, explain: "\"A large context that takes longer to process might be too\" off the table under a tight budget." },
+    { q: "Where does availability, the uptime commitment, belong according to the lesson?", options: ["As its own reliability requirement", "Inside the latency budget", "Inside the cost ceiling", "Inside region and residency"], answer: 0, explain: "\"Availability, the uptime commitment, returns in the next lesson as its own reliability requirement.\"" },
+    { q: "Which TWO statements describe an infrastructure requirement rather than a functional one? (Choose TWO.)", options: ["Summarize this document in three bullets", "Sustain peak requests per minute", "Answer in this JSON format", "Classify the ticket by topic", "Keep data inside the EU"], answer: [1, 4], explain: "Infrastructure requirements state what the architecture provides: compute, latency, throughput, hosting. Summarizing, formatting and classifying are functional behavior." },
+    { q: "A team has a strict cost ceiling and a large volume of bulk work nobody waits on. What does the lesson recommend?", options: ["Stream it to reduce perceived latency", "Run it synchronously at off-peak hours", "Run it in the cheaper batch lane", "Move it to the heaviest model tier"], answer: 2, explain: "\"If nobody is waiting on it, running it in a cheaper batch lane isn't polish. It's how you stay inside the ceiling.\"" },
+    { q: "What does the cost question in the four families ask?", options: ["Where the data may live", "The ceiling the bill must stay inside", "How long a caller will wait", "How many requests per minute at the peak"], answer: 1, explain: "Cost: \"What ceiling does the bill have to stay inside?\"" }
+  ]
 };
