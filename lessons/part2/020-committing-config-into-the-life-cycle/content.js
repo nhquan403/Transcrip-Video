@@ -1,140 +1,75 @@
 window.LESSON_CONTENT = {
   explanation: `
-<p class="key"><strong>Nói ngắn gọn:</strong> Khi cả team dùng chung một ứng dụng Claude, cấu hình của mỗi người dần lệch nhau, app cư xử hơi khác trên từng máy,
-tới mức không ai tái hiện được bug. Cách chữa: đưa cấu hình vào <strong>version control</strong> ngay cạnh code. Cấu hình <strong>chung</strong> thì commit,
-cấu hình <strong>cá nhân</strong> thì giữ local, ghim <strong>model ID chính xác</strong>, version prompt bằng <strong>semantic versioning</strong>,
-và để <strong>CI</strong> kiểm tra trước khi merge.</p>
+<p class="key"><strong>Nói ngắn gọn:</strong> Đưa config vào version control cạnh code để cả team có <strong>một Claude nhất quán, reproducible</strong>.
+<strong>Shared behavior → commit; personal preferences → local</strong>.</p>
 
-<h3>📌 Từ cần biết</h3>
+<h3>🔑 Keyword cần nhớ</h3>
 <ul class="terms">
-  <li><strong>Drift (trôi cấu hình):</strong> mỗi máy chạy một biến thể hơi khác mà không ai biết.</li>
-  <li><strong>CLAUDE.md của dự án:</strong> chỉ dẫn dự án cho Claude, dùng chung cả team.</li>
-  <li><strong>Settings của dự án:</strong> file chứa quyền, hook và model mà mọi người nên dùng.</li>
-  <li><strong>Semantic versioning:</strong> version dạng MAJOR.MINOR.PATCH, mỗi số mang một nghĩa.</li>
-  <li><strong>CI (continuous integration):</strong> các kiểm tra tự động chạy trước khi một thay đổi được merge.</li>
+  <li><strong>Project CLAUDE.md</strong>: chỉ dẫn dự án, commit để mọi người đọc cùng một trang.</li>
+  <li><strong>Project settings file</strong> (<code>.claude/settings.json</code>): permissions, hooks, model choice chung; commit.</li>
+  <li><strong>Local settings / CLAUDE.local.md</strong>: tinh chỉnh cá nhân, <strong>ignored on purpose</strong>, không commit.</li>
+  <li><strong>Pinned model ID</strong>: mỗi ID là <strong>fixed snapshot</strong>, weights không đổi suốt vòng đời.</li>
+  <li><strong>Semantic versioning</strong>: <strong>major.minor.patch</strong> cho prompt và config.</li>
+  <li><strong>Tracked change</strong>: có diff, author, lý do, rollback được.</li>
+  <li><strong>Untracked edit</strong>: sửa trong chat/file cá nhân → <strong>invisible drift</strong>.</li>
+  <li><strong>CI</strong>: kiểm tra tự động chạy <strong>trước khi merge</strong>.</li>
 </ul>
 
-<h3>Đường ranh: commit và không commit</h3>
+<h3>🎯 Trọng tâm thi</h3>
 <ul>
-  <li><strong>Commit:</strong> CLAUDE.md của dự án và file settings của dự án. Ai clone repo cũng có cùng chỉ dẫn và cùng quyền mặc định.</li>
-  <li><strong>Không commit:</strong> file settings local và <code>CLAUDE.local.md</code> cá nhân. Chúng bị ignore có chủ đích, không bao giờ chia sẻ,
-  vì chứa tinh chỉnh riêng; commit chúng là đè lên cấu hình của đồng đội.</li>
-</ul>
-<p>Quy tắc: <strong>hành vi chung thì commit, sở thích cá nhân thì giữ local</strong>. Chia đúng thì không ai giẫm chân ai.</p>
-
-<h3>Vì sao đáng kỷ luật?</h3>
-<div class="box">🎼 <strong>Hình dung thế này:</strong> Một dàn nhạc mà mỗi người tự chỉnh dây đàn theo ý mình thì cả bản nhạc lệch tông, và không ai biết lỗi ở đâu.
-Cùng lên dây theo một âm chuẩn thì ai vào chơi cũng hòa. Cấu hình trong repo là "âm chuẩn" của team.</div>
-<ul>
-  <li>Cả team có <strong>một Claude nhất quán</strong>, không phải nhiều bản hơi khác nhau; không ai chạy một biến thể bí mật.</li>
-  <li>Người mới clone dự án là <strong>làm được việc ngay</strong>, vì hành vi đi kèm code thay vì nằm trong đầu ai đó.</li>
-  <li>Hành vi <strong>tái lập được</strong>: không phụ thuộc may rủi từng máy hay ai đó tình cờ cấu hình gì.</li>
+  <li>Commit: <strong>CLAUDE.md, project settings, prompts, schemas</strong> (+ pinned model ID). Không commit: local settings, CLAUDE.local.md.</li>
+  <li>Model mới ra dưới <strong>ID mới</strong>, không lặng lẽ thay ID cũ → commit <strong>exact identifier</strong>, không dùng "latest" pointer.</li>
+  <li>SemVer: <strong>major</strong> = breaking change; <strong>minor</strong> = thêm chức năng, backward compatible; <strong>patch</strong> = sửa nhỏ, không đổi hành vi.</li>
+  <li>Lifecycle: <strong>develop on branch → review diff → test and gate → deploy merged result</strong>; prompt đi cùng pipeline với code.</li>
+  <li>3 bước CI: <strong>validate config</strong> (parse settings, CLAUDE.md), <strong>check schemas</strong> (tool/output schema theo spec), <strong>gate prompts</strong> (diff, lint, flag cho người review).</li>
+  <li>Lợi ích: teammate mới clone là làm được ngay; app chạy giống nhau trên mọi máy.</li>
 </ul>
 
-<h3>Ba thứ lần nào cũng đưa vào repo</h3>
-<ol>
-  <li><strong>CLAUDE.md:</strong> chỉ dẫn dự án định hình cách Claude làm việc trong codebase, để mọi người đọc cùng một trang.</li>
-  <li><strong>File settings của dự án:</strong> quyền, hook và lựa chọn model mà ai cũng nên chạy.</li>
-  <li><strong>Prompt và schema:</strong> system prompt và schema tool mà app phụ thuộc, version ngay cạnh code dùng chúng.</li>
-</ol>
-<p>Nếu một thứ chỉ nằm trên laptop của bạn, đồng đội đang chạy <strong>một ứng dụng khác</strong> với bạn, và bạn chỉ biết khi có gì đó hỏng.</p>
-
-<h3>Model ID: ghim chính xác</h3>
-<p>Mỗi model ID là một <strong>snapshot cố định</strong>, không phải mục tiêu di động tự nâng cấp dưới chân bạn; trọng số đằng sau ID đó giữ nguyên suốt vòng đời của nó.
-Ghim ID đó trong cấu hình đã commit là đảm bảo mọi lần chạy, mọi đồng đội gặp cùng một model với cùng hành vi.
-Model mới ra với <strong>ID mới</strong>, không bao giờ bằng cách âm thầm đổi thứ ID cũ trỏ tới. Vì vậy commit đúng ID, không phải một con trỏ "latest" mơ hồ.</p>
-
-<h3>Semantic versioning cho prompt và cấu hình</h3>
+<h3>⚠️ Bẫy hay gặp</h3>
 <ul>
-  <li><strong>MAJOR</strong> (số đầu): thay đổi <strong>phá vỡ</strong> người đang dùng, không tương thích ngược.</li>
-  <li><strong>MINOR</strong> (số giữa): <strong>thêm chức năng</strong> mà người đang dùng vẫn chạy được.</li>
-  <li><strong>PATCH</strong> (số cuối): sửa nhỏ, tương thích ngược, không nhằm đổi hành vi.</li>
-</ul>
-<p>⚠️ Cái bẫy: tăng PATCH cho một thay đổi phá vỡ, vì nó âm thầm nói với mọi người "nâng cấp an toàn" trong khi không phải.</p>
-
-<h3>Đi cùng vòng đời phát hành như mọi phần mềm</h3>
-<ol>
-  <li><strong>Develop</strong> thay đổi trên một branch, gồm cả cấu hình và prompt, không chỉ code.</li>
-  <li><strong>Review diff</strong>: nơi bắt được thay đổi hành vi trước khi tới người dùng.</li>
-  <li><strong>Test và gate</strong> thay đổi.</li>
-  <li><strong>Deploy</strong> kết quả đã merge.</li>
-</ol>
-<p>Phần làm việc với model không nằm ở một quy trình riêng; một thay đổi prompt đi từ ý tưởng tới production qua đúng các bước kiểm tra như thay đổi code.</p>
-
-<h3>Thay đổi được theo dõi và không được theo dõi</h3>
-<ul>
-  <li><strong>Được theo dõi:</strong> sửa prompt hay cấu hình nằm trong một commit: có diff, tác giả, lý do, và cách quay lại sạch sẽ nếu nó cư xử tệ.</li>
-  <li><strong>Không được theo dõi:</strong> cùng thay đổi đó nằm trong cửa sổ chat hay file cá nhân chưa commit. Không ai thấy, không ai review, không ai tái hiện được.</li>
-</ul>
-<p>Đó chính là cách drift lẻn vào dự án: <strong>từng tinh chỉnh vô hình một</strong>.</p>
-
-<h3>CI: lưới an toàn cho cấu hình</h3>
-<ul>
-  <li><strong>Kiểm tra cấu hình:</strong> parse settings và CLAUDE.md, để file hỏng bị bắt ngay chứ không phải trên production.</li>
-  <li><strong>Kiểm tra schema:</strong> đối chiếu schema tool và output với đặc tả, để schema sai làm build trượt sớm.</li>
-  <li><strong>Gate prompt:</strong> diff và thậm chí lint thay đổi prompt, gắn cờ sửa đổi rủi ro cho người xem trước khi merge.</li>
-</ul>
-
-<h3>✅ Nhớ 3 điều</h3>
-<ul>
-  <li>CLAUDE.md, settings, prompt, schema và model ID đã ghim đều vào Git; file cá nhân thì không.</li>
-  <li>Semantic versioning: phá vỡ là MAJOR, thêm tính năng là MINOR, sửa nhỏ là PATCH.</li>
-  <li>Một sửa đổi không được theo dõi là drift vô hình; CI kiểm tra cấu hình, schema và prompt trước khi merge.</li>
-</ul>
-
-<h3>🇬🇧 Cụm từ tiếng Anh đáng nhớ trong bài</h3>
-<ul>
-  <li><em class="en">Everyone's setup drifts</em>: cấu hình của mỗi người dần lệch đi.</li>
-  <li><em class="en">until nobody can reproduce a bug</em>: tới mức không ai tái hiện được bug.</li>
-  <li><em class="en">get ignored on purpose</em>: bị ignore có chủ đích.</li>
-  <li><em class="en">nobody steps on anybody</em>: không ai giẫm chân ai.</li>
-  <li><em class="en">Committing config isn't bureaucracy</em>: commit cấu hình không phải thủ tục rườm rà.</li>
-  <li><em class="en">running a secret variation</em>: chạy một biến thể bí mật.</li>
-  <li><em class="en">living in someone's head</em>: chỉ nằm trong đầu ai đó.</li>
-  <li><em class="en">machine-by-machine luck</em>: may rủi theo từng máy.</li>
-  <li><em class="en">reads from the same page</em>: đọc cùng một trang, hiểu như nhau.</li>
-  <li><em class="en">a moving target that quietly upgrades under you</em>: mục tiêu di động âm thầm nâng cấp dưới chân bạn.</li>
-  <li><em class="en">the difference is night and day</em>: khác nhau một trời một vực.</li>
-  <li><em class="en">one invisible tweak at a time</em>: từng tinh chỉnh vô hình một.</li>
+  <li>"Commit local settings cho đủ bộ" → <strong>sai</strong>, sẽ override setup của đồng đội.</li>
+  <li>"Bump patch cho breaking change" → <strong>sai</strong>, báo nhầm là upgrade an toàn.</li>
+  <li>"Model ID tự nâng cấp lên bản mới" → <strong>sai</strong>, ID là snapshot cố định.</li>
+  <li>"Commit config là bureaucracy" → <strong>sai</strong>, nó tạo một Claude nhất quán cho cả team.</li>
+  <li>"Prompt có quy trình riêng ngoài pipeline" → <strong>sai</strong>, cùng checks như code.</li>
 </ul>
 
 <h3>💻 Bài tập Java</h3>
-<p>Mở <code>java-app/src/main/java/part2/lesson20/Lesson20.java</code>. Có 4 bài: quyết định file nào commit, file nào giữ local, file nào là bí mật;
-chọn mức tăng semantic version; tăng version đúng cách; và viết một bước CI kiểm tra cấu hình (JSON hỏng, CLAUDE.md rỗng, model chưa ghim, prompt còn TODO).
-Chấm bằng <code>./mvnw -q compile exec:java -Dexec.args="p2-20"</code>. Bài này chỉ có bộ chấm offline.</p>
+<p><code>part2/lesson20/Lesson20.java</code>: phân loại file commit/local/bí mật, chọn và tăng semantic version, viết bước CI kiểm tra config (JSON hỏng, CLAUDE.md rỗng, model chưa ghim, prompt còn TODO).
+Chấm: <code>./mvnw -q compile exec:java -Dexec.args="p2-20"</code> (chỉ chấm offline).</p>
 `,
 
-  // answer = index of the correct option in `options` (options are shuffled on screen).
+  // answer = index of the correct option (options are shuffled on screen); an array means "Choose TWO".
   quiz: [
-    { q: 'Vấn đề mở đầu bài học là gì?', options: ['Model trả lời chậm trên một số máy', 'Cấu hình lệch dần giữa các máy', 'Git không lưu được file cấu hình', 'API key bị lộ trong repo'], answer: 1, explain: '"Everyone\'s setup drifts and the app behaves a little differently on each machine, until nobody can reproduce a bug."' },
-    { q: 'File nào được commit vào Git?', options: ['settings.local.json', 'CLAUDE.local.md', 'CLAUDE.md của dự án', 'File .env có API key'], answer: 2, explain: '"On the committed side, your project CLAUDE.md and your project settings file belong in Git."' },
-    { q: 'Vì sao không commit settings.local.json?', options: ['Vì sẽ đè cấu hình của đồng đội', 'Vì Git không đọc được JSON', 'Vì file quá lớn để lưu', 'Vì Claude không dùng file đó khi chạy'], answer: 0, explain: '"Those hold individual tweaks, and if you committed them, you\'d override a teammate\'s own setup."' },
-    { q: 'Quy tắc ngắn gọn về commit cấu hình là gì?', options: ['Commit mọi thứ cho chắc', 'Không commit bất kỳ file cấu hình nào, kể cả CLAUDE.md', 'Chỉ commit khi có bug xảy ra', 'Hành vi chung thì commit, sở thích cá nhân giữ ở máy mình'], answer: 3, explain: '"The rule is simple, shared behavior gets committed. Personal preferences stay local."' },
-    { q: 'Lợi ích của việc commit cấu hình KHÔNG phải là gì?', options: ['Một Claude nhất quán cho cả team', 'Model trả lời nhanh hơn', 'Người mới làm được việc ngay', 'Hành vi tái lập được trên mọi máy'], answer: 1, explain: 'Bài học nêu: một Claude nhất quán, người mới "productive right away", và hành vi "reproducible". Không nói gì về tốc độ model.' },
-    { q: 'Vì sao người mới clone dự án làm được việc ngay?', options: ['Vì họ được cấp API key riêng', 'Vì Claude tự học dự án', 'Vì hành vi đi kèm code', 'Vì họ đọc tài liệu kỹ'], answer: 2, explain: '"A brand new teammate clones the project and is productive right away, because the behavior comes with the code instead of living in someone\'s head."' },
-    { q: 'Ba thứ lần nào cũng đưa vào repo là gì?', options: ['CLAUDE.md, settings, prompt và schema', 'API key, log, cache', 'File build, ảnh chụp màn hình, ghi chú', 'node_modules, target, .env'], answer: 0, explain: '"CLAUDE.md, settings, prompts, and schemas."' },
-    { q: 'File settings của dự án chứa những gì?', options: ['API key và mật khẩu', 'Lịch sử hội thoại', 'Câu trả lời mẫu của model', 'Quyền, hook, model'], answer: 3, explain: '"Second, your project settings file, which holds the permissions, the hooks, and the model choice that everyone should run with."' },
-    { q: 'Một system prompt chỉ nằm trên laptop của bạn. Hậu quả?', options: ['Không sao nếu bạn nhớ cập nhật', 'Đồng đội chạy một app khác bạn', 'Prompt chạy nhanh hơn', 'Git tự đồng bộ'], answer: 1, explain: '"If any one of those lives only on your laptop, a teammate is running a different application than you are, and you won\'t find out until something breaks."' },
-    { q: 'Câu nào ĐÚNG về một model ID?', options: ['Nó tự nâng cấp khi có model mới', 'Nó luôn trỏ tới bản mới nhất cùng dòng model', 'Snapshot cố định, trọng số không đổi', 'Nó thay đổi theo vùng'], answer: 2, explain: '"Each model ID is a fixed snapshot. It\'s not a moving target that quietly upgrades under you. The weights behind that exact ID stay the same."' },
-    { q: 'Khi có model mới, Anthropic làm gì?', options: ['Ra với ID mới', 'Thay trọng số sau ID cũ', 'Xóa ID cũ ngay', 'Đổi tên ID cũ'], answer: 0, explain: '"When a newer model comes along, it ships under a brand new ID, never by silently swapping what your old ID points to."' },
-    { q: 'Nên commit model ID dạng nào?', options: ['Một con trỏ "latest" cho luôn mới', 'Không commit, để mỗi người tự chọn', 'Tên model không có số version', 'ID chính xác'], answer: 3, explain: '"That\'s why you commit the exact identifier rather than some vague latest pointer."' },
-    { q: 'Trong semantic versioning, số MAJOR tăng khi nào?', options: ['Khi sửa một lỗi chính tả nhỏ trong system prompt', 'Khi thay đổi phá vỡ người đang dùng', 'Khi thêm một ví dụ mới', 'Mỗi tuần một lần'], answer: 1, explain: '"You bump it for a breaking change, one that isn\'t backward compatible with what people were relying on before."' },
-    { q: 'Thêm một trường tùy chọn vào schema output, code cũ vẫn chạy. Tăng số nào?', options: ['MAJOR', 'PATCH', 'MINOR', 'Không tăng'], answer: 2, explain: '"The middle number is the minor version. You bump it when you add new functionality that still works for existing callers."' },
-    { q: 'Sửa một lỗi chính tả trong prompt, không đổi hành vi. Tăng số nào?', options: ['PATCH', 'MAJOR', 'MINOR', 'Cả ba'], answer: 0, explain: '"The last number is the patch. You bump that for a small, backward compatible fix that isn\'t supposed to change behavior at all."' },
-    { q: 'Version 2.4.7, có thay đổi phá vỡ. Version mới là gì?', options: ['2.4.8', '2.5.0', '3.4.7', '3.0.0'], answer: 3, explain: 'Tăng MAJOR thì đặt lại hai số sau về 0: 2.4.7 thành 3.0.0.' },
-    { q: 'Vì sao tăng PATCH cho thay đổi phá vỡ là cái bẫy?', options: ['Vì Git sẽ từ chối commit có số version sai', 'Vì nó báo sai rằng nâng cấp an toàn', 'Vì CI không chạy', 'Vì số PATCH có giới hạn'], answer: 1, explain: '"The trap to avoid is bumping patch for a breaking change, because that quietly tells everyone it\'s safe to upgrade when it isn\'t."' },
-    { q: 'Thay đổi prompt đi qua những bước nào?', options: ['Sửa trực tiếp trên production', 'Một quy trình riêng cho model, tách khỏi code', 'Develop trên branch, review diff, test và gate, rồi deploy', 'Chỉ cần một người duyệt miệng'], answer: 2, explain: '"You develop a change on a branch... You review the diff... Then you test and gate the change, and once it passes, you deploy the merged result."' },
-    { q: 'Bước nào là nơi bắt được thay đổi hành vi trước khi tới người dùng?', options: ['Review diff', 'Deploy', 'Viết message commit', 'Tạo tag'], answer: 0, explain: '"You review the diff, which is where behavior shifts get caught before they reach a user."' },
-    { q: 'Một "thay đổi được theo dõi" có những gì?', options: ['Chỉ nội dung mới', 'Một tin nhắn mô tả thay đổi gửi trong chat của team', 'Một file trên Desktop', 'Diff, tác giả, lý do trong message, và cách quay lại sạch sẽ'], answer: 3, explain: '"There\'s a diff showing what changed, an author, a reason in the message, and a clean way to roll it back if it misbehaves."' },
-    { q: 'Bạn sửa system prompt ngay trong cửa sổ chat của công cụ, không commit. Vấn đề là gì?', options: ['Không có vấn đề', 'Không ai thấy, review hay tái hiện được', 'Prompt bị công cụ tự xóa sau 24 giờ', 'Model từ chối prompt đó'], answer: 1, explain: '"Nobody else can see it, nobody can review it, and nobody can reproduce it later. That\'s exactly how drift creeps into a project."' },
-    { q: 'Drift lẻn vào dự án như thế nào?', options: ['Do một commit lớn', 'Do model tự cập nhật hằng tuần mà không báo', 'Qua từng tinh chỉnh vô hình, không ai thấy, không ai review', 'Do CI chạy sai'], answer: 2, explain: '"That\'s exactly how drift creeps into a project, one invisible tweak at a time."' },
-    { q: 'CI là gì?', options: ['Kiểm tra tự động', 'Một loại model', 'Một file cấu hình cá nhân', 'Một công cụ chat'], answer: 0, explain: '"Continuous integration, or CI. These are automated checks that run before a change merges."' },
-    { q: 'Ba kiểm tra CI quan trọng cho cấu hình là gì?', options: ['Đếm dòng, đếm file, đếm commit', 'Đo tốc độ, đo RAM, đo CPU', 'Kiểm tra chính tả mọi file', 'Cấu hình, schema, prompt'], answer: 3, explain: '"Validate config, check schemas, gate prompts. That\'s your safety net running on every single change."' },
-    { q: 'Một file settings bị lỗi cú pháp JSON. Muốn bắt được ở đâu?', options: ['Trên production', 'Ở bước CI', 'Khi người dùng phàn nàn', 'Không cần bắt'], answer: 1, explain: '"A CI step parses your settings and your CLAUDE.md, so a broken file gets caught right there instead of in production."' },
-    { q: 'CI "gate" prompt bằng cách nào?', options: ['Chặn mọi thay đổi prompt', 'Tự viết lại prompt', 'Gắn cờ sửa đổi rủi ro', 'Chạy prompt trên mọi model'], answer: 2, explain: '"Automated checks can diff and even lint prompt changes, flagging risky edits for a human before the merge goes through."' },
-    { q: 'CLAUDE.local.md của bạn nên được xử lý thế nào?', options: ['Giữ local, ignore', 'Commit để cả team dùng', 'Gửi qua chat cho đồng đội', 'Đặt trong prompts/'], answer: 0, explain: '"Your local settings file and a personal CLAUDE.local.md, stay out of the repo, get ignored on purpose, never team shared."' },
-    { q: 'Câu nào là tổng kết đúng của bài?', options: ['Chỉ commit code, cấu hình để mỗi người tự lo', 'Commit cả file cá nhân cho đủ', 'Model ID nên là "latest"', 'Cấu hình chung vào Git, cá nhân thì không'], answer: 3, explain: '"Committing config gives your team one reproducible Claude. Project CLAUDE.md, settings, prompts, and pinned model IDs all go into Git. Personal files stay out."' },
-    { q: 'Điều cần nhớ cuối bài là gì?', options: ['CI chậm nên bỏ qua', 'Sửa không theo dõi là drift', 'PATCH dùng cho mọi thay đổi', 'Model ID không quan trọng'], answer: 1, explain: '"One thing to watch, an untracked edit is invisible drift."' },
-    { q: 'Vì sao ghim model ID giúp hành vi tái lập được?', options: ['Vì model rẻ hơn', 'Vì CI chạy nhanh hơn', 'Biết đúng model nào trả lời', 'Vì không cần prompt'], answer: 2, explain: '"Reproducible behavior starts with knowing precisely which model answered, and version control is where you record it."' },
-  ],
+    { q: "A team shares a Claude application, and a bug appears on one laptop but nobody else can reproduce it. What is the MOST likely root cause?", options: ["The model ID changed its weights overnight", "Config has drifted across machines", "The API rate limit differs per developer", "Git corrupted the prompt file"], answer: 1, explain: "\"Everyone's setup drifts and the app behaves a little differently on each machine, until nobody can reproduce a bug. The fix is to put your config under version control.\"" },
+    { q: "Which TWO files should be committed to the repository so every teammate gets the same behavior? (Choose TWO.)", options: ["The project CLAUDE.md", "A personal CLAUDE.local.md", "The project settings file", "The local settings file", "A note pasted into a chat window"], answer: [0, 2], explain: "\"Your project CLAUDE.md and your project settings file belong in Git.\" Local settings and CLAUDE.local.md \"stay out of the repo.\"" },
+    { q: "A developer commits their personal local settings file to the shared repository. What is the MOST likely consequence?", options: ["CI rejects every later merge", "The model ID becomes unpinned", "Nothing, local files are ignored by Claude", "It overrides a teammate's own setup"], answer: 3, explain: "Local files \"hold individual tweaks, and if you committed them, you'd override a teammate's own setup.\"" },
+    { q: "Which rule BEST summarizes what to commit and what to keep local?", options: ["Commit shared behavior; keep personal preferences local", "Commit everything in the project folder, including local files", "Commit only code and keep every config file local", "Keep config local until the release has been tagged"], answer: 0, explain: "\"The rule is simple, shared behavior gets committed. Personal preferences stay local.\"" },
+    { q: "Where do the permissions, hooks, and model choice that everyone should run with belong?", options: ["In each developer's CLAUDE.local.md", "In the system prompt of each request", "In the committed project settings file", "In a wiki page linked from the README"], answer: 2, explain: "The project settings file \"holds the permissions, the hooks, and the model choice that everyone should run with.\"" },
+    { q: "A new teammate clones the project. Why can they be productive right away when config is committed?", options: ["Claude learns the team's habits over time", "The behavior comes with the code", "CI sets up their machine automatically", "Their local settings are copied from the lead"], answer: 1, explain: "\"A brand new teammate clones the project and is productive right away, because the behavior comes with the code instead of living in someone's head.\"" },
+    { q: "A team lead is writing the case for committing Claude config to Git. Which TWO reasons are supported by the lesson? (Choose TWO.)", options: ["It is required by the API terms of service", "Everyone pulls the same instructions and permissions", "It lets the pinned model upgrade automatically", "Behavior is reproducible, not machine-by-machine luck", "It removes the need for any code review"], answer: [1, 3], explain: "\"Everyone pulls the same instructions and the same permissions, so nobody's running a secret variation\", and \"the app's behavior is reproducible. It's not a matter of machine-by-machine luck.\"" },
+    { q: "Which of the following is NOT one of the things the lesson says you check in every time?", options: ["CLAUDE.md", "The project settings file", "Prompts and tool or output schemas", "Your personal editor theme"], answer: 3, explain: "The three items are \"CLAUDE.md, settings, prompts, and schemas.\" Personal preferences stay local." },
+    { q: "A developer's system prompt and tool schemas live only on their laptop. What does the lesson warn will happen?", options: ["Teammates unknowingly run a different app", "The model refuses to use the tool schemas", "CI automatically copies them to the repo", "The prompt cache stops working for the whole team"], answer: 0, explain: "\"If any one of those lives only on your laptop, a teammate is running a different application than you are, and you won't find out until something breaks.\"" },
+    { q: "A team wants every run and every teammate to hit the same model with the same behavior. What is the BEST approach?", options: ["Use a \"latest\" pointer in config", "Let each developer choose a model locally", "Pin the exact model ID in committed config", "Set the model ID in an environment note"], answer: 2, explain: "\"When you pin that ID in your committed config, you're guaranteeing every run and every teammate hits the same model with the same behavior.\"" },
+    { q: "Which statement about a model ID is accurate?", options: ["It quietly upgrades to newer weights over time", "Its weights stay fixed for its lifetime", "Its weights change at each minor release", "It always points to the newest available model"], answer: 1, explain: "\"Each model ID is a fixed snapshot. It's not a moving target that quietly upgrades under you. The weights behind that exact ID stay the same over its lifetime.\"" },
+    { q: "How does a newer model become available to an application that pins a model ID?", options: ["The old ID silently starts pointing to it", "The provider swaps it during a patch release", "It replaces the old ID after a grace period", "It ships under a brand new ID"], answer: 3, explain: "\"When a newer model comes along, it ships under a brand new ID, never by silently swapping what your old ID points to.\"" },
+    { q: "A team changes a prompt so that existing callers that relied on the old output format will break. Which version number should they bump?", options: ["Major", "Patch", "Minor", "None, prompts are not versioned"], answer: 0, explain: "Major is bumped \"for a breaking change, one that isn't backward compatible with what people were relying on before.\"" },
+    { q: "A team adds a new optional field to an output schema that existing callers can ignore. Which version bump is MOST appropriate?", options: ["Major", "Patch", "Minor", "A new model ID"], answer: 2, explain: "The minor version is bumped \"when you add new functionality that still works for existing callers.\"" },
+    { q: "A developer fixes a typo in a prompt with no intended behavior change. Which version bump fits?", options: ["Major", "Patch", "Minor", "Both major and minor"], answer: 1, explain: "The patch is bumped \"for a small, backward compatible fix that isn't supposed to change behavior at all.\"" },
+    { q: "Why is bumping only the patch number for a breaking change a trap?", options: ["It forces CI to rebuild every schema", "It resets the major version to zero", "It changes the pinned model ID", "It falsely signals a safe upgrade"], answer: 3, explain: "\"The trap to avoid is bumping patch for a breaking change, because that quietly tells everyone it's safe to upgrade when it isn't.\"" },
+    { q: "Which ordering matches how a Claude change rides the delivery lifecycle?", options: ["Develop, review, test and gate, deploy", "Deploy, review, develop, test and gate", "Review, deploy, develop, test and gate", "Test and gate, develop, deploy, review"], answer: 0, explain: "\"You develop a change on a branch... You review the diff... Then you test and gate the change, and once it passes, you deploy the merged result.\"" },
+    { q: "A team runs prompt changes through a separate informal process outside the normal pipeline. What does the lesson recommend instead?", options: ["Keep the separate process but log changes", "Deploy prompts first, then review them later", "Let prompts ride the same pipeline as code", "Review prompts only once per quarter"], answer: 2, explain: "\"The model-facing work isn't off in its own special process. It rides the same pipeline as everything else.\"" },
+    { q: "Which TWO properties does a tracked prompt or config change have? (Choose TWO.)", options: ["It is visible only to its author", "It skips the review step", "A diff showing what changed", "It is stored in a chat window", "A clean way to roll it back"], answer: [2, 4], explain: "A tracked change has \"a diff showing what changed, an author, a reason in the message, and a clean way to roll it back if it misbehaves.\"" },
+    { q: "A developer tweaks the prompt in a chat window and never commits it. What is the MAIN problem?", options: ["The model rejects edited prompts", "Nobody can see, review, or reproduce it", "It doubles the token cost", "It invalidates every pinned model ID"], answer: 1, explain: "\"Nobody else can see it, nobody can review it, and nobody can reproduce it later. That's exactly how drift creeps into a project.\"" },
+    { q: "Which statement BEST describes how drift creeps into a project?", options: ["Through model weight updates behind one ID", "Through too many small commits", "Through rebasing shared branches", "One invisible, untracked tweak at a time"], answer: 3, explain: "Drift creeps in \"one invisible tweak at a time\"; \"an untracked edit is invisible drift.\"" },
+    { q: "Which statement about continuous integration in this lesson is accurate?", options: ["It runs automated checks before a change merges", "It runs after deployment to monitor users", "It replaces human code review entirely", "It only checks application code, not config"], answer: 0, explain: "CI means \"automated checks that run before a change merges.\"" },
+    { q: "A broken settings file reached production and crashed the app. Which CI check would have caught it FIRST?", options: ["Gate prompts with a diff and lint step before merge", "Bump the major version of the settings file", "Validate config by parsing settings and CLAUDE.md", "Pin the model ID"], answer: 2, explain: "\"A CI step parses your settings and your CLAUDE.md, so a broken file gets caught right there instead of in production.\"" },
+    { q: "A malformed tool schema keeps slipping through to runtime. What is the MOST appropriate fix?", options: ["Ask reviewers to read schemas more slowly", "Validate schemas against their spec in CI", "Move the schema into the system prompt", "Keep the schema in the local settings file"], answer: 1, explain: "\"The pipeline validates your tool and output schemas against their spec, so a malformed schema fails the build early.\"" },
+    { q: "Which TWO checks are among the three CI checks that matter for config? (Choose TWO.)", options: ["Gate prompts with diff and lint", "Benchmark model latency", "Auto-upgrade the model ID", "Check schemas against their spec", "Measure token cost per user"], answer: [0, 3], explain: "\"Validate config, check schemas, gate prompts. That's your safety net running on every single change.\"" },
+    { q: "What does the prompt gate in CI do with risky prompt edits?", options: ["Rewrites them automatically to a safer form", "Deletes them from the branch", "Deploys them to a small test group of users", "Flags them for human review before merge"], answer: 3, explain: "\"Automated checks can diff and even lint prompt changes, flagging risky edits for a human before the merge goes through.\"" },
+    { q: "Which TWO items does the lesson's bottom line say go into Git? (Choose TWO.)", options: ["Personal preference files", "Pinned model IDs", "Chat transcripts", "Untracked local tweaks", "The project CLAUDE.md"], answer: [1, 4], explain: "\"Project CLAUDE.md, settings, prompts, and pinned model IDs all go into Git. Personal files stay out.\"" },
+    { q: "Why does the lesson say a personal CLAUDE.local.md should be ignored on purpose?", options: ["It holds individual tweaks, not team behavior", "Claude cannot read files ending in .local.md", "It is always larger than the project file", "It contains the model weights"], answer: 0, explain: "Local files are \"ignored on purpose, never team shared. Those hold individual tweaks.\"" },
+    { q: "Why does committing the exact model ID support reproducible behavior?", options: ["It lowers the model's temperature", "It enables prompt caching", "You know precisely which model answered", "It allows automatic upgrades"], answer: 2, explain: "\"Reproducible behavior starts with knowing precisely which model answered, and version control is where you record it.\"" },
+    { q: "What is the ultimate goal of putting shared config under version control?", options: ["Fewer files in the repository", "The app acts the same on every desk", "Faster model responses for every user", "Removing the need for any CI pipeline"], answer: 1, explain: "\"Shared config means the application acts the same on every desk, which is the entire point of putting it under control.\"" }
+  ]
 };

@@ -1,129 +1,73 @@
 window.LESSON_CONTENT = {
   explanation: `
-<p class="key"><strong>Nói ngắn gọn:</strong> Tích hợp Claude lớn dần thì cùng một tên model, cùng một đoạn prompt, cùng một logic retry bị chép khắp hàng chục file;
-đổi một thứ là phải sửa tất cả. <strong>Refactor</strong> là sắp xếp lại code đang chạy cho dễ đọc, dễ đổi, <strong>mà không đổi hành vi</strong>:
-gom lời gọi API sau <strong>một client</strong>, rút prompt dùng chung thành <strong>fragment</strong>, và giảm <strong>coupling</strong> để mỗi thay đổi chỉ chạm một chỗ.</p>
+<p class="key"><strong>Nói ngắn gọn:</strong> Refactoring = sắp xếp lại code đang chạy cho dễ đọc, dễ bảo trì <strong>mà không đổi hành vi</strong>.
+Với ứng dụng Claude: <strong>isolate API call sau một client</strong>, <strong>extract shared prompts/config</strong>, <strong>reduce coupling</strong>.</p>
 
-<h3>📌 Từ cần biết</h3>
+<h3>🔑 Keyword cần nhớ</h3>
 <ul class="terms">
-  <li><strong>Refactor:</strong> tái cấu trúc code đang chạy cho dễ đọc, dễ bảo trì, giữ nguyên output.</li>
-  <li><strong>Seam (đường nối):</strong> một ranh giới sạch, như một interface, mà phần còn lại của app phụ thuộc vào.</li>
-  <li><strong>Fragment:</strong> một đoạn chỉ dẫn được đặt tên, dùng chung ở nhiều chỗ gọi.</li>
-  <li><strong>Coupling:</strong> mức độ một thay đổi ở chỗ này buộc phải sửa ở chỗ khác.</li>
+  <li><strong>Behavior preserving</strong>: output trước và sau như nhau; người dùng không nhận ra gì.</li>
+  <li><strong>Tests as safety net</strong>: xác nhận hành vi không đổi để refactor tự tin.</li>
+  <li><strong>Keep it separate</strong>: refactor và feature change <strong>không chung commit</strong>.</li>
+  <li><strong>Single client module</strong>: model name, headers, retry policy, error handling ở một chỗ.</li>
+  <li><strong>Seam / clean interface</strong>: app phụ thuộc interface của bạn, không phụ thuộc raw API.</li>
+  <li><strong>Shared named fragment</strong>: đoạn chỉ dẫn lặp lại rút thành một đơn vị dùng chung, test riêng được.</li>
+  <li><strong>Coupling</strong>: mức một thay đổi ở chỗ này ép thay đổi ở chỗ khác.</li>
 </ul>
 
-<h3>Refactor có kỷ luật: ba ý neo</h3>
+<h3>🎯 Trọng tâm thi</h3>
 <ul>
-  <li><strong>Giữ nguyên hành vi:</strong> output trước và sau như nhau; bạn chỉ đổi cách tổ chức. Người dùng không được nhận ra gì.</li>
-  <li><strong>Test là lưới an toàn:</strong> test xác nhận hành vi không đổi, để bạn tái cấu trúc tự tin.</li>
-  <li><strong>Để riêng:</strong> refactor và thay đổi tính năng <strong>không chung một commit</strong>, vì trộn lẫn làm review và rollback khổ sở.</li>
+  <li>Refactor giá trị nhất: <strong>isolate the API call behind one clean interface</strong> → đổi model/header/retry là <strong>one module edit</strong>.</li>
+  <li>4 target: <strong>duplicated prompts</strong> → shared fragment; <strong>inline config</strong> → config module; <strong>repeated call logic</strong> → single client; <strong>tangled concerns</strong> (build prompt + call + parse trong một hàm) → tách ra.</li>
+  <li>Tight coupling là lý do pin model biến thành <strong>20-file edit</strong>; low coupling → <strong>make change local</strong>.</li>
+  <li>Small refactor (rename, extract helper, xoá block trùng): rủi ro thấp, làm liên tục. Large refactor (module boundaries, client layer): dựa vào tests, <strong>small reviewable steps</strong>, không giant rewrite.</li>
+  <li>Claude làm refactoring partner: spot duplication, đề xuất client interface, draft phần cơ học; <strong>tests + human sign-off</strong> vẫn bắt buộc.</li>
 </ul>
 
-<h3>Refactor đáng giá nhất: cô lập lời gọi API sau một client</h3>
-<div class="box">🔌 <strong>Hình dung thế này:</strong> Cả tòa nhà đi dây điện thẳng từ cột điện vào từng phòng; muốn đổi nguồn là phải đi lại dây từng phòng.
-Gắn một <strong>tủ điện</strong> ở giữa: mọi phòng chỉ nối vào tủ, đổi nguồn chỉ làm ở tủ. Client dùng chung chính là cái tủ điện đó.</div>
-<p>Thay vì rải lời gọi SDK thô khắp codebase, bọc chúng trong <strong>một module client</strong> mà phần còn lại của app gọi tới.
-Tên model, header, chính sách retry, xử lý lỗi đều nằm ở <strong>một chỗ</strong>. Mọi thứ khác phụ thuộc vào interface của bạn, không phụ thuộc API thô.
-Lợi ích hiện ra ngay khi cần đổi: chuyển model mới, chỉnh một header, hay sửa retry thành <strong>sửa một module</strong> thay vì lùng khắp dự án.</p>
-
-<h3>Rải rác và gom lại</h3>
+<h3>⚠️ Bẫy hay gặp</h3>
 <ul>
-  <li><strong>Rải rác:</strong> tên model, header, retry bị copy-paste qua nhiều file. Ghim model mới là sửa từng file, và <strong>bạn sẽ sót một cái</strong>: một bug đang chờ xảy ra.</li>
-  <li><strong>Gom lại:</strong> mọi lời gọi đi qua một client dùng chung. Ghim model, đổi header, chỉnh retry xảy ra <strong>đúng một lần</strong>, mọi chỗ gọi tự nhận.</li>
-</ul>
-<p>Hành vi như nhau, nhưng một bên làm thay đổi <strong>rẻ</strong>, bên kia làm thay đổi <strong>nguy hiểm</strong>.</p>
-
-<h3>Prompt cũng bị trùng lặp, và cách sửa cũng vậy</h3>
-<p>Cùng một khối chỉ dẫn xuất hiện ở nhiều chỗ gọi là trùng lặp <strong>đang chờ trôi</strong>: một bản được sửa, các bản khác không, và hành vi thành không nhất quán tùy đường nào chạy.
-Cách sửa: rút đoạn chỉ dẫn lặp lại thành <strong>một fragment dùng chung có tên</strong>, lưu system prompt dùng lại như những đơn vị test được riêng.
-Mỗi chỗ gọi tham chiếu fragment thay vì giữ bản sao riêng. Sửa câu chữ một lần, mọi chỗ gọi nhận bản đúng cùng lúc.
-Coi text prompt là <strong>tài sản dùng lại</strong>, không phải chuỗi literal rải rác.</p>
-
-<h3>Bốn mục tiêu refactor hay gặp</h3>
-<ol>
-  <li><strong>Prompt trùng lặp:</strong> rút thành một fragment dùng chung.</li>
-  <li><strong>Cấu hình viết cứng:</strong> tên model, thiết lập ở từng chỗ gọi, chuyển về một module cấu hình.</li>
-  <li><strong>Logic gọi lặp lại:</strong> cùng request, retry, parse chép khắp nơi, bọc sau một client.</li>
-  <li><strong>Mối quan tâm rối vào nhau:</strong> dựng prompt, gọi API, parse cùng nằm trong một hàm, tách ra.</li>
-</ol>
-
-<h3>Mọi thứ quy về một nguyên tắc: giảm coupling</h3>
-<p>Coupling chặt là lý do một lần ghim model biến thành <strong>sửa 20 file</strong>. Khi cô lập lời gọi sau một client và rút prompt thành fragment,
-bạn làm thay đổi trở nên <strong>cục bộ</strong>: ghim model nằm trong client, tăng version prompt chỉ đổi một fragment, chỉnh cấu hình chảy ra từ một nguồn.
-Đổi model hay tung version prompt mới trở nên rẻ và ít rủi ro. Coupling thấp là thứ cho bạn đi nhanh mà không làm hỏng tích hợp mỗi lần.</p>
-
-<h3>Hai cỡ refactor</h3>
-<ul>
-  <li><strong>Nhỏ, hằng ngày:</strong> đổi tên biến khó hiểu, tách một hàm phụ, xóa khối trùng. Rủi ro thấp, làm liên tục khi chạm vào code.</li>
-  <li><strong>Lớn:</strong> vẽ lại ranh giới module, đưa lớp client vào. Rủi ro cao hơn, nên dựa mạnh vào test và đi từng bước nhỏ review được, không viết lại một lèo.</li>
-</ul>
-<p>Ở cỡ nào cũng vậy: giữ nguyên hành vi, và không để refactor chung commit với thay đổi tính năng.</p>
-
-<h3>Claude là bạn đồng hành refactor, cùng một ranh giới</h3>
-<p>Claude giỏi tìm trùng lặp bạn đã quen mắt không thấy, đề xuất cách rút gọn, nhìn các chỗ gọi rải rác rồi đề xuất một interface client, và soạn nhanh phần cơ học của một refactor lớn.
-Hai thứ giữ bạn an toàn: <strong>test</strong> vẫn xác nhận hành vi y nguyên (một đề xuất refactor tự tin vẫn có thể đổi output một cách tinh vi),
-và <strong>bạn review, duyệt</strong> từng bước trước khi nó vào. Claude tăng tốc công việc, không thay test hay chữ ký duyệt của con người.</p>
-
-<h3>✅ Nhớ 3 điều</h3>
-<ul>
-  <li>Refactor giữ nguyên hành vi, có test che chắn, và tách riêng khỏi thay đổi tính năng.</li>
-  <li>Cô lập lời gọi API sau một client; rút prompt và cấu hình dùng chung thành đơn vị tái sử dụng.</li>
-  <li>Giảm coupling để đổi model hay prompt chỉ chạm một chỗ; Claude giúp, test và người duyệt giữ an toàn.</li>
-</ul>
-
-<h3>🇬🇧 Cụm từ tiếng Anh đáng nhớ trong bài</h3>
-<ul>
-  <li><em class="en">every growing integration hits</em>: tích hợp nào lớn dần cũng gặp.</li>
-  <li><em class="en">people use the word loosely</em>: người ta dùng từ này lỏng lẻo.</li>
-  <li><em class="en">Nobody using the system should notice a thing</em>: người dùng hệ thống không được nhận ra gì.</li>
-  <li><em class="en">makes review and rollback painful</em>: làm review và rollback khổ sở.</li>
-  <li><em class="en">a hunt across the whole project</em>: một cuộc lùng sục khắp dự án.</li>
-  <li><em class="en">One clean seam is worth a lot</em>: một đường nối sạch đáng giá rất nhiều.</li>
-  <li><em class="en">a bug waiting to happen</em>: một bug đang chờ xảy ra.</li>
-  <li><em class="en">That's the whole argument for the seam</em>: đó là toàn bộ lý lẽ cho đường nối.</li>
-  <li><em class="en">duplication waiting to drift</em>: trùng lặp đang chờ trôi lệch.</li>
-  <li><em class="en">tangled concerns</em>: các mối quan tâm rối vào nhau.</li>
-  <li><em class="en">one giant rewrite</em>: một lần viết lại khổng lồ.</li>
-  <li><em class="en">the human sign-off</em>: chữ ký duyệt của con người.</li>
+  <li>"Refactor kèm luôn tính năng mới cho tiện" → <strong>sai</strong>, khó review và rollback.</li>
+  <li>"Copy-paste model name rồi tìm-thay khi đổi" → <strong>sai</strong>, sẽ sót một chỗ → bug.</li>
+  <li>"Prompt là string literal rải rác" → <strong>sai</strong>, prompt là reusable asset.</li>
+  <li>"Claude đề xuất refactor tự tin thì không cần test" → <strong>sai</strong>, có thể đổi output tinh vi.</li>
+  <li>"Large refactor nên làm một lần cho xong" → <strong>sai</strong>, đi từng bước nhỏ.</li>
 </ul>
 
 <h3>💻 Bài tập Java</h3>
-<p>Mở <code>java-app/src/main/java/part2/lesson22/Lesson22.java</code>. Có 5 bài: tìm dòng prompt bị chép ở nhiều chỗ gọi, rút đoạn trùng thành tham chiếu
-<code>{{name}}</code>, dựng prompt hoàn chỉnh từ fragment (thiếu fragment thì báo lỗi), đếm số file hard-code tên model (đo coupling),
-và dùng test để chứng minh refactor giữ nguyên hành vi. Chấm bằng <code>./mvnw -q compile exec:java -Dexec.args="p2-22"</code>. Bài này chỉ có bộ chấm offline.</p>
+<p><code>part2/lesson22/Lesson22.java</code>: tìm dòng prompt bị chép, rút thành tham chiếu <code>{{name}}</code>, dựng prompt từ fragment (thiếu thì báo lỗi), đếm file hard-code tên model, dùng test chứng minh refactor giữ hành vi.
+Chấm: <code>./mvnw -q compile exec:java -Dexec.args="p2-22"</code> (chỉ chấm offline).</p>
 `,
 
-  // answer = index of the correct option in `options` (options are shuffled on screen).
+  // answer = index of the correct option (options are shuffled on screen); an array means "Choose TWO".
   quiz: [
-    { q: 'Vấn đề mở đầu bài học là gì?', options: ['Model trả lời ngày càng chậm', 'Cùng model, prompt, retry bị chép khắp nhiều file', 'Rate limit quá thấp khi số lượng người dùng của app tăng nhanh', 'Prompt quá dài so với context window'], answer: 1, explain: '"The same model name, the same prompt text, and the same retry logic end up copied across dozens of files. Then a single change means editing all of them."' },
-    { q: 'Refactor là gì?', options: ['Thêm tính năng mới cho app', 'Viết lại toàn bộ ứng dụng bằng một ngôn ngữ lập trình khác', 'Sắp xếp lại code', 'Sửa bug theo báo cáo người dùng'], answer: 2, explain: '"Refactoring is restructuring working code to make it more readable and maintainable without changing what it does."' },
-    { q: 'Ba ý neo của refactor có kỷ luật là gì?', options: ['Giữ nguyên hành vi, có test che chắn, và để riêng khỏi tính năng', 'Nhanh, rẻ, đẹp', 'Đổi model, đổi prompt, đổi schema', 'Viết lại, xóa cũ, deploy ngay'], answer: 0, explain: '"Behavior preserving, test backed, and kept separate. That\'s a disciplined refactor."' },
-    { q: 'Vai trò của test khi refactor là gì?', options: ['Làm code chạy nhanh hơn', 'Thay hoàn toàn cho việc review code của đồng đội', 'Tự động viết lại code cho gọn', 'Lưới an toàn: xác nhận hành vi không đổi'], answer: 3, explain: '"Second, tests are your safety net. They confirm behavior didn\'t change so you can restructure with confidence."' },
-    { q: 'Vì sao không gộp refactor và thay đổi tính năng vào một commit?', options: ['Vì Git không cho phép', 'Review và rollback khổ sở', 'Vì commit sẽ quá lớn để push', 'Vì CI chỉ chạy được một loại'], answer: 1, explain: '"A refactor and a feature change shouldn\'t share a commit because mixing them makes review and rollback painful."' },
-    { q: 'Refactor đáng giá nhất trong phần lớn tích hợp Claude là gì?', options: ['Đổi tên mọi biến cho ngắn', 'Chuyển toàn bộ lời gọi sang Batches API cho rẻ hơn một nửa', 'Cô lập lời gọi API sau một client', 'Xóa toàn bộ xử lý lỗi cho gọn'], answer: 2, explain: '"The highest value refactor in most Claude integrations is isolating the API call behind one clean interface."' },
-    { q: 'Những gì nên nằm trong module client dùng chung?', options: ['Tên model, header, chính sách retry và xử lý lỗi', 'Giao diện người dùng', 'Dữ liệu khách hàng', 'Toàn bộ prompt của mọi tính năng'], answer: 0, explain: '"The model name, the headers, the retry policy, and the error handling all live in that one place."' },
-    { q: 'Sau khi có client dùng chung, đổi sang model mới thì sao?', options: ['Phải sửa từng file gọi API', 'Không đổi được nữa', 'Phải viết lại client từ đầu', 'Chỉ sửa một module'], answer: 3, explain: '"Swapping to a new model, adjusting a header, or tweaking retry behavior becomes a one module edit instead of a hunt across the whole project."' },
-    { q: 'Ở phiên bản "rải rác", ghim model mới dẫn tới rủi ro gì?', options: ['Không có rủi ro nào', 'Sót một file: bug đang chờ', 'Model mới chạy chậm hơn model cũ ở mọi file', 'Chi phí tăng gấp đôi'], answer: 1, explain: '"When you need to pin a new model, you\'re editing every one of them and you will miss one. That missed spot is a bug waiting to happen."' },
-    { q: 'So sánh rải rác và gom lại, câu nào ĐÚNG?', options: ['Gom lại đổi hành vi của app', 'Rải rác an toàn hơn vì mỗi file độc lập, sửa file này không ảnh hưởng file kia', 'Hành vi như nhau, nhưng gom lại làm thay đổi rẻ', 'Gom lại chỉ dùng được cho app nhỏ'], answer: 2, explain: '"Same behavior either way, but one of them makes change cheap and the other makes it dangerous."' },
-    { q: 'Cùng một khối chỉ dẫn xuất hiện ở nhiều chỗ gọi. Vì sao đó là vấn đề?', options: ['Trùng lặp đang chờ trôi lệch', 'Vì tốn thêm token mỗi lần gọi', 'Vì Claude không đọc được chỉ dẫn lặp', 'Vì vi phạm bản quyền prompt'], answer: 0, explain: '"That\'s duplication waiting to drift. One copy gets updated, the others don\'t, and now your behavior is inconsistent."' },
-    { q: 'Cách sửa prompt trùng lặp là gì?', options: ['Xóa hết các bản trừ một chỗ gọi', 'Viết lại mỗi bản cho khác nhau', 'Chuyển hết prompt vào database', 'Rút thành một fragment có tên'], answer: 3, explain: '"The refactor is to pull that repeated instruction text into one shared named fragment... Then each call site references the shared fragment."' },
-    { q: 'Lợi ích của fragment dùng chung là gì?', options: ['Prompt ngắn hơn', 'Sửa một lần, mọi chỗ gọi đều nhận', 'Claude trả lời nhanh hơn', 'Không cần version prompt trong Git nữa'], answer: 1, explain: '"Fix the wording once and every caller gets the corrected version at the same time."' },
-    { q: 'Theo bài học, nên đối xử với text prompt thế nào?', options: ['Như chuỗi literal tại chỗ gọi', 'Như dữ liệu người dùng', 'Như tài sản dùng lại', 'Như bí mật không cần version'], answer: 2, explain: '"Treat prompt text as a reusable asset, not as string literals scattered around."' },
-    { q: 'Mục nào KHÔNG thuộc bốn mục tiêu refactor hay gặp?', options: ['Màu giao diện', 'Prompt trùng lặp', 'Cấu hình viết cứng', 'Logic gọi lặp lại'], answer: 0, explain: 'Bốn mục tiêu là "duplicated prompts, inline config, repeated call logic, tangled concerns".' },
-    { q: 'Một hàm vừa dựng prompt, vừa gọi API, vừa parse. Đây là mục tiêu refactor nào?', options: ['Prompt trùng lặp', 'Cấu hình viết cứng', 'Logic gọi lặp lại', 'Rối mối quan tâm'], answer: 3, explain: '"Tangled concerns where prompt building, the API call, and parsing all live in one function which you split apart."' },
-    { q: 'Coupling là gì?', options: ['Số dòng code của một file', 'Đổi chỗ này buộc sửa chỗ khác', 'Số model app dùng', 'Số lần gọi API mỗi phút'], answer: 1, explain: '"Coupling is how much a change in one place forces changes somewhere else."' },
-    { q: 'Vì sao một lần ghim model biến thành sửa 20 file?', options: ['Vì model mới khó dùng', 'Vì Git chậm', 'Vì coupling chặt giữa các chỗ gọi', 'Vì thiếu test'], answer: 2, explain: '"Tight coupling is why a simple model pin turns into a 20-file edit."' },
-    { q: 'Sau khi giảm coupling, tăng version một prompt chạm tới đâu?', options: ['Đúng một fragment dùng chung có tên', 'Mọi file có gọi API', 'Toàn bộ client', 'Cấu hình của từng người'], answer: 0, explain: '"A model pin update lives in the client. A prompt version bump changes one shared fragment."' },
-    { q: 'Refactor nhỏ hằng ngày gồm những gì?', options: ['Vẽ lại ranh giới module', 'Đưa lớp client mới vào', 'Viết lại toàn bộ hệ thống trong một commit lớn', 'Đổi tên, tách hàm phụ, xóa khối trùng'], answer: 3, explain: '"Small refactors are the everyday kind. Rename a confusing variable, extract a helper, delete a duplicated block."' },
-    { q: 'Refactor lớn nên làm thế nào?', options: ['Viết lại một lèo trong một commit', 'Dựa vào test, đi từng bước nhỏ', 'Không cần test vì đã có kinh nghiệm', 'Gộp chung với tính năng mới cho tiện'], answer: 1, explain: '"They carry more risk so you lean hard on tests and move in small, reviewable steps rather than one giant rewrite."' },
-    { q: 'Quy tắc chung cho mọi cỡ refactor là gì?', options: ['Refactor càng to càng tốt', 'Luôn kèm tính năng mới', 'Giữ hành vi, tách khỏi tính năng', 'Chỉ refactor khi có bug được người dùng báo cáo'], answer: 2, explain: '"You preserve behavior and you keep the refactor out of any commit that also changes a feature."' },
-    { q: 'Claude giúp refactor ở những việc nào?', options: ['Tìm trùng lặp bạn đã quen mắt, đề xuất một interface client', 'Tự duyệt và merge refactor', 'Thay hoàn toàn bộ test', 'Đảm bảo refactor không đổi hành vi'], answer: 0, explain: '"It can spot duplication you\'ve stopped noticing and suggest a clean extraction. It can look at scattered call sites and propose a client interface."' },
-    { q: 'Vì sao vẫn cần test khi Claude đề xuất refactor?', options: ['Vì Claude không viết được Java', 'Vì test chạy nhanh hơn Claude', 'Vì luật yêu cầu', 'Vì vẫn có thể đổi output'], answer: 3, explain: '"Tests still verify that behavior stayed exactly the same because a confident refactor suggestion can still change output in a subtle way."' },
-    { q: 'Claude thay thế được điều gì trong refactor?', options: ['Test', 'Không thay cái nào', 'Người duyệt', 'Cả test lẫn người duyệt'], answer: 1, explain: '"Claude accelerates the work. It doesn\'t replace the tests or the human sign-off that make refactoring trustworthy."' },
-    { q: 'Ba file đang hard-code "claude-opus-4-8". Sau khi gom vào client, có bao nhiêu file còn chứa chuỗi đó?', options: ['3', '0', '1', '4'], answer: 2, explain: 'Tên model chỉ còn nằm trong client dùng chung, "the model name... all live in that one place".' },
-    { q: 'Refactor đúng phải đảm bảo điều gì về prompt cuối cùng gửi cho Claude?', options: ['Giống hệt trước', 'Ngắn hơn trước', 'Dùng model mới', 'Có thêm ví dụ'], answer: 0, explain: 'Refactor là "behavior preserving. The output is the same before and after." Prompt cuối cùng gửi đi phải giống hệt.' },
-    { q: 'Người dùng hệ thống nên nhận ra gì sau một refactor?', options: ['Giao diện mới', 'Tính năng mới', 'Tốc độ chậm hơn', 'Không gì cả'], answer: 3, explain: '"You\'ve only reshaped how the code is organized. Nobody using the system should notice a thing."' },
-    { q: 'Lợi ích của coupling thấp là gì?', options: ['Ít file hơn', 'Đi nhanh mà không làm hỏng tích hợp mỗi lần', 'Không cần test', 'Không cần version control'], answer: 1, explain: '"Low coupling is what lets you move fast without breaking the integration every time."' },
-    { q: 'Câu tổng kết đúng của bài là gì?', options: ['Refactor để thêm tính năng nhanh hơn', 'Chép prompt ra từng file cho độc lập', 'Cô lập lời gọi, rút phần dùng chung', 'Để Claude refactor rồi merge thẳng'], answer: 2, explain: '"Isolate your API calls behind one clean client. Extract shared prompts and config into reusable units and reduce coupling so a model or prompt change touches a single place."' },
-  ],
+    { q: "Which statement BEST defines refactoring?", options: ["Rewriting code to add new features faster", "Restructuring working code, same behavior", "Replacing an SDK with raw HTTP calls", "Optimizing code to cut API latency and token cost"], answer: 1, explain: "\"Refactoring is restructuring working code to make it more readable and maintainable without changing what it does.\"" },
+    { q: "A developer wants to refactor the Claude client and also add a new summarization feature. How should they commit the work?", options: ["One commit, so the history stays short", "One commit, with a long message", "Commit the feature first, refactor never", "Separate commits for each"], answer: 3, explain: "\"A refactor and a feature change shouldn't share a commit because mixing them makes review and rollback painful.\"" },
+    { q: "What gives a developer confidence that a refactor did not change behavior?", options: ["Tests that confirm behavior is unchanged", "A code review by Claude alone", "A shorter file length after the change is done", "A new model ID"], answer: 0, explain: "\"Tests are your safety net. They confirm behavior didn't change so you can restructure with confidence.\"" },
+    { q: "A Claude integration has raw SDK calls scattered across forty files. What is the HIGHEST value refactor?", options: ["Add comments above each call site", "Rename the files for clarity", "Wrap the calls behind one client module", "Raise the retry count everywhere"], answer: 2, explain: "\"The highest value refactor in most Claude integrations is isolating the API call behind one clean interface.\"" },
+    { q: "Which TWO things should live inside the single client module? (Choose TWO.)", options: ["The retry policy", "Each feature's UI layout", "The model name", "End-user session data", "The test fixtures"], answer: [0, 2], explain: "\"The model name, the headers, the retry policy, and the error handling all live in that one place.\"" },
+    { q: "After calls are isolated behind a client, what does swapping to a new model require?", options: ["A search across the whole project", "A one module edit", "A change in every caller", "A rewrite of all prompts"], answer: 1, explain: "\"Swapping to a new model, adjusting a header, or tweaking retry behavior becomes a one module edit instead of a hunt across the whole project.\"" },
+    { q: "In the scattered version, a team must pin a new model in every file. What is the MOST likely risk?", options: ["The new model rejects old headers", "Prompt caching stops working", "The tests run slower", "They miss one spot, creating a bug"], answer: 3, explain: "\"You're editing every one of them and you will miss one. That missed spot is a bug waiting to happen.\"" },
+    { q: "Which statement about the scattered and consolidated versions is accurate?", options: ["They behave the same, but one makes change cheap", "Only the consolidated version is correct", "The scattered version is faster at runtime overall", "They behave differently under load"], answer: 0, explain: "\"Same behavior either way, but one of them makes change cheap and the other makes it dangerous.\"" },
+    { q: "The same block of instructions appears in five call sites, and only two were updated last month. What is the MOST appropriate refactor?", options: ["Update the remaining three copies", "Add a comment linking all five copies", "Extract one shared named fragment", "Move all five into one long prompt"], answer: 2, explain: "\"Pull that repeated instruction text into one shared named fragment... Then each call site references the shared fragment instead of carrying its own copy.\"" },
+    { q: "What problem does duplicated prompt text cause over time?", options: ["Higher token cost on every request", "Inconsistent behavior across paths", "Slower API responses", "Failed schema validation"], answer: 1, explain: "\"One copy gets updated, the others don't, and now your behavior is inconsistent depending on which path ran.\"" },
+    { q: "Which TWO practices match the lesson's advice for prompt text? (Choose TWO.)", options: ["Keep prompts as inline string literals", "Store reusable system prompts as testable units", "Copy prompts into each caller for speed", "Treat prompt text as a reusable asset", "Let each team member keep their own copy"], answer: [1, 3], explain: "\"Store reusable system prompts as units you can test on their own\" and \"treat prompt text as a reusable asset, not as string literals scattered around.\"" },
+    { q: "Model names are hard-coded at each call site. Where should they go?", options: ["Into the system prompt", "Into each test file", "Into a code comment", "Into one config module"], answer: 3, explain: "Inline config means \"model names, and settings hard-coded at each call site which belong in one config module.\"" },
+    { q: "One function builds the prompt, calls the API, and parses the result. Which refactoring target is this?", options: ["Tangled concerns", "Duplicated prompts", "Inline config", "Repeated call logic"], answer: 0, explain: "Tangled concerns are \"where prompt building, the API call, and parsing all live in one function which you split apart.\"" },
+    { q: "The same request, retry, and parse code is copied everywhere. What is the fix?", options: ["Split it into more functions per file", "Move it into the system prompt", "Wrap it behind a single client", "Delete the retry logic"], answer: 2, explain: "Repeated call logic is \"the same request, retry, and parse code copied everywhere which you wrap behind a single client.\"" },
+    { q: "Which of the following is NOT one of the four refactoring targets in the lesson?", options: ["Duplicated prompts", "Slow test suites", "Inline config", "Tangled concerns"], answer: 1, explain: "The four targets: \"duplicated prompts, inline config, repeated call logic, tangled concerns.\"" },
+    { q: "Which statement about coupling is accurate?", options: ["It is how many tests a module has", "It is how often the model is called", "It is the number of files in a module", "How much one change forces others"], answer: 3, explain: "\"Coupling is how much a change in one place forces changes somewhere else.\"" },
+    { q: "A simple model pin keeps turning into a 20-file edit. What is the root cause?", options: ["Tight coupling", "Too many tests", "A slow CI pipeline", "Missing tags"], answer: 0, explain: "\"Tight coupling is why a simple model pin turns into a 20-file edit.\"" },
+    { q: "Which TWO outcomes come from reducing coupling in a Claude integration? (Choose TWO.)", options: ["Every caller sets its own retry policy", "Each file keeps its own model name", "A model pin update lives in the client", "Config tweaks need edits in many places", "A prompt version bump changes one fragment"], answer: [2, 4], explain: "\"A model pin update lives in the client. A prompt version bump changes one shared fragment.\"" },
+    { q: "Why does low coupling let a team move fast?", options: ["It removes the need for tests", "It lets every file pick its own model", "A change touches one place instead of many", "It skips the review process"], answer: 2, explain: "\"The change touches one place instead of many\", so swapping a model or rolling a prompt version \"becomes cheap and low risk.\"" },
+    { q: "Which TWO are examples of small, everyday refactors? (Choose TWO.)", options: ["Extract a helper", "Redraw module boundaries", "Introduce a client layer", "Rename a confusing variable", "Rewrite the whole service"], answer: [0, 3], explain: "Small refactors: \"Rename a confusing variable, extract a helper, delete a duplicated block.\"" },
+    { q: "A team plans to introduce a client layer across the codebase. How should they approach it?", options: ["One giant rewrite over a weekend", "Use tests and small, reviewable steps", "Skip tests to move faster", "Combine it with the next feature release"], answer: 1, explain: "Large refactors \"carry more risk so you lean hard on tests and move in small, reviewable steps rather than one giant rewrite.\"" },
+    { q: "Which rule applies to BOTH small and large refactors?", options: ["Always ask Claude to approve them before merge", "Only do them before a release", "Skip tests for small ones", "Preserve behavior; keep features separate"], answer: 3, explain: "\"You preserve behavior and you keep the refactor out of any commit that also changes a feature.\"" },
+    { q: "A developer asks Claude to find duplication in the codebase. Which statement is accurate?", options: ["Claude can spot duplication and suggest an extraction", "Claude cannot read code across files", "Claude's suggestions never need tests", "Claude should merge its own refactors"], answer: 0, explain: "Claude \"can spot duplication you've stopped noticing and suggest a clean extraction.\"" },
+    { q: "Claude proposes a confident refactor of the client layer. What should happen BEFORE it lands?", options: ["It is merged since the suggestion is confident", "It is deployed to production for real feedback", "Tests verify behavior and a human approves each step", "The model ID is bumped to match"], answer: 2, explain: "\"A confident refactor suggestion can still change output in a subtle way and you review each step and approve it before it lands.\"" },
+    { q: "Which TWO safeguards keep Claude-assisted refactoring trustworthy? (Choose TWO.)", options: ["Higher temperature settings", "Tests that verify behavior", "Longer prompts", "Fewer commits", "Human sign-off on each step"], answer: [1, 4], explain: "Claude \"doesn't replace the tests or the human sign-off that make refactoring trustworthy.\"" },
+    { q: "After a refactor, users report that responses look different. What does this indicate?", options: ["The refactor worked exactly as it was intended", "It changed behavior, so it was not a refactor", "The model was silently upgraded by the provider", "Users need to clear their local browser cache"], answer: 1, explain: "Refactoring is behavior preserving: \"The output is the same before and after... Nobody using the system should notice a thing.\"" },
+    { q: "What should the rest of the application depend on after isolating calls?", options: ["The raw API directly", "Each feature's own SDK copy", "Hard-coded HTTP headers", "Your client interface"], answer: 3, explain: "\"Everything else depends on your interface, not on the raw API.\"" },
+    { q: "A prompt typo is fixed in a shared fragment. Which callers get the fix?", options: ["Every caller, at the same time", "Only the caller that was edited", "Only callers redeployed manually", "None until the model is re-pinned"], answer: 0, explain: "\"Fix the wording once and every caller gets the corrected version at the same time.\"" },
+    { q: "Which part of a large refactor is Claude especially quick at drafting?", options: ["The final approval", "The release notes", "The mechanical parts", "The business requirements"], answer: 2, explain: "Claude \"can draft the mechanical parts of a large refactor quickly.\"" },
+    { q: "Which statement BEST summarizes the lesson?", options: ["Refactoring is mainly about making code run faster", "It keeps change easy without changing behavior", "Prompts should stay inline for clarity", "Claude can replace tests during refactors"], answer: 1, explain: "\"Refactoring keeps a Claude integration easy to change without changing what it does.\"" }
+  ]
 };
