@@ -77,6 +77,12 @@
 
   // Answers are stored by the option's original index, so the shuffled display order
   // can change between visits without breaking saved progress.
+  // A multiple-response question ("Choose TWO") has an array `answer`; its saved answer is a sorted index array.
+  function isCorrect(q, picked) {
+    if (!Array.isArray(q.answer)) return q.answer === picked;
+    return Array.isArray(picked) && picked.length === q.answer.length && q.answer.every(i => picked.includes(i));
+  }
+
   function renderQuiz(root, quiz, key) {
     const version = quizVersion(quiz);
     const saved = load(key);
@@ -93,7 +99,7 @@
 
     function updateScore() {
       const done = Object.keys(answers).length;
-      const correct = Object.entries(answers).filter(([i, a]) => quiz[i].answer === a).length;
+      const correct = Object.entries(answers).filter(([i, a]) => isCorrect(quiz[i], a)).length;
       scoreEl.textContent = `Đã làm ${done}/${quiz.length} · Đúng ${correct}/${done || 0}`
         + (done === quiz.length ? ` · Kết quả: ${Math.round(correct / quiz.length * 100)}%` : '');
       save(key, { version, answers, correct, total: quiz.length });
@@ -111,26 +117,45 @@
       why.textContent = '💡 ' + q.explain;
       box.append(title);
 
+      const multi = Array.isArray(q.answer);
+      const chosen = new Set();
+      const submit = document.createElement('button');
+      submit.className = 'submit';
+      submit.textContent = multi ? `Trả lời (chọn đủ ${q.answer.length} đáp án)` : '';
+      submit.disabled = true;
+      submit.hidden = !multi;
+      submit.addEventListener('click', () => { answers[qi] = [...chosen].sort((x, y) => x - y); reveal(); updateScore(); });
+
       const buttons = shuffle(q.options.map((text, oi) => ({ text, oi }))).map(({ text, oi }) => {
         const b = document.createElement('button');
         b.className = 'opt';
         b.textContent = text;
         b.dataset.oi = oi;
-        b.addEventListener('click', () => { answers[qi] = oi; reveal(); updateScore(); });
+        b.addEventListener('click', () => {
+          if (!multi) { answers[qi] = oi; reveal(); updateScore(); return; }
+          if (chosen.has(oi)) chosen.delete(oi);
+          else if (chosen.size < q.answer.length) chosen.add(oi);
+          b.classList.toggle('chosen', chosen.has(oi));
+          submit.disabled = chosen.size !== q.answer.length;
+        });
         box.append(b);
         return b;
       });
-      box.append(why);
+      box.append(submit, why);
 
       function reveal() {
         const picked = answers[qi];
         if (picked === undefined) return;
+        const right = multi ? q.answer : [q.answer];
+        const pickedList = Array.isArray(picked) ? picked : [picked];
         for (const b of buttons) {
           const oi = +b.dataset.oi;
           b.disabled = true;
-          if (oi === q.answer) b.classList.add('right');
-          else if (oi === picked) b.classList.add('wrong');
+          b.classList.remove('chosen');
+          if (right.includes(oi)) b.classList.add('right');
+          else if (pickedList.includes(oi)) b.classList.add('wrong');
         }
+        submit.hidden = true;
         why.hidden = false;
       }
       reveal();

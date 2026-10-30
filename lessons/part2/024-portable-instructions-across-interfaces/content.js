@@ -1,144 +1,72 @@
 window.LESSON_CONTENT = {
   explanation: `
-<p class="key"><strong>Nói ngắn gọn:</strong> Một chỉ dẫn chạy tốt ở chỗ này nhưng lệch ở chỗ khác thường <strong>không phải do model đổi ý</strong>,
-mà do <strong>cùng câu chữ được nạp vào chỗ khác nhau</strong>. Sự thật then chốt: <strong>CLAUDE.md không nằm trong system prompt</strong>;
-nó được đưa vào hội thoại như <strong>một lượt user</strong>, đứng sau system prompt. Muốn chỉ dẫn "mang đi đâu cũng đúng", hãy chọn chỗ đặt có chủ đích.</p>
+<p class="key"><strong>Nói ngắn gọn:</strong> Chỉ dẫn "lệch" giữa các bề mặt là do <strong>placement</strong> (nạp ở đâu), không phải model đổi ý.
+<strong>CLAUDE.md không nằm trong system prompt</strong>: nó được chèn như <strong>một user message sau system prompt</strong>.</p>
 
-<h3>📌 Từ cần biết</h3>
+<h3>🔑 Keyword cần nhớ</h3>
 <ul class="terms">
-  <li><strong>Portable (mang đi được):</strong> chỉ dẫn cho ra cùng hành vi dù bạn dùng Claude qua bề mặt nào.</li>
-  <li><strong>System prompt:</strong> kênh cấp cao nhất cho hành vi lâu dài của cả lượt chạy.</li>
-  <li><strong>Output style:</strong> tính năng Claude Code thay phần "phong cách" trong system prompt.</li>
-  <li><strong>Append option:</strong> tùy chọn nối thêm text vào cuối system prompt.</li>
-  <li><strong>In-session message:</strong> câu bạn gõ giữa hội thoại; chỉ lái phiên hiện tại.</li>
-  <li><strong>System prompt cache:</strong> phần đầu (prefix) của request được cache lại; đổi system prompt là đổi prefix này.</li>
+  <li><strong>System prompt</strong>: kênh cấp cao cho hành vi lâu dài; raw API đặt qua tham số <code>system</code>.</li>
+  <li><strong>Output style / append option</strong>: hai cơ chế <strong>sửa thẳng system prompt</strong>, nên đổi cached prefix.</li>
+  <li><strong>CLAUDE.md</strong>: quy tắc dự án, nạp như <strong>user message</strong>, <strong>không</strong> đổi system prompt cache.</li>
+  <li><strong>In-session message</strong>: chỉ lái phiên hiện tại, mất khi phiên kết thúc.</li>
+  <li><strong>Surface-scoped</strong>: profile/project instructions trên claude.ai chỉ có hiệu lực trong web app đó.</li>
+  <li><strong>Drift</strong>: cùng câu chữ, nạp ở chỗ khác → hành vi khác.</li>
+  <li><strong>Unloaded rule</strong>: quy tắc "bị phớt lờ" thường là quy tắc chưa được nạp.</li>
 </ul>
 
-<h3>Ba "ngôi nhà" của một chỉ dẫn</h3>
+<h3>🎯 Trọng tâm thi</h3>
 <ul>
-  <li><strong>System prompt:</strong> kênh cấp cao cho hành vi lâu dài. Trên raw API bạn đặt trực tiếp; output style và append option cũng <strong>sửa thẳng vào nó</strong>.</li>
-  <li><strong>CLAUDE.md:</strong> quy tắc do lập trình viên viết, nạp vào ngữ cảnh <strong>dưới dạng một lượt user</strong>, đi cùng system prompt bạn đã chọn.</li>
-  <li><strong>Tin nhắn trong phiên:</strong> lái phiên hiện tại, nhưng <strong>không lưu lại ở đâu</strong> khi phiên kết thúc.</li>
-</ul>
-<p>Cùng câu chữ, ba tuổi thọ khác nhau, ba ngôi nhà khác nhau.</p>
-
-<h3>Sự thật then chốt: CLAUDE.md là một lượt user "đi nhờ xe"</h3>
-<div class="box">🚌 <strong>Hình dung thế này:</strong> System prompt là <strong>nội quy dán ở cửa công ty</strong>: áp cho mọi người, cả ngày.
-CLAUDE.md là <strong>tờ ghi chú đưa tận tay</strong> khi bạn vừa vào phòng họp: vẫn quan trọng, nhưng nó là một lời nói trong cuộc họp, không phải nội quy ở cửa.
-Đổi tờ ghi chú không làm thay nội quy (và không làm hỏng cache của nội quy).</div>
-<p>Anthropic ghi rõ điều này trong tài liệu của cả Claude Code lẫn Agent SDK: khi CLAUDE.md được nạp, nội dung của nó được chèn vào hội thoại
-<strong>như một lượt user</strong>, gửi <strong>sau</strong> system prompt, chứ không nướng vào trong system prompt. Vì thế:</p>
-<ul>
-  <li>Nó định hình hành vi <strong>bên cạnh</strong> system prompt bạn chọn, bất kể là prompt nào.</li>
-  <li>Nó <strong>không ảnh hưởng system prompt cache</strong>.</li>
-  <li>Ngược lại, output style và append option <strong>có</strong> sửa system prompt, nên chúng đổi prefix được cache và áp như hành vi cấp cao cho cả lượt chạy.</li>
+  <li>Cần quy tắc <strong>system-level thật sự</strong> → <strong>append</strong> hoặc <strong>output style</strong>.</li>
+  <li>Cần quy tắc dự án <strong>portable</strong> cho cả team và mọi bề mặt → <strong>committed CLAUDE.md</strong>.</li>
+  <li>Chọn bề mặt: nhúng vào app, kiểm soát từng request → <strong>raw API / SDK</strong>; làm việc trên repo → <strong>Claude Code</strong>; hỏi nhanh, không code → <strong>hosted chat</strong>.</li>
+  <li>Portability checklist: <strong>state rules explicitly</strong> ở nơi bề mặt thật sự nạp, <strong>commit shared rules</strong>, <strong>never trust defaults</strong>.</li>
+  <li>Debug quy tắc bị bỏ qua: (1) xác nhận nó <strong>có tới model</strong> không, (2) nó rơi vào <strong>system hay user message</strong>, (3) <strong>retest trên raw API</strong> nơi thấy chính xác cái gì được gửi.</li>
 </ul>
 
-<h3>Vậy đặt quy tắc ở đâu?</h3>
+<h3>⚠️ Bẫy hay gặp</h3>
 <ul>
-  <li>Cần một quy tắc <strong>thực sự cấp hệ thống</strong>: dùng <strong>append</strong> hoặc <strong>output style</strong>.</li>
-  <li>Cần <strong>quy tắc dự án mang đi được</strong>: <strong>CLAUDE.md</strong> là đúng chỗ, miễn bạn nhớ nó là một lượt user.</li>
-</ul>
-
-<h3>"Lệch" (drift) đến từ đâu?</h3>
-<p>Không phải model âm thầm đổi ý. Mà là cùng câu chữ được nạp ở chỗ khác nhau trên bề mặt khác nhau:</p>
-<ul>
-  <li>Một bề mặt đọc file CLAUDE.md trên đĩa, bề mặt kế tiếp <strong>thậm chí không tìm</strong> file đó.</li>
-  <li>Quy tắc đặt trong ứng dụng chat <strong>bị khóa trong ứng dụng đó</strong>, không bao giờ đi tới code của bạn.</li>
-  <li>Prompt mặc định tối giản của Agent SDK <strong>đơn giản là thiếu</strong> hướng dẫn mà bạn tưởng lúc nào cũng có.</li>
-</ul>
-<p>Câu chữ không đổi; <strong>vị trí</strong> đổi. Và vị trí quyết định model <strong>có thấy</strong> chỉ dẫn hay không.</p>
-
-<h3>Checklist mang đi được</h3>
-<ol>
-  <li><strong>Nói rõ quy tắc</strong> và đặt chúng ở nơi bề mặt <strong>thực sự nạp</strong>, thay vì giả định có cơ chế tự nạp lo hộ.</li>
-  <li><strong>Commit quy tắc dùng chung</strong>: quy tắc dự án lâu dài nằm trong CLAUDE.md đã commit, để mọi đồng đội và mọi bề mặt đọc đúng một bản từ version control.</li>
-  <li><strong>Đừng tin mặc định</strong>: quy tắc quan trọng thì tự đặt, đừng trông vào bề mặt cung cấp hộ.</li>
-</ol>
-
-<h3>Phạm vi bề mặt: quy tắc trên Claude.ai không đi theo bạn</h3>
-<p>Chỉ dẫn hồ sơ và chỉ dẫn dự án trên Claude.ai chỉ áp trong web app đó. Claude Code và raw API <strong>không bao giờ thấy chúng</strong>.
-Mỗi bề mặt giữ cấu hình riêng, không có "kho chung". Muốn quy tắc đúng ở mọi nơi thì hồ sơ chat là <strong>chỗ sai</strong>; hãy để nó trong cấu hình đã commit như CLAUDE.md của dự án.</p>
-
-<h3>Chọn bề mặt theo việc</h3>
-<ul>
-  <li><strong>Nhúng Claude vào ứng dụng</strong>, cần kiểm soát từng request bằng code: raw API hoặc SDK.</li>
-  <li><strong>Phát triển trên repo</strong>, muốn file, tool và CLAUDE.md được nạp tự động: Claude Code.</li>
-  <li><strong>Việc nhanh, tương tác</strong>, soạn nháp, hỏi đáp, không code, không file: ứng dụng chat.</li>
-</ul>
-<p>Chỉ dẫn khớp với bề mặt: <strong>quy tắc lập trình nằm trong code</strong>, <strong>quy tắc dự án nằm trong CLAUDE.md</strong>, <strong>chỉ dẫn dùng một lần gõ ngay trong chat</strong>.</p>
-
-<h3>Khi một quy tắc có vẻ bị phớt lờ</h3>
-<ol>
-  <li>Đừng vội nghĩ model không nghe lời; thường quy tắc <strong>chưa từng được nạp</strong> trên bề mặt đó.</li>
-  <li>Xác nhận chỉ dẫn <strong>có tới được model</strong> hay không.</li>
-  <li>Xem nó <strong>rơi vào đâu</strong>: text cấp hệ thống hay lượt user, vì điều đó đổi độ mạnh khi lái hành vi.</li>
-  <li><strong>Thử lại đúng quy tắc đó</strong> trên bề mặt bạn kiểm soát hoàn toàn, như raw API, nơi bạn thấy chính xác cái gì được gửi.</li>
-</ol>
-<p>Gần như luôn luôn: <strong>quy tắc bị bỏ qua là quy tắc chưa được nạp</strong>. Sửa việc nạp, hành vi bạn muốn quay lại ngay.</p>
-
-<h3>✅ Nhớ 3 điều</h3>
-<ul>
-  <li>CLAUDE.md đi như một lượt user sau system prompt, không đổi system prompt cache; output style và append thì sửa system prompt.</li>
-  <li>Drift đến từ vị trí nạp, không phải câu chữ hay model; quy tắc chat app bị khóa trong app đó.</li>
-  <li>Quy tắc lâu dài nằm trong cấu hình đã commit; quy tắc quan trọng thì tự đặt, đừng tin mặc định.</li>
-</ul>
-
-<h3>🇬🇧 Cụm từ tiếng Anh đáng nhớ trong bài</h3>
-<ul>
-  <li><em class="en">a problem that bites builders</em>: một vấn đề hay "cắn" người xây dựng.</li>
-  <li><em class="en">The instructions just landed in a different spot</em>: chỉ dẫn chỉ rơi vào một chỗ khác.</li>
-  <li><em class="en">three very different lifespans</em>: ba tuổi thọ rất khác nhau.</li>
-  <li><em class="en">the key fact this whole lesson hangs on</em>: sự thật then chốt cả bài dựa vào.</li>
-  <li><em class="en">rather than baked into it</em>: chứ không nướng thẳng vào trong nó.</li>
-  <li><em class="en">It's a user message that rides along</em>: nó là một lượt user đi nhờ xe.</li>
-  <li><em class="en">leaves the system prompt cache untouched</em>: để nguyên cache của system prompt.</li>
-  <li><em class="en">Same words, different home, different behavior</em>: cùng câu chữ, khác ngôi nhà, khác hành vi.</li>
-  <li><em class="en">never trust defaults</em>: đừng bao giờ tin mặc định.</li>
-  <li><em class="en">full stop</em>: chấm hết, không có ngoại lệ.</li>
-  <li><em class="en">throwaway steering</em>: chỉ dẫn lái tạm, dùng xong bỏ.</li>
-  <li><em class="en">an ignored rule turns out to be an unloaded rule</em>: quy tắc bị phớt lờ hóa ra là quy tắc chưa được nạp.</li>
+  <li>"CLAUDE.md là một phần của system prompt" → <strong>sai</strong>, nó là user message đi kèm.</li>
+  <li>"Sửa CLAUDE.md làm hỏng prompt cache của system prompt" → <strong>sai</strong>; append/output style mới đổi cache.</li>
+  <li>"Quy tắc đặt trên claude.ai sẽ áp cho Claude Code/raw API cùng tài khoản" → <strong>sai</strong>, không có kho cấu hình chung.</li>
+  <li>"Quy tắc bị bỏ qua → đổi model mạnh hơn / viết in hoa" → sai hướng; kiểm tra việc nạp trước.</li>
 </ul>
 
 <h3>💻 Bài tập Java</h3>
-<p>Mở <code>java-app/src/main/java/part2/lesson24/Lesson24.java</code>. Có 5 bài: xếp mỗi cơ chế vào đúng kênh (system prompt, lượt user, trong phiên),
-cơ chế nào đổi system prompt cache, cơ chế nào còn sống sau khi phiên kết thúc, dựng request đưa CLAUDE.md thành một lượt user đứng trước câu hỏi,
-và chọn ngôi nhà đúng cho từng loại quy tắc. Chấm bằng <code>./mvnw -q compile exec:java -Dexec.args="p2-24"</code>.</p>
-<p>Làm xong, chạy với Claude thật bằng <code>-Dexec.args="p2-24 --live"</code>: gửi request có CLAUDE.md đi như lượt user (Claude làm theo quy tắc của nó),
-rồi gửi lại không nạp CLAUDE.md để thấy "quy tắc bị bỏ qua" thật ra là quy tắc chưa được nạp.</p>
+<p><code>part2/lesson24/Lesson24.java</code>: xếp cơ chế vào kênh, cơ chế nào đổi cache, dựng request đưa CLAUDE.md thành lượt user, chọn nơi đặt quy tắc.
+Chấm: <code>./mvnw -q compile exec:java -Dexec.args="p2-24"</code>; chạy thật: thêm <code>--live</code>.</p>
 `,
 
-  // answer = index of the correct option in `options` (options are shuffled on screen).
+  // answer = index of the correct option (options are shuffled on screen); an array means "Choose TWO".
   quiz: [
-    { q: 'Theo bài học, khi một chỉ dẫn chạy ở chỗ này nhưng lệch ở chỗ khác mà không có lỗi nào, chuyện gì thường đã xảy ra?', options: ['Model đã được cập nhật phiên bản', 'Chỉ dẫn rơi vào một chỗ khác', 'Prompt bị cắt bớt vì quá dài', 'API trả về lỗi bị nuốt mất'], answer: 1, explain: '"Nothing errored. The instructions just landed in a different spot."' },
-    { q: 'Khi CLAUDE.md được nạp, nội dung của nó đi vào request ở dạng nào?', options: ['Nối vào cuối system prompt', 'Thay phần phong cách của system prompt', 'Một lượt user, sau system prompt', 'Một tham số metadata riêng'], answer: 2, explain: '"When it loads, its content is injected into the conversation as a user message, delivered after the system prompt, rather than baked into it."' },
-    { q: 'Cơ chế nào sau đây sửa trực tiếp vào system prompt?', options: ['Output style và append option', 'CLAUDE.md của dự án', 'CLAUDE.md trong thư mục cá nhân', 'Tin nhắn gõ giữa phiên'], answer: 0, explain: '"Contrast that with output styles, and the append option, which do modify the system prompt directly."' },
-    { q: 'Đổi nội dung CLAUDE.md có làm thay đổi system prompt cache không?', options: ['Có, vì CLAUDE.md nằm trong system prompt', 'Có, nhưng chỉ khi dùng Agent SDK', 'Chỉ khi file dài hơn một giới hạn', 'Không, nó để nguyên cache đó'], answer: 3, explain: '"It loads beside your chosen system prompt, not inside it, and it leaves the system prompt cache untouched."' },
-    { q: 'Một chỉ dẫn gõ giữa hội thoại có đặc điểm gì?', options: ['Được lưu vào CLAUDE.md tự động', 'Lái phiên hiện tại, mất khi phiên kết thúc', 'Áp cho mọi phiên sau của cả nhóm', 'Ghi đè system prompt cho tới khi tắt'], answer: 1, explain: '"It steers the current session, but it persists nowhere once that session ends."' },
-    { q: 'Cần một quy tắc hoạt động như quy tắc cấp hệ thống thật sự. Nên làm gì?', options: ['Ghi vào CLAUDE.md của dự án rồi commit', 'Gõ lại ở đầu mỗi phiên làm việc', 'Đặt trong chỉ dẫn hồ sơ Claude.ai', 'Dùng append hoặc output style'], answer: 3, explain: '"If you need something to behave as a genuine system-level rule, append it, or use an output style."' },
-    { q: 'Cần quy tắc dự án mang đi được giữa các bề mặt và đồng đội. Chỗ đúng là đâu?', options: ['CLAUDE.md, nhớ rằng nó là lượt user', 'Chỉ dẫn hồ sơ trên web app', 'Tin nhắn đầu tiên mỗi phiên', 'Biến môi trường của từng máy'], answer: 0, explain: '"If you want portable project rules, CLAUDE.md is the right home, as long as you remember it\'s a user message."' },
-    { q: 'Theo bài học, "drift" giữa các bề mặt chủ yếu đến từ đâu?', options: ['Model âm thầm đổi ý giữa các lần gọi API', 'Nhiệt độ lấy mẫu khác nhau', 'Cùng câu chữ được nạp ở chỗ khác nhau', 'Giới hạn token khác nhau giữa các bề mặt'], answer: 2, explain: '"Not from the model quietly changing its mind, it comes from the same words loading in different places on different surfaces."' },
-    { q: 'Thứ quyết định model có thấy một chỉ dẫn hay không là gì?', options: ['Độ dài của câu chữ', 'Ngôn ngữ viết chỉ dẫn', 'Mức độ nhấn mạnh bằng chữ in hoa', 'Vị trí chỉ dẫn được nạp'], answer: 3, explain: '"Placement is exactly what determines whether the model ever sees the instruction at all."' },
-    { q: 'Bạn đặt một quy tắc hữu ích trong chỉ dẫn hồ sơ trên Claude.ai. Lời gọi raw API trong code của bạn sẽ thế nào?', options: ['Không bao giờ thấy quy tắc đó', 'Thấy, vì cùng tài khoản', 'Thấy sau khi đồng bộ hồ sơ', 'Thấy nếu bật Claude Code preset'], answer: 0, explain: '"That rule doesn\'t follow the model into your code... Claude Code and the raw API never see them full stop."' },
-    { q: 'Vì sao Agent SDK có thể gây "drift" dù bạn không đổi câu chữ nào?', options: ['SDK dùng model yếu hơn', 'SDK tự viết lại prompt của bạn', 'Prompt tối giản thiếu hướng dẫn bạn tưởng có', 'SDK bỏ qua tham số system'], answer: 2, explain: '"The agent SDK\'s minimal default prompt simply omits the standing guidance you assumed was always there."' },
-    { q: 'Mục đầu tiên của checklist mang đi được là gì?', options: ['Viết quy tắc thật ngắn', 'Nói rõ, đặt nơi bề mặt thật sự nạp', 'Lặp lại quy tắc ở mọi bề mặt bằng tay', 'Chỉ dùng một bề mặt duy nhất cho mọi việc'], answer: 1, explain: '"State your rules explicitly and put them where the surface will really load them, instead of assuming some autoload will handle it."' },
-    { q: 'Vì sao nên để quy tắc dự án lâu dài trong CLAUDE.md đã commit?', options: ['Để mọi người, mọi bề mặt đọc cùng một bản', 'Để giảm số token mỗi lượt', 'Để model luôn ưu tiên nó hơn system prompt', 'Để quy tắc được mã hóa an toàn trong git repo'], answer: 0, explain: '"Durable project rules belong in a committed CLAUDE.md, so every teammate and every surface reads the exact same thing from version control."' },
-    { q: '"Never trust defaults" trong checklist nghĩa là gì trong thực tế?', options: ['Luôn tắt mọi cấu hình mặc định của mọi bề mặt', 'Tự đặt quy tắc quan trọng, đừng trông bề mặt', 'Luôn bật Claude Code preset ở mọi nơi dùng SDK', 'Không bao giờ dùng Agent SDK'], answer: 1, explain: '"If a rule genuinely matters, set it yourself rather than relying on a surface to supply it for you."' },
-    { q: 'Chủ đề chung xuyên suốt ba mục của checklist là gì?', options: ['Viết chỉ dẫn càng dài càng tốt', 'Dồn mọi quy tắc vào system prompt', 'Làm cho ngôi nhà của chỉ dẫn có chủ đích', 'Thử chỉ dẫn trên mọi model'], answer: 2, explain: '"You make the instructions home deliberate, so the same behavior shows up no matter which surface loads it."' },
-    { q: 'Có "kho cấu hình chung" mà mọi bề mặt cùng đọc không?', options: ['Có, gắn với tài khoản Anthropic của bạn', 'Có, miễn là mọi nơi dùng cùng một API key', 'Có, qua thư mục ~/.claude dùng chung mọi nơi', 'Không, mỗi bề mặt có cấu hình riêng'], answer: 3, explain: '"Each surface keeps its own separate configuration, and there\'s no shared pool they all draw from."' },
-    { q: 'Bạn nhúng Claude vào một ứng dụng và muốn kiểm soát từng request bằng code. Nên dùng bề mặt nào?', options: ['Ứng dụng chat trên web', 'Raw API hoặc SDK', 'Claude Desktop', 'Chỉ dẫn hồ sơ Claude.ai'], answer: 1, explain: '"When you\'re embedding Claude inside an application and you want programmatic control over every request, reach for the raw API or the SDK."' },
-    { q: 'Bạn làm việc trên một repo và muốn file, tool, CLAUDE.md được nạp tự động. Bề mặt tự nhiên là gì?', options: ['Raw API', 'Ứng dụng chat', 'Claude Code', 'Batches API'], answer: 2, explain: '"When you\'re doing repository-based development and you want your files, your tools, and your CLAUDE.md loaded for you, automatically, Claude Code is the natural fit."' },
-    { q: 'Cần hỏi nhanh một câu, soạn nháp, không code, không file. Đường nhanh nhất là gì?', options: ['Viết một Agent SDK script', 'Mở phiên Claude Code', 'Gọi raw API bằng curl', 'Một bề mặt chat được host'], answer: 3, explain: '"When you just need quick interactive work... with no code, no files, and no persistent integration, a hosted chat surface is the fastest path."' },
-    { q: 'Ghép đúng loại chỉ dẫn với chỗ đặt theo bài học.', options: ['Lập trình ở code, dự án ở CLAUDE.md', 'Mọi quy tắc trong hồ sơ chat cho tiện', 'Quy tắc dự án gõ lại mỗi phiên', 'Quy tắc lập trình trong CLAUDE.md cá nhân'], answer: 0, explain: '"Programmatic rules in code, project rules in CLAUDE.md, and throwaway steering in the chat itself."' },
-    { q: 'Một quy tắc có vẻ bị phớt lờ. Bước đầu tiên nên làm là gì?', options: ['Viết lại quy tắc bằng chữ in hoa cho rõ', 'Xác nhận nó có tới được model không', 'Chuyển sang một model mạnh hơn để thử', 'Báo lỗi rằng model không chịu nghe lời'], answer: 1, explain: '"Don\'t immediately assume the model is disobeying you... So confirm first that the instruction actually reached the model at all."' },
-    { q: 'Vì sao cần kiểm tra chỉ dẫn rơi vào system prompt hay lượt user?', options: ['Vì lượt user bị tính phí cao hơn', 'Vì lượt user không được cache', 'Vì điều đó đổi độ mạnh khi lái hành vi', 'Vì system prompt bị giới hạn độ dài'], answer: 2, explain: '"Then check where it landed, whether it came in a system-level text, or as a user message, because that changes how strongly it steers behavior."' },
-    { q: 'Ở bước cuối khi debug, vì sao thử lại quy tắc trên raw API?', options: ['Vì raw API dùng một model khác mạnh hơn', 'Vì raw API rẻ hơn mọi bề mặt khác', 'Vì raw API tự nạp CLAUDE.md từ ổ đĩa', 'Vì ở đó thấy rõ cái gì được gửi'], answer: 3, explain: '"Retest the very same rule on a surface you fully control, like the raw API, where you can see exactly what was sent."' },
-    { q: 'Kết luận "gần như luôn luôn" của bài khi một quy tắc bị bỏ qua là gì?', options: ['Đó là quy tắc chưa được nạp', 'Đó là lỗi của model', 'Quy tắc viết quá mơ hồ', 'Quy tắc mâu thuẫn với system prompt'], answer: 0, explain: '"Almost always, an ignored rule turns out to be an unloaded rule."' },
-    { q: 'Bạn dựng request trên raw API mô phỏng cách SDK nạp CLAUDE.md. Cấu trúc nào đúng?', options: ['system = prompt + nội dung CLAUDE.md', 'system = CLAUDE.md, user = câu hỏi', 'system = prompt; lượt user CLAUDE.md, rồi câu hỏi', 'Bỏ system, chỉ gửi câu hỏi'], answer: 2, explain: 'CLAUDE.md "arrive as a user message alongside whichever system prompt you chose", nên system giữ nguyên, CLAUDE.md là lượt user đứng trước câu hỏi.' },
-    { q: 'Đội bạn đổi CLAUDE.md mỗi ngày và lo làm hỏng prompt cache của system prompt. Nhận định nào đúng?', options: ['Đúng, mỗi lần sửa phá cache', 'Nên chuyển quy tắc sang append để cache ổn định', 'Lo không cần thiết: CLAUDE.md không chạm cache đó', 'Phải tắt cache khi dùng CLAUDE.md'], answer: 2, explain: '"Its content doesn\'t affect the system prompt cache." Ngược lại, append và output style mới "change the cached prefix".' },
-    { q: 'Ai đó hình dung CLAUDE.md là "text cấp hệ thống". Bài học sửa lại mô hình tư duy đó thế nào?', options: ['Nó là output style', 'Nó là một lượt user đi kèm', 'Nó là phần đầu của system prompt', 'Nó là một tool definition'], answer: 1, explain: '"So if you were picturing CLAUDE.md as system-level text, correct the mental model now. It\'s a user message that rides along."' },
-    { q: 'Câu nào mô tả đúng ba ngôi nhà của một chỉ dẫn?', options: ['Ba chỗ nhưng cùng tuổi thọ', 'Chỉ có hai: system prompt và CLAUDE.md', 'Cả ba đều sửa system prompt', 'System prompt, CLAUDE.md, tin nhắn trong phiên'], answer: 3, explain: '"First, the system prompt... Second, CLAUDE.md... Third, an in-session message... Same words, three very different lifespans, and three different homes."' },
-    { q: 'Một bề mặt đọc CLAUDE.md từ đĩa, bề mặt kia không tìm file đó. Cùng quy tắc cho hai hành vi khác nhau. Đây là ví dụ của gì?', options: ['Vị trí nạp gây drift', 'Model không ổn định', 'Lỗi encoding của file', 'Rate limit khác nhau'], answer: 0, explain: '"One surface reads a CLAUDE.md file off-disk that the next surface never even looks for... In every case, the instruction text didn\'t change. Its placement did."' },
-    { q: 'Theo bài, "bottom line" của chỉ dẫn mang đi được quy về điều gì?', options: ['Chọn đúng model', 'Vị trí đặt chỉ dẫn', 'Viết prompt thật dài', 'Số lượng ví dụ'], answer: 1, explain: '"Here\'s the bottom line. Portable instructions come down to one thing, placement."' }
+    { q: "A team adds a rule to the project CLAUDE.md. Where does that content appear in the request Claude receives?", options: ["Appended to the end of the system prompt", "As a user message after the system prompt", "In a separate metadata field of the request", "Merged into the output style section"], answer: 1, explain: "CLAUDE.md \"is injected into the conversation as a user message, delivered after the system prompt, rather than baked into it.\"" },
+    { q: "A developer needs a rule to behave as a genuine system-level instruction for the whole run in Claude Code. Which approach is MOST appropriate?", options: ["Add the rule to the project CLAUDE.md", "Type the rule at the start of each session", "Add it to the claude.ai profile instructions", "Use the append option or an output style"], answer: 3, explain: "\"If you need something to behave as a genuine system-level rule, append it, or use an output style.\" CLAUDE.md arrives as a user message, not system-level text." },
+    { q: "A team edits CLAUDE.md several times a day and worries about invalidating the system prompt cache. What should you tell them?", options: ["CLAUDE.md content does not affect the system prompt cache", "Each edit invalidates the cached system prompt prefix", "They should move the rules into the append option to keep the cache stable", "Caching must be disabled while CLAUDE.md is in use"], answer: 0, explain: "CLAUDE.md \"leaves the system prompt cache untouched.\" Moving rules into append would do the opposite: append changes the cached prefix." },
+    { q: "Which TWO mechanisms modify the system prompt directly? (Choose TWO.)", options: ["Output styles", "Project CLAUDE.md", "The append option", "An in-session message", "User-level CLAUDE.md"], answer: [0, 2], explain: "\"Output styles and the append option write directly into it.\" CLAUDE.md files (project or user) ride as user messages; in-session messages only steer the current session." },
+    { q: "A developer sets a coding-style rule in their claude.ai profile instructions. Their backend service calls the Claude API with the same account. What happens?", options: ["The API call inherits the rule automatically", "The rule applies after the profile is synced", "The API call never sees the rule", "The rule applies only if the Claude Code preset is enabled"], answer: 2, explain: "Profile and project instructions \"apply only inside that web app. Claude Code and the raw API never see them full stop.\"" },
+    { q: "An instruction that worked in Claude Code is ignored when the same text is used through the Agent SDK. Nothing errored. What is the MOST likely cause?", options: ["The model reasons differently through the SDK", "The instruction landed in a different place, or was never loaded", "The SDK truncates long instructions", "The SDK uses a lower sampling temperature"], answer: 1, explain: "Drift comes \"from the same words loading in different places on different surfaces.\" The SDK's minimal default prompt also \"simply omits the standing guidance you assumed was always there.\"" },
+    { q: "A rule appears to be ignored by Claude. According to the recommended debugging sequence, what should you do FIRST?", options: ["Rewrite the rule in capital letters", "Switch to a more capable model", "Move the rule into an output style", "Confirm the instruction actually reached the model"], answer: 3, explain: "\"Don't immediately assume the model is disobeying you... confirm first that the instruction actually reached the model at all.\"" },
+    { q: "Why does the debugging sequence ask whether an instruction arrived as system-level text or as a user message?", options: ["It changes how strongly the instruction steers behavior", "User messages are billed at a higher rate", "System text is limited to a fixed length", "User messages are never cached"], answer: 0, explain: "\"Check where it landed, whether it came in a system-level text, or as a user message, because that changes how strongly it steers behavior.\"" },
+    { q: "Which TWO items belong to the portability checklist from the lesson? (Choose TWO.)", options: ["Keep each rule under 50 words", "Commit shared rules to version control", "Rely on each surface to load the standard rules", "Never trust defaults for rules that matter", "Repeat every rule in each user message"], answer: [1, 3], explain: "The checklist: state rules explicitly where the surface really loads them, \"commit your shared rules\", and \"never trust defaults\"." },
+    { q: "A company embeds Claude in a customer-facing app and needs programmatic control over every request. Which surface is the BEST fit?", options: ["Claude Code in headless mode", "A hosted chat project", "The raw API or an SDK", "Claude Desktop with connectors"], answer: 2, explain: "\"When you're embedding Claude inside an application and you want programmatic control over every request, reach for the raw API or the SDK.\"" },
+    { q: "A developer works in a repository and wants files, tools, and CLAUDE.md loaded automatically. Which surface is the natural fit?", options: ["The Messages API", "Claude Code", "A hosted chat surface", "The Batches API"], answer: 1, explain: "\"When you're doing repository-based development and you want your files, your tools, and your CLAUDE.md loaded for you, automatically, Claude Code is the natural fit.\"" },
+    { q: "Which instruction placement matches the lesson's guidance?", options: ["Project rules in the chat profile, programmatic rules in CLAUDE.md", "All rules in the system prompt of every surface", "Project rules typed at the start of each session", "Programmatic rules in code, project rules in CLAUDE.md"], answer: 3, explain: "\"Programmatic rules in code, project rules in CLAUDE.md, and throwaway steering in the chat itself.\"" },
+    { q: "Which TWO instruction homes still apply after the current session ends? (Choose TWO.)", options: ["An instruction typed mid-conversation", "A one-off correction typed in the chat", "A rule in the committed project CLAUDE.md", "A request made in the previous turn", "An output style configured in settings"], answer: [2, 4], explain: "An in-session message \"steers the current session, but it persists nowhere once that session ends.\" CLAUDE.md and system-prompt mechanisms such as output styles are configuration, so they apply again next session." },
+    { q: "You rebuild, on the raw API, the request the Agent SDK sends when CLAUDE.md is loaded. Which structure is correct?", options: ["system = your prompt; a user turn with CLAUDE.md, then the question", "system = your prompt + CLAUDE.md text; user = question", "system = CLAUDE.md; user = question", "No system; one user turn with CLAUDE.md and the question merged"], answer: 0, explain: "CLAUDE.md content arrives \"as a user message alongside whichever system prompt you chose\", so the system prompt stays as-is and CLAUDE.md is a user turn before the question." },
+    { q: "Which statement about configuration across surfaces is accurate?", options: ["All surfaces share one configuration pool per account", "Settings sync between surfaces using the same API key", "Each surface keeps its own separate configuration", "claude.ai settings override Claude Code settings"], answer: 2, explain: "\"Each surface keeps its own separate configuration, and there's no shared pool they all draw from.\"" },
+    { q: "A user needs a quick draft of an email with no code, no files, and no persistent integration. Which surface is the fastest path?", options: ["A short Agent SDK script", "A hosted chat surface", "A Claude Code session in the repo", "A raw API call with curl"], answer: 1, explain: "\"When you just need quick interactive work, a bit of drafting, or a question, with no code, no files, and no persistent integration, a hosted chat surface is the fastest path.\"" },
+    { q: "Which statement BEST explains why CLAUDE.md is the right home for portable project rules?", options: ["It overrides any system prompt you choose", "It is cached separately for each user", "It is encrypted in version control", "It is committed, so every teammate and surface reads the same file"], answer: 3, explain: "\"Durable project rules belong in a committed CLAUDE.md, so every teammate and every surface reads the exact same thing from version control.\"" },
+    { q: "One surface reads CLAUDE.md from disk while another never looks for it. The same rule produces different behavior. What does this illustrate?", options: ["Placement causing drift", "Model non-determinism", "A file encoding problem", "Different rate limits"], answer: 0, explain: "\"One surface reads a CLAUDE.md file off-disk that the next surface never even looks for... In every case, the instruction text didn't change. Its placement did.\"" },
+    { q: "A developer uses the Agent SDK with its default system prompt and expects Claude Code's standing guidance. What should they expect?", options: ["The full Claude Code guidance is included by default", "The SDK copies guidance from claude.ai", "The minimal default prompt omits that guidance", "The SDK refuses to start without a preset"], answer: 2, explain: "\"The agent SDK's minimal default prompt simply omits the standing guidance you assumed was always there.\"" },
+    { q: "What determines whether the model ever sees an instruction?", options: ["How emphatic the wording is", "Where the instruction is placed and loaded", "The language the instruction is written in", "How long the instruction is"], answer: 1, explain: "\"Placement is exactly what determines whether the model ever sees the instruction at all.\"" },
+    { q: "Which TWO statements about CLAUDE.md are correct? (Choose TWO.)", options: ["It loads beside your chosen system prompt, not inside it", "It is baked into the system prompt", "It changes the cached system prompt prefix", "It shapes behavior alongside whichever system prompt you choose", "It applies only inside claude.ai projects"], answer: [0, 3], explain: "\"It loads beside your chosen system prompt, not inside it\" and \"it shapes behavior alongside whichever system prompt you happen to choose.\" It does not touch the system prompt cache." },
+    { q: "After rewording an ignored rule three times without success, what is the MOST useful next step?", options: ["Add more examples to the rule", "Lower the temperature", "Report a model bug", "Retest the same rule on the raw API where you see exactly what is sent"], answer: 3, explain: "\"Retest the very same rule on a surface you fully control, like the raw API, where you can see exactly what was sent. Almost always, an ignored rule turns out to be an unloaded rule.\"" },
+    { q: "A team wants a rule to hold on every surface that reads config. Where should it NOT be placed?", options: ["In a chat profile on claude.ai", "In the committed project CLAUDE.md", "In version control with the repo", "In configuration every teammate pulls"], answer: 0, explain: "\"If you want a rule to hold everywhere, a chat profile is the wrong place to put it. Portable rules belong in committed config like a project CLAUDE.md.\"" },
+    { q: "Which statement about output styles is accurate?", options: ["They are loaded as a user message like CLAUDE.md", "They only apply to the next message", "They swap the system prompt's style section", "They are shared with claude.ai"], answer: 2, explain: "Output styles are \"the Claude Code feature that swaps the system prompt's style section\", so they modify the system prompt directly." },
+    { q: "Which TWO are valid reasons a rule set in one place does not show up on another surface? (Choose TWO.)", options: ["The model forgot the rule after a few turns", "The rule was stored in a chat app's instructions", "The rule was written in Vietnamese", "The API key was rotated", "The other surface never loads that file"], answer: [1, 4], explain: "Chat app rules stay \"locked to that chat app\", and one surface may read a CLAUDE.md \"that the next surface never even looks for\". Both are placement problems." },
+    { q: "What does \"never trust defaults\" mean in practice?", options: ["Disable every default setting", "Set rules that matter yourself instead of relying on a surface", "Always enable the Claude Code preset", "Avoid the Agent SDK entirely"], answer: 1, explain: "\"If a rule genuinely matters, set it yourself rather than relying on a surface to supply it for you.\"" },
+    { q: "Where should throwaway steering for a single task be written?", options: ["In the committed CLAUDE.md", "In an output style", "In the append option", "In the chat itself"], answer: 3, explain: "\"Throwaway steering in the chat itself.\" Committing it would turn a one-off instruction into a durable project rule." },
+    { q: "Which of the following is NOT one of the three homes for an instruction described in the lesson?", options: ["The tool definitions", "The system prompt", "CLAUDE.md", "An in-session message"], answer: 0, explain: "The three homes are the system prompt, CLAUDE.md, and an in-session message: \"Same words, three very different lifespans, and three different homes.\"" },
+    { q: "On the raw API, how do you set standing behavior for a request?", options: ["Place a CLAUDE.md in the working directory", "Enable an output style in settings", "Set the system parameter yourself", "Rely on the account's profile instructions"], answer: 2, explain: "The system prompt is \"the top-level channel for standing behavior. On the raw API, you set it directly.\"" },
+    { q: "What is the lesson's bottom line for portable instructions?", options: ["Choose the strongest model", "Get the placement right", "Write longer instructions", "Add more few-shot examples"], answer: 1, explain: "\"Portable instructions come down to one thing, placement.\"" }
   ]
 };

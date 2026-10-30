@@ -57,6 +57,10 @@ video::cue { font-size: var(--sub-size); background: rgba(0, 0, 0, .6); }
 .question button.opt:disabled { cursor: default; }
 .question button.opt.right { border-color: var(--ok); background: #12261a; }
 .question button.opt.wrong { border-color: var(--bad); background: #2d1414; }
+.question button.opt.chosen { border-color: var(--accent); background: #16202e; }
+.question button.submit { margin: 6px 0; padding: 6px 14px; background: var(--accent); color: #fff; border: 0; border-radius: 6px; cursor: pointer; font: inherit; }
+.question button.submit:disabled { background: #333; color: var(--muted); cursor: default; }
+.question button.submit[hidden] { display: none; }
 .question .why { margin-top: 8px; font-size: 14px; color: #cfcfcf; }
 .question .why[hidden] { display: none; }
 
