@@ -1,147 +1,73 @@
 window.LESSON_CONTENT = {
   explanation: `
-<p class="key"><strong>Nói ngắn gọn:</strong> <strong>settings.json</strong> là chỗ cho những thiết lập mà model <strong>không được tự diễn giải lại</strong>.
-Ba thứ quan trọng nhất trong đó: <strong>permissions</strong> (allow, deny, ask), <strong>hooks</strong> (script tất định chạy ở các thời điểm cố định)
-và <strong>environment</strong> (biến môi trường, chọn model). Đây là <strong>cài đặt, không phải gợi ý</strong>: model không thể "nói khéo" để vượt qua một deny rule.</p>
+<p class="key"><strong>Nói ngắn gọn:</strong> <strong>settings.json</strong> là lớp điều khiển <strong>machine-readable</strong>: permissions, hooks, environment và model.
+Đây là <strong>settings, không phải suggestions</strong>: model không thể "nói lách" qua một deny rule.</p>
 
-<h3>📌 Từ cần biết</h3>
+<h3>🔑 Keyword cần nhớ</h3>
 <ul class="terms">
-  <li><strong>settings.json:</strong> file cấu hình máy đọc được của Claude Code: permissions, hooks, env, model.</li>
-  <li><strong>Permission rule:</strong> quy tắc khớp với một tool call và cho ra một trong ba quyết định: allow, deny, ask.</li>
-  <li><strong>Hook:</strong> script tất định (deterministic) gắn vào một thời điểm trong vòng đời agent, chạy <strong>bên ngoài model</strong>.</li>
-  <li><strong>Lifecycle event:</strong> thời điểm hook có thể chạy, ví dụ PreToolUse, PostToolUse, Notification, Stop, SessionStart.</li>
-  <li><strong>permissionDecision:</strong> trường mà một PreToolUse hook đặt để quyết định số phận tool call: allow, deny, ask, defer.</li>
-  <li><strong>Fallback model:</strong> model dự phòng dùng khi model mặc định không sẵn sàng.</li>
+  <li><strong>Permissions</strong>: rule khớp với tool call và ra một trong ba quyết định <strong>allow / deny / ask</strong>.</li>
+  <li><strong>Allow</strong>: chạy tự động, không hỏi. <strong>Deny</strong>: chặn hẳn. <strong>Ask</strong>: dừng lại cho người duyệt.</li>
+  <li><strong>Hook</strong>: script <strong>deterministic</strong> khai báo trong settings.json, chạy <strong>ngoài model</strong> tại một lifecycle event.</li>
+  <li><strong>PreToolUse</strong>: chạy <strong>trước</strong> tool call, còn kịp chặn.</li>
+  <li><strong>PostToolUse</strong>: chạy <strong>sau</strong> khi tool xong; dùng để log/phản ứng, không chặn được.</li>
+  <li><strong>Notification / Stop / SessionStart</strong>: khi Claude gửi thông báo / khi response xong / khi phiên mới bắt đầu (setup).</li>
+  <li><strong>permissionDecision</strong>: field PreToolUse hook trả về: <strong>allow, deny, ask, defer</strong>.</li>
+  <li><strong>Environment / model</strong>: env vars cho tools và hooks, default model + fallback, effort level.</li>
 </ul>
 
-<h3>Trong settings.json có gì?</h3>
+<h3>🎯 Trọng tâm thi</h3>
 <ul>
-  <li><strong>Permissions:</strong> quy tắc cho phép, chặn, hoặc hỏi trước khi Claude chạy một tool, để hành động rủi ro <strong>bị chặn cửa</strong> thay vì cứ thế được tin.</li>
-  <li><strong>Hooks:</strong> script tất định đăng ký ngay trong file này, chạy ở các sự kiện cố định để <strong>thực thi, ghi log hoặc tự động hóa</strong>.</li>
-  <li><strong>Environment:</strong> biến môi trường và lựa chọn model đặt qua config, để mọi phiên đều dùng cùng giá trị mà không phải hard-code trong app.</li>
+  <li>Cần <strong>ngăn</strong> hành động nguy hiểm → <strong>PreToolUse</strong>; cần <strong>ghi log</strong> sau khi chạy → <strong>PostToolUse</strong>.</li>
+  <li><strong>defer</strong> = quay về permission rules bình thường; hook trả <strong>empty object</strong> → call giữ nguyên, hành xử như allow.</li>
+  <li>Phổ biến: allow cho tool thường ngày, deny cho vài việc không bao giờ muốn, ask cho vùng xám.</li>
+  <li>Permissions và hooks → <strong>settings.json</strong>; hướng dẫn ngôn ngữ tự nhiên → <strong>CLAUDE.md</strong>.</li>
+  <li>Reload: permissions, hooks, env có hiệu lực <strong>live</strong>; <strong>model</strong> và <strong>output style</strong> cần restart hoặc slash command.</li>
 </ul>
 
-<h3>Permissions: allow, deny, ask</h3>
+<h3>⚠️ Bẫy hay gặp</h3>
 <ul>
-  <li><strong>Allow:</strong> lời gọi khớp được chạy tự động, không hỏi, vì bạn đã quyết định trước là an toàn.</li>
-  <li><strong>Deny:</strong> chặn thẳng, hành động nguy hiểm <strong>không bao giờ chạy</strong>.</li>
-  <li><strong>Ask:</strong> dừng lại hỏi bạn duyệt hay từ chối, giữ con người trong vòng lặp cho phần "vùng xám".</li>
-</ul>
-<p>Cách dùng phổ biến: <strong>allow</strong> cho tool thường lệ, <strong>deny</strong> cho vài thứ không bao giờ được xảy ra, <strong>ask</strong> cho phần ở giữa.</p>
-
-<div class="box">🏢 <strong>Hình dung thế này:</strong> settings.json là <strong>hệ thống thẻ từ của tòa nhà</strong>. Allow là cửa quẹt thẻ là vào,
-deny là cửa khóa cứng, ask là cửa có bảo vệ gọi hỏi bạn. Còn CLAUDE.md là <strong>tấm bảng "vui lòng giữ yên lặng"</strong>:
-người ta đọc và thường làm theo, nhưng không có ổ khóa nào cả. Muốn chắc chắn ai đó không vào phòng máy chủ, bạn khóa cửa, không dán thêm bảng.</div>
-
-<h3>Hooks: khai báo trong config, không phải trong văn xuôi</h3>
-<p>Mỗi hook nêu <strong>sự kiện</strong> kích hoạt nó và trỏ tới <strong>lệnh</strong> sẽ chạy khi sự kiện đó xảy ra. Vì hook nằm trong config chứ không nằm trong
-suy luận của model, nó chạy <strong>giống hệt nhau mọi lần</strong>, bất kể Claude quyết định gì. Tính tất định đó là toàn bộ lý do tồn tại của hook:
-cần điều gì xảy ra chắc chắn thì hook cho bạn một <strong>bảo đảm</strong> mà một chỉ dẫn không bao giờ cho được.</p>
-
-<h3>Năm thời điểm hook đáng biết</h3>
-<ul>
-  <li><strong>PreToolUse:</strong> trước khi tool call chạy, lúc bạn <strong>còn kịp chặn</strong>.</li>
-  <li><strong>PostToolUse:</strong> sau khi tool call xong, khi đã có kết quả.</li>
-  <li><strong>Notification:</strong> khi Claude đưa ra một thông báo cho bạn.</li>
-  <li><strong>Stop:</strong> khi một câu trả lời hoàn tất.</li>
-  <li><strong>SessionStart:</strong> khi một phiên mới bắt đầu, tiện cho việc chuẩn bị.</li>
-</ul>
-<p>Không cần dùng cả năm. Chọn thời điểm mà hành động bạn quan tâm <strong>tự nhiên nằm ở đó</strong>.</p>
-
-<h3>PreToolUse và PostToolUse: đừng nhầm</h3>
-<ul>
-  <li><strong>PreToolUse</strong> chạy trước khi tool call đang chờ được thực thi, nên có thể <strong>deny hoặc ask</strong> và chặn thật sự. Guardrail thuộc về đây.</li>
-  <li><strong>PostToolUse</strong> chạy khi lời gọi đã xong: tốt cho ghi log hoặc phản ứng với kết quả, nhưng <strong>không chặn được</strong> thứ đã chạy rồi.</li>
-</ul>
-<p>Muốn <strong>ngăn</strong> hành động rủi ro: PreToolUse. Muốn <strong>ghi lại hoặc phản ứng sau sự việc</strong>: PostToolUse.</p>
-
-<h3>permissionDecision: bốn giá trị</h3>
-<ul>
-  <li><strong>allow:</strong> duyệt, cho chạy.</li>
-  <li><strong>deny:</strong> chặn, không bao giờ chạy.</li>
-  <li><strong>ask:</strong> chuyển quyết định cho bạn.</li>
-  <li><strong>defer:</strong> không ép kết quả, <strong>rơi về permission rule thường</strong> của bạn.</li>
-</ul>
-<p>Nếu hook trả về <strong>object rỗng</strong>, lời gọi được giữ nguyên, cư xử như allow.</p>
-
-<h3>Phần "ống nước": env, model, effort</h3>
-<ul>
-  <li>Biến môi trường mà tool và hook đọc lúc chạy (endpoint, cờ bật tắt) nằm trong config, không rải khắp code.</li>
-  <li>Model mặc định cho phiên, và một <strong>fallback</strong> khi model đầu không sẵn sàng.</li>
-  <li>Effort level và các tùy chọn harness khác.</li>
-</ul>
-<p>Chủ đề chung: <strong>đặt giá trị một lần, ở một chỗ</strong>, mọi phiên trong phạm vi đó tự nhận.</p>
-
-<h3>Thay đổi này thuộc về đâu?</h3>
-<ul>
-  <li><strong>settings.json:</strong> config máy đọc được: permissions, hooks, env.</li>
-  <li><strong>CLAUDE.md:</strong> chỉ dẫn ngôn ngữ tự nhiên, Claude đọc như ngữ cảnh hướng dẫn chứ không phải máy móc.</li>
-</ul>
-<p>Quy tắc đơn giản: <strong>permissions và hooks vào settings.json, không bao giờ vào văn xuôi</strong>, vì văn xuôi là gợi ý còn config được thực thi.</p>
-<p><strong>Về nạp lại:</strong> phần lớn key (permissions, hooks, env) có hiệu lực ngay; riêng <strong>model</strong> và <strong>output style</strong> cần khởi động lại hoặc một slash command.</p>
-
-<h3>✅ Nhớ 3 điều</h3>
-<ul>
-  <li>settings.json chứa permissions (allow/deny/ask), hooks và env/model: là cài đặt được thực thi, không phải gợi ý.</li>
-  <li>Muốn chặn thì dùng PreToolUse (permissionDecision: allow, deny, ask, defer); PostToolUse chỉ ghi log/phản ứng sau khi đã chạy.</li>
-  <li>Permissions và hooks ở settings.json; hướng dẫn bằng lời ở CLAUDE.md. Model và output style cần restart để nhận thay đổi.</li>
-</ul>
-
-<h3>🇬🇧 Cụm từ tiếng Anh đáng nhớ trong bài</h3>
-<ul>
-  <li><em class="en">a model shouldn't be free to reinterpret</em>: model không được tự do diễn giải lại.</li>
-  <li><em class="en">risky actions are gated instead of just trusted</em>: hành động rủi ro bị chặn cửa thay vì cứ thế được tin.</li>
-  <li><em class="en">these are settings, not suggestions</em>: đây là cài đặt, không phải gợi ý.</li>
-  <li><em class="en">The model can't talk its way past a deny rule</em>: model không thể nói khéo để lách qua một deny rule.</li>
-  <li><em class="en">keeping a human in the loop</em>: giữ con người trong vòng lặp ra quyết định.</li>
-  <li><em class="en">the gray area</em>: vùng xám, phần không rõ trắng đen.</li>
-  <li><em class="en">That determinism is the entire point</em>: tính tất định đó chính là toàn bộ lý do.</li>
-  <li><em class="en">a guarantee that an instruction never can</em>: một bảo đảm mà chỉ dẫn không bao giờ cho được.</li>
-  <li><em class="en">That's exactly where guardrails belong</em>: đó chính là chỗ của rào chắn an toàn.</li>
-  <li><em class="en">after the fact</em>: sau khi sự việc đã xảy ra.</li>
-  <li><em class="en">the plumbing you'd otherwise hard code</em>: phần "ống nước" mà nếu không thì bạn phải hard-code.</li>
-  <li><em class="en">prose is a suggestion and config is enforced</em>: văn xuôi là gợi ý, còn config thì được thực thi.</li>
+  <li>"Viết quy tắc cấm vào CLAUDE.md là đủ chặn" → <strong>sai</strong>: prose là gợi ý, config mới được enforce.</li>
+  <li>"PostToolUse có thể chặn tool call" → <strong>sai</strong>: call đã chạy xong rồi.</li>
+  <li>"defer nghĩa là deny" → <strong>sai</strong>: defer giao lại cho permission rules.</li>
+  <li>"Đổi model trong settings.json áp dụng ngay" → <strong>sai</strong>: cần restart hoặc slash command.</li>
 </ul>
 
 <h3>💻 Bài tập Java</h3>
-<p>Mở <code>java-app/src/main/java/part2/lesson32/Lesson32.java</code>. Có 5 bài: đọc khối <code>permissions</code> của một settings.json thật (JSON) và quyết định
-ALLOW / DENY / ASK cho một tool call (deny xét trước, rồi ask, rồi allow, hỗ trợ rule dạng <code>Bash(npm run test:*)</code>),
-chọn đúng sự kiện hook cho từng mục tiêu và biết sự kiện nào còn kịp chặn tool call, áp <code>permissionDecision</code> của một PreToolUse hook
-(gồm defer và object rỗng), xếp từng thay đổi vào settings.json hay CLAUDE.md, và key nào có hiệu lực ngay hay cần khởi động lại.
-Chấm bằng <code>./mvnw -q compile exec:java -Dexec.args="p2-32"</code>.</p>
+<p><code>part2/lesson32/Lesson32.java</code>: quyết định ALLOW/DENY/ASK từ khối permissions, chọn hook event, áp permissionDecision (gồm defer, object rỗng), xếp thay đổi vào settings.json hay CLAUDE.md, key nào cần restart.
+Chấm: <code>./mvnw -q compile exec:java -Dexec.args="p2-32"</code>.</p>
 `,
 
-  // answer = index of the correct option in `options` (options are shuffled on screen).
+  // answer = index of the correct option (options are shuffled on screen); an array means "Choose TWO".
   quiz: [
-    { q: 'Theo bài học, ba nhóm thiết lập quan trọng nhất trong settings.json là gì?', options: ['Prompts, examples, tools', 'Permissions, hooks, environment', 'Memory, skills, subagents', 'Themes, keybindings, aliases, fonts'], answer: 1, explain: '"Permissions, hooks, environment. Hold those three and the rest of the file makes sense."' },
-    { q: 'Một đồng đội viết vào CLAUDE.md: "Tuyệt đối không chạy rm -rf". Bạn muốn bảo đảm lệnh đó không bao giờ chạy. Lựa chọn tốt nhất là gì?', options: ['Viết lại câu đó bằng chữ in hoa và đặt ở đầu file', 'Nhắc lại quy tắc ở đầu mỗi phiên làm việc', 'Thêm deny rule tương ứng trong settings.json', 'Chuyển câu đó sang output style của phiên'], answer: 2, explain: '"Notice these are settings, not suggestions. The model can\'t talk its way past a deny rule." Văn xuôi chỉ là gợi ý.' },
-    { q: 'Một permission rule khớp với tool call. Quyết định nào cho lời gọi chạy ngay mà không hỏi?', options: ['Allow', 'Ask', 'Defer', 'Deny'], answer: 0, explain: '"Allow lets a matching call run automatically with no prompt because you\'ve already decided that action is safe."' },
-    { q: 'Với một lệnh nhạy cảm như git push, bạn muốn con người vẫn duyệt từng lần. Nên dùng gì?', options: ['Allow rule để chạy nhanh', 'Deny rule để chặn hẳn', 'Một dòng nhắc trong CLAUDE.md', 'Ask rule để hỏi trước'], answer: 3, explain: '"And ask pauses and prompts you to approve or reject the call, keeping a human in the loop for the sensitive stuff in between."' },
-    { q: 'Cách bố trí permission phổ biến mà bài học mô tả là gì?', options: ['Deny mọi thứ rồi ask từng lệnh một cách thủ công', 'Ask cho mọi tool để an toàn tuyệt đối mọi lúc', 'Allow việc thường lệ, deny vài thứ cấm, ask vùng xám', 'Allow mọi thứ rồi dựa vào hook để dọn dẹp'], answer: 2, explain: '"Most setups lean on allow for routine tools and deny for the handful of things you never want to happen with ask covering the gray area."' },
-    { q: 'Theo bài học, điểm then chốt về NƠI khai báo một hook là gì?', options: ['Trong system prompt', 'Trong settings.json', 'Trong CLAUDE.md', 'Trong một skill'], answer: 1, explain: '"You put it in settings.json, not in prose."' },
-    { q: 'Vì sao một hook chạy giống hệt nhau mọi lần, bất kể Claude nghĩ gì?', options: ['Vì nó nằm trong config, ngoài suy luận của model', 'Vì Claude được huấn luyện để luôn nghe lời hook', 'Vì hook được nhắc lại trong mỗi lượt user gửi đi', 'Vì hook dùng model riêng có temperature bằng 0'], answer: 0, explain: '"Because the hook lives in config rather than in the model\'s reasoning, it fires the same way every single time no matter what Claude decides to do in the moment."' },
-    { q: 'Một hook trong settings.json được mô tả bởi hai thành phần nào?', options: ['Một prompt và một model', 'Một tool và một permission', 'Một biến môi trường và một cờ', 'Một sự kiện và một lệnh'], answer: 3, explain: '"Each hook names the event that should trigger it and points to the command that runs when that event happens."' },
-    { q: 'Bạn cần chặn một lệnh shell nguy hiểm trước khi nó kịp chạy. Sự kiện hook nào phù hợp?', options: ['PostToolUse', 'PreToolUse', 'Notification', 'Stop'], answer: 1, explain: '"Pre-tool use fires before a tool call runs, which is the moment you can still stop something."' },
-    { q: 'Bạn viết một PostToolUse hook để chặn ghi file vào thư mục production. Vấn đề là gì?', options: ['PostToolUse không đọc được tên tool', 'PostToolUse chỉ chạy một lần mỗi phiên làm việc', 'Nó chạy khi lời gọi đã xong, không chặn được', 'PostToolUse chỉ áp cho tool MCP'], answer: 2, explain: '"It fires after the call has already finished, so it\'s great for logging or reacting to a result, but it can\'t block something that has already run."' },
-    { q: 'Bạn muốn chạy script chuẩn bị môi trường mỗi khi mở phiên mới. Sự kiện nào hợp nhất?', options: ['PreToolUse', 'Stop', 'Notification', 'SessionStart'], answer: 3, explain: '"Session start fires when a new session begins, handy for setup work."' },
-    { q: 'Bạn muốn ghi audit log kết quả của mọi tool call sau khi chúng chạy xong. Sự kiện nào phù hợp?', options: ['PostToolUse', 'PreToolUse', 'SessionStart', 'Notification'], answer: 0, explain: '"Post-tool use fires after a tool call finishes, once the result is in." Hợp cho "logging or reacting to a result".' },
-    { q: 'Sự kiện Stop được kích hoạt khi nào?', options: ['Khi người dùng nhấn Ctrl+C', 'Khi một tool call bị deny', 'Khi một câu trả lời hoàn tất', 'Khi phiên bị đóng do hết token'], answer: 2, explain: '"Stop fires when a response completes and session start fires when a new session begins."' },
-    { q: 'Câu nào KHÔNG đúng về năm sự kiện hook trong bài?', options: ['Chúng là những điểm hook phổ biến', 'Phải dùng đủ cả năm thì hook mới chạy', 'Chọn sự kiện nơi hành động tự nhiên nằm', 'Mỗi sự kiện là chỗ để thực thi hoặc ghi log'], answer: 1, explain: '"You don\'t have to use all of them. You just pick the moment where the action you care about naturally lives."' },
-    { q: 'Một PreToolUse hook muốn can thiệp vào tool call. Nó đặt trường nào?', options: ['permissionDecision', 'stopReason', 'toolChoice', 'hookEventName'], answer: 0, explain: '"When a pre-tool use hook does weigh in on a tool call, it sets a field called permission decision and that field has four possible values."' },
-    { q: 'Giá trị nào KHÔNG thuộc bốn giá trị của permissionDecision?', options: ['allow', 'defer', 'ask', 'retry'], answer: 3, explain: '"Allow, deny, ask, defer. Each value maps directly to how the pending call is handled."' },
-    { q: 'Hook của bạn chỉ muốn ý kiến ở vài lệnh, còn lại để permission rule thường xử lý. Nó nên trả permissionDecision nào cho phần còn lại?', options: ['allow', 'defer', 'deny', 'ask'], answer: 1, explain: '"The fourth value is defer, which falls back to your normal permission rules instead of forcing an outcome right there."' },
-    { q: 'Một PreToolUse hook trả về object rỗng {}. Tool call sẽ thế nào?', options: ['Bị chặn vì hook không trả quyết định', 'Bị hỏi lại người dùng để chắc chắn', 'Giữ nguyên, cư xử như allow', 'Hook bị coi là lỗi và chạy lại'], answer: 2, explain: '"If a hook returns an empty object, the call is simply left unchanged, which behaves like allow."' },
-    { q: 'Vì sao bài học nói kết quả của hook quyết định số phận tool call một cách tất định?', options: ['Vì hook luôn hỏi lại Claude trước khi trả lời', 'Vì Claude tự chọn có nghe hook hay không', 'Mỗi giá trị trả về ánh xạ thẳng tới cách xử lý', 'Vì hook chỉ chạy khi model đồng ý'], answer: 2, explain: '"Each value maps directly to how the pending call is handled, so the hook\'s return decides the outcome deterministically."' },
-    { q: 'Hook của bạn cần biết URL của một endpoint nội bộ. Nên đặt giá trị đó ở đâu?', options: ['Biến môi trường trong settings.json', 'Hard-code trong từng script hook', 'Một dòng hướng dẫn trong CLAUDE.md của dự án', 'Gõ vào chat mỗi phiên'], answer: 0, explain: '"You can set environment variables that your tools and hooks read at runtime, so a value like an endpoint or a flag lives in config, not scattered through your code."' },
-    { q: 'Ngoài model mặc định, settings.json còn cho đặt gì liên quan tới model?', options: ['Giá token của từng model', 'Danh sách model bị cấm dùng', 'Trọng số fine-tune riêng của dự án', 'Fallback khi model đầu không sẵn sàng'], answer: 3, explain: '"You can name a default model for the session and a fallback to use if the first one isn\'t available."' },
-    { q: 'Chủ đề chung của phần env, model, effort trong settings.json là gì?', options: ['Mỗi phiên tự đặt lại giá trị cho linh hoạt', 'Đặt một lần ở một chỗ, mọi phiên tự nhận', 'Để model tự chọn giá trị phù hợp nhất', 'Đặt giá trị trong code để dễ review'], answer: 1, explain: '"Set the value once in one place and every session in that scope picks it up instead of you repeating yourself or hard coding it."' },
-    { q: 'Thay đổi nào thuộc về CLAUDE.md thay vì settings.json?', options: ['Quy ước đặt tên biến', 'Rule deny cho rm -rf', 'Hook format code', 'Biến môi trường API_URL'], answer: 0, explain: '"CLAUDE.md holds natural language instructions that Claude reads as context guidance rather than machinery."' },
-    { q: 'Bài học đưa ra lý do nào cho quy tắc "permissions và hooks không bao giờ nằm trong văn xuôi"?', options: ['Văn xuôi tốn nhiều token hơn JSON', 'CLAUDE.md không được commit vào git', 'Văn xuôi là gợi ý, config được thực thi', 'CLAUDE.md chỉ đọc lúc khởi động'], answer: 2, explain: '"Permissions and hooks go in settings.json, never in prose because prose is a suggestion and config is enforced."' },
-    { q: 'Bạn vừa sửa một deny rule trong settings.json khi phiên đang chạy. Điều gì xảy ra?', options: ['Cần khởi động lại Claude Code', 'Phải chạy một slash command riêng', 'Chỉ áp dụng cho phiên kế tiếp', 'Thay đổi có hiệu lực ngay'], answer: 3, explain: '"Most settings.json keys like permissions, hooks, and environment take effect live."' },
-    { q: 'Bạn đổi model mặc định trong settings.json nhưng phiên hiện tại vẫn dùng model cũ. Giải thích đúng là gì?', options: ['File bị lỗi cú pháp JSON', 'Model cần restart hoặc slash command', 'Managed policy đang khóa trường model lại', 'Model mới chưa được phát hành'], answer: 1, explain: '"But a couple, model, and output style need a restart or a slash command to pick up."' },
-    { q: 'Cặp key nào cần khởi động lại hoặc slash command để nhận thay đổi?', options: ['permissions và hooks', 'env và permissions', 'model và output style', 'hooks và env'], answer: 2, explain: '"A couple, model, and output style need a restart or a slash command to pick up."' },
-    { q: 'Theo phần tổng kết, vì sao settings.json quan trọng?', options: ['Nó chứa kiểm soát được thực thi, không phải gợi ý', 'Nó giúp Claude trả lời nhanh và rẻ hơn', 'Nó thay thế hoàn toàn cho CLAUDE.md', 'Nó là nơi duy nhất Claude đọc lúc khởi động'], answer: 0, explain: '"It matters because these are enforced controls, not suggestions the model can interpret."' },
-    { q: 'Một hook PreToolUse trả "ask" cho lệnh deploy. Điều gì xảy ra?', options: ['Lệnh chạy ngay, chỉ ghi log lại', 'Lệnh bị chặn và không bao giờ chạy', 'Rơi về permission rule thường', 'Bạn được hỏi duyệt hay từ chối'], answer: 3, explain: '"Ask hands the decision to you to approve or reject."' },
-    { q: 'Bạn cần cả hai: chặn lệnh nguy hiểm và ghi lại kết quả các lệnh đã chạy. Thiết kế nào đúng?', options: ['Một PostToolUse hook cho cả hai việc', 'PreToolUse để chặn, PostToolUse để ghi log', 'Một Stop hook kiểm tra toàn bộ phiên', 'Ghi cả hai yêu cầu vào CLAUDE.md thật rõ ràng'], answer: 1, explain: '"If your goal is to prevent a risky action, reach for pre-tool use. If your goal is to record or respond after the fact, post-tool use is the right tool."' }
+    { q: "A team wants Claude Code to never run a destructive shell command, regardless of what the model decides. Where should this control live?", options: ["A strongly worded rule in CLAUDE.md", "A deny rule in settings.json", "A reminder typed at the start of each session", "An instruction inside the output style"], answer: 1, explain: "Settings are enforced: \"The model can't talk its way past a deny rule.\" CLAUDE.md is natural-language guidance, \"a suggestion\"." },
+    { q: "A developer wants routine tools like reading files to run without prompts, but wants to approve anything that edits production config. Which combination is MOST appropriate?", options: ["Deny for routine tools, allow for the sensitive edits", "Ask for every tool call in the project", "Allow for every tool and log afterwards", "Allow for routine tools, ask for the sensitive edits"], answer: 3, explain: "Allow \"lets a matching call run automatically\", while ask \"keeps a human in the loop for the sensitive stuff in between\"." },
+    { q: "A security team needs a hook that can stop a risky tool call before it executes. Which hook event should they use?", options: ["PreToolUse", "PostToolUse", "Notification", "Stop"], answer: 0, explain: "PreToolUse \"fires before a pending tool call executes\", so it \"can deny or ask on a dangerous action and actually stop it\". PostToolUse runs after the fact." },
+    { q: "A team wants to record the result of every tool call to an audit log after it finishes. Which hook event is the BEST fit?", options: ["SessionStart", "PreToolUse", "PostToolUse", "Notification"], answer: 2, explain: "PostToolUse fires \"after a tool call finishes, once the result is in\", which makes it \"great for logging or reacting to a result\"." },
+    { q: "A developer registers a PostToolUse hook intended to block dangerous file deletions. What will happen?", options: ["The hook blocks the deletion if it returns deny", "It runs too late to block the deletion", "The hook converts the deletion into an ask prompt", "The hook delays the deletion until approval"], answer: 1, explain: "PostToolUse \"can't block something that has already run\". To prevent an action, \"reach for pre-tool use\"." },
+    { q: "A PreToolUse hook returns a permissionDecision of defer. How is the pending tool call handled?", options: ["It is blocked outright", "It is approved and runs immediately", "It is retried automatically after the session restarts", "It falls back to the normal permission rules"], answer: 3, explain: "Defer \"falls back to your normal permission rules instead of forcing an outcome right there.\"" },
+    { q: "A PreToolUse hook script returns an empty object. What is the effect on the pending tool call?", options: ["The call is left unchanged, behaving like allow", "The call is denied by default", "The user is asked to approve the call", "The hook is treated as a failure and the call is retried"], answer: 0, explain: "\"If a hook returns an empty object, the call is simply left unchanged, which behaves like allow.\"" },
+    { q: "Why does a hook give a stronger guarantee than an instruction written for the model?", options: ["Hooks are written in a stricter syntax", "Hooks are cached as part of the system prompt prefix", "Hooks run outside the model, deterministically", "Hooks are re-sent to the model in every single user message"], answer: 2, explain: "Because the hook \"lives in config rather than in the model's reasoning, it fires the same way every single time no matter what Claude decides to do\"." },
+    { q: "Which TWO pieces of information does each hook declaration provide? (Choose TWO.)", options: ["The event that should trigger it", "The model that should evaluate it", "The command that runs when the event happens", "The CLAUDE.md section it overrides", "The output style it applies to"], answer: [0, 2], explain: "\"Each hook names the event that should trigger it and points to the command that runs when that event happens. That's really the whole shape of it.\"" },
+    { q: "A team needs to run environment setup work whenever a new Claude Code session begins. Which hook event is the natural place?", options: ["Stop", "SessionStart", "PostToolUse", "Notification"], answer: 1, explain: "SessionStart \"fires when a new session begins, handy for setup work.\"" },
+    { q: "A team changes the default model in settings.json during a running session, but nothing changes. What is the MOST likely explanation?", options: ["The model key is only read from CLAUDE.md", "Model settings require a deny rule to activate", "The fallback model always overrides the configured default model", "It needs a restart or a slash command"], answer: 3, explain: "\"Most settings.json keys like permissions, hooks, and environment take effect live, but a couple, model, and output style need a restart or a slash command.\"" },
+    { q: "Which TWO settings.json keys take effect live without a restart? (Choose TWO.)", options: ["Model", "Permissions", "Output style", "Hooks", "Theme of the chat app"], answer: [1, 3], explain: "Permissions, hooks, and environment \"take effect live\"; model and output style need a restart or a slash command." },
+    { q: "A service endpoint URL is hard-coded in several hook scripts. What does the lesson recommend?", options: ["Set it as an environment variable in settings.json", "Describe the endpoint in CLAUDE.md", "Pass the endpoint in every user prompt", "Store it in a PostToolUse hook output"], answer: 0, explain: "Environment variables that \"your tools and hooks read at runtime\" let a value like an endpoint live \"in config, not scattered through your code.\"" },
+    { q: "Which statement about CLAUDE.md and settings.json is accurate?", options: ["Both are enforced in the same way", "CLAUDE.md holds permissions; settings.json holds guidance", "CLAUDE.md guides; settings.json enforces", "settings.json is read by the model as context guidance"], answer: 2, explain: "\"Settings.json holds machine-readable config... Clod.md holds natural language instructions that Claude reads as context guidance rather than machinery.\"" },
+    { q: "Which TWO are valid permissionDecision values a PreToolUse hook can return? (Choose TWO.)", options: ["retry", "escalate", "defer", "skip", "ask"], answer: [2, 4], explain: "The four values are \"Allow, deny, ask, defer.\" Retry, escalate, and skip are not among them." },
+    { q: "A PreToolUse hook returns ask for a pending tool call. What happens?", options: ["The call runs and the user is notified afterwards", "The decision is handed to the user to approve or reject", "The call is blocked and logged", "The call falls back to the normal permission rules"], answer: 1, explain: "\"Ask hands the decision to you to approve or reject.\" Falling back to the normal rules is what defer does." },
+    { q: "A team wants a primary model and a backup if the first one is unavailable. Where should this be configured?", options: ["In a PreToolUse hook", "As a written preference in the project CLAUDE.md file", "In a Notification hook", "As a default and fallback model in settings.json"], answer: 3, explain: "In settings.json \"you can name a default model for the session and a fallback to use if the first one isn't available.\"" },
+    { q: "A developer wants to be alerted through a desktop script whenever Claude surfaces a message to them. Which hook event fits?", options: ["Notification", "PreToolUse", "SessionStart", "PostToolUse"], answer: 0, explain: "Notification \"fires when Claude surfaces a message to you.\"" },
+    { q: "Which TWO belong in settings.json rather than CLAUDE.md? (Choose TWO.)", options: ["A deny rule for a dangerous command", "A note explaining the team's naming style", "A description of the project architecture", "A PreToolUse hook that blocks risky edits", "A preferred tone for code comments"], answer: [0, 3], explain: "\"Permissions and hooks go in settings.json, never in prose because prose is a suggestion and config is enforced.\" Style and architecture notes are guidance for CLAUDE.md." },
+    { q: "A team wants something to happen every time a response completes, such as running a summary script. Which hook event matches?", options: ["SessionStart", "PreToolUse", "Stop", "Notification"], answer: 2, explain: "\"Stop fires when a response completes.\"" },
+    { q: "What does a deny permission rule do to a matching tool call?", options: ["Asks the user before running it", "Blocks it outright so it never executes", "Runs it but records a warning in the session log", "Defers it to the PreToolUse hook"], answer: 1, explain: "\"Deny blocks a matching call outright so a dangerous or unwanted action never executes at all.\"" },
+    { q: "Which statement about the five hook events in the lesson is accurate?", options: ["Every project must register all five", "They are the only hook events that exist", "Only PreToolUse and PostToolUse can run scripts", "Pick the moment where the action you care about naturally lives"], answer: 3, explain: "They are \"among the most common hook points. You don't have to use all of them. You just pick the moment where the action you care about naturally lives.\"" },
+    { q: "A developer asks why the lesson calls settings.json values \"settings, not suggestions\". What is the BEST explanation?", options: ["They are enforced controls the model cannot reinterpret", "They are written in JSON instead of Markdown", "They are loaded before the system prompt", "They are cached across all surfaces"], answer: 0, explain: "\"These are enforced controls, not suggestions the model can interpret.\"" },
+    { q: "Which TWO are configured in settings.json according to the lesson? (Choose TWO.)", options: ["Natural-language coding conventions", "Environment variables read by tools and hooks", "The project architecture overview", "Per-session throwaway steering", "The effort level and other harness options"], answer: [1, 4], explain: "settings.json handles environment variables, a default and fallback model, and \"things like the effort level and other harness options\"." },
+    { q: "A team keeps adding hooks to CLAUDE.md as plain-text instructions like \"always run the linter after edits\". The linter runs only sometimes. What is the MOST appropriate fix?", options: ["Rewrite the instruction in capital letters", "Move the instruction into a user message", "Register a PostToolUse hook in settings.json", "Add the instruction to every prompt"], answer: 2, explain: "A hook \"fires the same way every single time\". You declare it \"in settings.json, not in prose.\"" },
+    { q: "Which statement about how a PreToolUse hook's return value is applied is accurate?", options: ["The model may override the hook's decision", "Each value maps directly to how the pending call is handled", "The value is a suggestion for the model to consider", "The value only applies to the next session"], answer: 1, explain: "\"Each value maps directly to how the pending call is handled, so the hook's return decides the outcome deterministically.\"" },
+    { q: "Where do hooks run relative to the model?", options: ["Inside the model's reasoning loop", "Inside the system prompt", "Inside CLAUDE.md context", "Outside the model, as scripts"], answer: 3, explain: "Hooks are \"deterministic scripts registered right here that fire at fixed lifecycle events running outside the model\"." },
+    { q: "A team wants a guardrail for gray-area actions that are not clearly safe or clearly forbidden. Which permission decision is designed for this?", options: ["Ask", "Allow", "Deny", "Defer"], answer: 0, explain: "Setups \"lean on allow for routine tools and deny for the handful of things you never want to happen with ask covering the gray area.\"" },
+    { q: "Which of the following is NOT a main area configured in settings.json?", options: ["Permissions", "Hooks", "Project architecture notes", "Environment and model choice"], answer: 2, explain: "settings.json covers \"permissions, hooks, environment values, and model choice\". Architecture notes are natural-language guidance for CLAUDE.md." },
+    { q: "A change to output style in settings.json does not show up. What should the developer do?", options: ["Add a deny rule", "Restart or use a slash command", "Edit CLAUDE.md instead", "Register a SessionStart hook"], answer: 1, explain: "Model and output style \"need a restart or a slash command to pick up.\"" }
   ]
 };
