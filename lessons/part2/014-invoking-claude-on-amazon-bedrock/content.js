@@ -1,139 +1,75 @@
 window.LESSON_CONTENT = {
   explanation: `
-<p class="key"><strong>Nói ngắn gọn:</strong> Nhiều dự án doanh nghiệp không được gửi dữ liệu ra API first-party; mọi thứ phải chạy trong tài khoản AWS của họ.
-<strong>Amazon Bedrock</strong> giải quyết đúng chuyện đó. Phần prompt và body request <strong>giữ nguyên</strong>; thứ thay đổi là "đường ống" xung quanh:
-endpoint khác, client khác, xác thực bằng <strong>AWS</strong> thay vì API key của Anthropic, model ID khác, và vài tính năng không có.</p>
+<p class="key"><strong>Nói ngắn gọn:</strong> Bedrock nhận <strong>cùng Messages API request body</strong> và cùng stream event format; chỉ đổi "plumbing":
+endpoint, client, <strong>AWS credentials</strong> thay cho Anthropic key, và model ID. Đường hiện tại là <strong>Bedrock Mantle</strong>.</p>
 
-<h3>📌 Từ cần biết</h3>
+<h3>🔑 Keyword cần nhớ</h3>
 <ul class="terms">
-  <li><strong>Bedrock Mantle:</strong> cách tích hợp hiện tại, đưa Messages API vào một endpoint theo vùng trong AWS. Khuyến nghị cho Opus 4.7 trở lên.</li>
-  <li><strong>Invoke model / Converse:</strong> cách tích hợp cũ (legacy), dùng ID có tiền tố profile.</li>
-  <li><strong>Profile prefix:</strong> tiền tố như <code>global.</code>, <code>us.</code>, <code>eu.</code> trên model ID của đường cũ.</li>
-  <li><strong>IAM:</strong> hệ thống quản lý danh tính và quyền của AWS.</li>
-  <li><strong>Service role:</strong> vai trò mà nền tảng tự đảm nhận cho bạn; bạn không phải giữ bí mật nào.</li>
+  <li><strong>Bedrock Mantle</strong>: tích hợp hiện tại, Anthropic khuyến nghị cho <strong>Opus 4.7 trở lên</strong>; endpoint <strong>region-scoped</strong> trong AWS.</li>
+  <li><strong>Bedrock extra</strong>: gói cài thêm cho SDK (Python, TypeScript...).</li>
+  <li><strong>Mantle client</strong>: tên client cho biết bạn đang ở đường nào.</li>
+  <li><strong>Bare anthropic. prefix</strong>: model ID trên Mantle, ví dụ <code>anthropic.claude-opus-4-8</code>, không có US/EU.</li>
+  <li><strong>InvokeModel / Converse</strong>: đường <strong>legacy</strong>, dùng client Anthropic Bedrock thường, ID có prefix <code>global.</code>/<code>us.</code>/<code>eu.</code>.</li>
+  <li><strong>Bedrock service role</strong>: cách xác thực được khuyến nghị nhất.</li>
+  <li><strong>IAM assumed role</strong>: hợp cross-account, tối đa 12 giờ.</li>
+  <li><strong>Bearer token</strong>: kém ưu tiên nhất, tối đa 12 giờ, là static credential.</li>
 </ul>
 
-<h3>Tin tốt: logic prompt không đổi</h3>
-<p>Bedrock nhận <strong>đúng body Messages API</strong> và stream về <strong>cùng định dạng sự kiện</strong>. Code parse, bộ đọc stream, vòng lặp xử lý tool
-đều chuyển sang nguyên vẹn.</p>
-<div class="box">🚪 <strong>Hình dung thế này:</strong> Bạn chỉ <strong>thay cửa chính</strong>, không thay căn phòng phía sau.
-Đi vào bằng cửa khác (endpoint, client, chìa khóa AWS), nhưng bên trong vẫn là những đồ đạc quen thuộc (body request, sự kiện stream, vòng tool).</div>
-
-<h3>Đường hiện tại: Bedrock Mantle</h3>
+<h3>🎯 Trọng tâm thi</h3>
 <ul>
-  <li>Đưa Messages API vào một <strong>endpoint theo vùng</strong> trong AWS; traffic đi vào vùng của bạn thay vì server của Anthropic.</li>
-  <li>Cài <strong>gói Bedrock extra</strong> cho SDK ngôn ngữ bạn dùng (Python, TypeScript...). Từ đó request trông giống hệt lời gọi first-party.</li>
-  <li>Thói quen nên có: <strong>đọc tên client</strong>. Tên client cho bạn và người review biết ngay đang ở đường tích hợp nào, rất hữu ích khi code cũ và mới nằm cạnh nhau.</li>
+  <li>Opus 4.7+ hoặc code mới → <strong>Mantle</strong>; Opus 4.6 trở xuống hoặc bảo trì code cũ → InvokeModel.</li>
+  <li>Thứ tự credential: <strong>constructor args</strong> &gt; <strong>env vars</strong> (access key, secret, session token, region) &gt; <strong>AWS config file</strong>/credential chain. Sai identity → kiểm tra constructor args và env vars trước.</li>
+  <li>Ưu tiên auth: <strong>service role</strong> &gt; IAM assumed role &gt; bearer token. Không cái nào là Anthropic key; quyền do <strong>AWS IAM</strong> quản lý.</li>
+  <li><strong>Không có</strong>: URL image, Files API (ảnh/tài liệu gửi inline base64, ảnh tối đa <strong>5 MB</strong>), server tools (code execution, web search, web fetch), <strong>Message Batches API</strong>, <strong>MCP connector</strong>.</li>
+  <li><strong>Vẫn có</strong>: prompt caching, extended thinking, client tools (bash, text editor, memory, computer use), citations, structured outputs.</li>
+  <li>Endpoint: <strong>global</strong> không phụ phí (mặc định); <strong>regional</strong> khoảng <strong>+10%</strong> để giữ dữ liệu theo vùng.</li>
 </ul>
 
-<h3>Phân biệt quan trọng nhất: đường hiện tại và đường cũ</h3>
+<h3>⚠️ Bẫy hay gặp</h3>
 <ul>
-  <li><strong>Hiện tại (Bedrock Mantle):</strong> model ID có tiền tố <strong>trần</strong> <code>anthropic.</code>, dùng với client <strong>Anthropic Bedrock Mantle</strong>.</li>
-  <li><strong>Cũ (invoke model / converse):</strong> ID có <strong>tiền tố profile</strong> (<code>global.</code>, <code>us.</code>, <code>eu.</code>...), dùng với client <strong>Anthropic Bedrock</strong> thường.</li>
-</ul>
-<p>⚠️ Cái bẫy: đường cũ <strong>vẫn chạy</strong>, nên rất dễ chép một đoạn code cũ rồi tưởng là mới. Với Opus 4.7 trở lên, dùng Mantle.
-Để dành invoke model cho Opus 4.6 trở xuống, hoặc cho code đang bảo trì, đừng viết mới bằng nó.</p>
-
-<h3>Model ID</h3>
-<ul>
-  <li><strong>Mantle:</strong> tiền tố trần, kiểu "anthropic.claude-opus-4-8". <strong>Không có</strong> tiền tố us., eu. hay profile vùng.</li>
-  <li><strong>Đường cũ:</strong> ID có tiền tố profile; <code>global.</code> là mặc định khuyến nghị, dạng theo vùng (us., eu.) là tùy chọn với phụ phí khoảng <strong>10%</strong>.</li>
-</ul>
-<p>Quy tắc: dùng client Mantle thì dùng tiền tố trần. Thấy mình với tay lấy ID có tiền tố profile là bạn đã âm thầm quay lại đường cũ; hãy tự hỏi có thật muốn vậy không.</p>
-
-<h3>Xác thực: thứ tự ưu tiên</h3>
-<p>Trên Bedrock bạn <strong>không bao giờ</strong> gửi API key của Anthropic. Client tìm thông tin xác thực AWS theo thứ tự:</p>
-<ol>
-  <li><strong>Tham số truyền vào constructor</strong>: thắng tất cả.</li>
-  <li><strong>Biến môi trường</strong>: access key, secret key, session token, region của AWS.</li>
-  <li><strong>File cấu hình AWS</strong> và chuỗi thông tin xác thực chuẩn.</li>
-</ol>
-<p>Tường minh luôn thắng ngầm định. Nếu request xác thực nhầm danh tính, hãy kiểm tra <strong>tham số constructor</strong> hay <strong>biến môi trường</strong> lạc trước tiên.</p>
-
-<h3>Ba nguồn thông tin xác thực, xếp theo mức khuyến nghị</h3>
-<ul>
-  <li><strong>Bedrock service role</strong> (khuyến nghị): nền tảng tự đảm nhận vai trò, bạn không giữ gì nhạy cảm.</li>
-  <li><strong>IAM assumed role:</strong> hợp cho truy cập chéo tài khoản, phiên tối đa <strong>12 giờ</strong>.</li>
-  <li><strong>Bearer token</strong> (ít khuyến nghị nhất): cũng tối đa 12 giờ, nhưng tạo riêng và truyền như một API key, tức một bí mật tĩnh mà code phải giữ.</li>
-</ul>
-<p>Điểm chung: không cái nào là API key của Anthropic. Quyền truy cập Claude ở đây do <strong>AWS IAM</strong> quản lý, thường đúng thứ đội bảo mật muốn.</p>
-
-<h3>Những gì KHÔNG có trên Bedrock</h3>
-<ul>
-  <li><strong>Không có ảnh qua URL</strong> và <strong>không có Files API</strong>: ảnh hay tài liệu phải gửi inline base64; ảnh tối đa <strong>5 MB</strong> mỗi cái.</li>
-  <li><strong>Server tools không chạy</strong>: không code execution, web search, web fetch.</li>
-  <li><strong>Không có Message Batches API</strong> và <strong>MCP connector</strong>.</li>
-</ul>
-<p>Không cái nào chặn một app hỏi đáp thông thường, nhưng nếu thiết kế dựa vào batch hay server tool thì cần kế hoạch khác trên Bedrock.</p>
-
-<h3>Những gì vẫn chạy</h3>
-<ul>
-  <li><strong>Prompt caching</strong> (vẫn được giảm giá), <strong>extended thinking</strong>.</li>
-  <li><strong>Client-side tool use</strong> đầy đủ, kể cả bash, text editor, memory và computer use.</li>
-  <li><strong>Citations</strong> và <strong>structured outputs</strong>.</li>
-  <li>Chọn loại endpoint: <strong>global</strong> không phụ phí; <strong>regional</strong> thêm khoảng 10% để dữ liệu nằm gần hơn.</li>
-</ul>
-
-<h3>✅ Nhớ 3 điều</h3>
-<ul>
-  <li>Cùng Messages API, nhưng client, xác thực và model ID khác; Mantle là đường hiện tại, invoke model là đường cũ.</li>
-  <li>Xác thực bằng AWS (constructor → môi trường → file cấu hình); service role là mặc định khuyến nghị.</li>
-  <li>Caching, thinking, client tools vẫn chạy; batch, server tools, Files API, ảnh qua URL thì không.</li>
-</ul>
-
-<h3>🇬🇧 Cụm từ tiếng Anh đáng nhớ trong bài</h3>
-<ul>
-  <li><em class="en">which features quietly change</em>: tính năng nào âm thầm thay đổi.</li>
-  <li><em class="en">the plumbing around that request</em>: đường ống quanh request đó.</li>
-  <li><em class="en">move over untouched</em>: chuyển sang nguyên vẹn.</li>
-  <li><em class="en">swapping the front door, not the room behind it</em>: thay cửa chính, không thay căn phòng phía sau.</li>
-  <li><em class="en">sit side by side</em>: nằm cạnh nhau.</li>
-  <li><em class="en">grab an old snippet</em>: chộp một đoạn code cũ.</li>
-  <li><em class="en">you have quietly slipped back onto the legacy surface</em>: bạn đã âm thầm trượt về đường cũ.</li>
-  <li><em class="en">explicit always beats implicit</em>: tường minh luôn thắng ngầm định.</li>
-  <li><em class="en">stray constructor arguments</em>: tham số constructor lạc lõng.</li>
-  <li><em class="en">off the table</em>: bị loại khỏi lựa chọn.</li>
-  <li><em class="en">with AWS holding the keys</em>: với AWS giữ chìa khóa.</li>
+  <li>"Chuyển sang Bedrock phải viết lại prompt và parser" → <strong>sai</strong>, body và stream giống hệt.</li>
+  <li>"Snippet InvokeModel vẫn chạy nên là đường hiện tại" → <strong>sai</strong>, nó là legacy.</li>
+  <li>"Dùng <code>us.</code> prefix với Mantle client" → <strong>sai</strong>, Mantle dùng bare <code>anthropic.</code>.</li>
+  <li>"Bedrock cần Anthropic API key" → <strong>sai</strong>, dùng AWS identity.</li>
+  <li>"Thiết kế dựa vào batches/web search vẫn chạy trên Bedrock" → <strong>sai</strong>.</li>
 </ul>
 
 <h3>💻 Bài tập Java</h3>
-<p>Mở <code>java-app/src/main/java/part2/lesson14/Lesson14.java</code>. Có 5 bài: chọn đường tích hợp theo phiên bản Opus, dựng model ID đúng cho Mantle và cho đường cũ,
-chọn thông tin xác thực AWS theo thứ tự ưu tiên, tìm tính năng thiết kế cần mà Bedrock không có, và tính giá endpoint regional cùng kiểm tra ảnh quá 5 MB.
-Chấm bằng <code>./mvnw -q compile exec:java -Dexec.args="p2-14"</code>.</p>
-<p>Bài này không có phần <code>--live</code> vì cần một tài khoản AWS có quyền Bedrock.</p>
+<p><code>part2/lesson14/Lesson14.java</code>: chọn đường tích hợp theo phiên bản Opus, dựng model ID, chọn credential theo thứ tự ưu tiên, tìm tính năng thiếu, tính giá regional và kiểm tra ảnh 5 MB.
+Chấm: <code>./mvnw -q compile exec:java -Dexec.args="p2-14"</code> (không có <code>--live</code>, vì cần tài khoản AWS).</p>
 `,
 
-  // answer = index of the correct option in `options` (options are shuffled on screen).
+  // answer = index of the correct option (options are shuffled on screen); an array means "Choose TWO".
   quiz: [
-    { q: 'Vì sao nhiều dự án doanh nghiệp chọn Bedrock?', options: ['Vì Bedrock luôn rẻ hơn một nửa so với API first-party', 'Mọi thứ phải chạy trong tài khoản AWS', 'Vì Bedrock có model riêng', 'Vì Bedrock không cần prompt'], answer: 1, explain: '"On plenty of enterprise projects, you can\'t send data to the first party API. Everything has to run inside your AWS account."' },
-    { q: 'Khi chuyển sang Bedrock, điều gì GIỮ NGUYÊN?', options: ['Endpoint và client', 'API key của Anthropic', 'Body request và stream', 'Model ID'], answer: 2, explain: '"Bedrock accepts the exact same messages API request body, and it streams responses back with the same event format you already handle."' },
-    { q: 'Ba thứ thay đổi khi lên Bedrock là gì?', options: ['Endpoint, client, xác thực', 'Prompt, schema, tool', 'Model, max_tokens và cấu trúc mảng messages', 'Streaming, caching, thinking'], answer: 0, explain: '"You point at a different endpoint, you use a different client, and you authenticate with AWS instead of an Anthropic key."' },
-    { q: 'Cách tích hợp hiện tại được khuyến nghị cho Opus 4.7 trở lên là gì?', options: ['Invoke model', 'Converse', 'Batches trên Bedrock', 'Bedrock Mantle'], answer: 3, explain: '"The current integration is called Bedrock Mantle. And it is the path Anthropic recommends for Opus 4.7 and later."' },
-    { q: 'Bedrock Mantle đưa Messages API vào đâu?', options: ['Server của Anthropic', 'Endpoint theo vùng trong AWS', 'Một máy chủ trong mạng nội bộ của bạn', 'Lambda function'], answer: 1, explain: '"The Bedrock Mantle integration exposes the messages API at a region scoped endpoint inside AWS."' },
-    { q: 'Thói quen nào giúp biết ngay code đang dùng đường tích hợp nào?', options: ['Đọc phiên bản SDK', 'Xem giá trên hóa đơn', 'Đọc tên client', 'Đếm số dòng code'], answer: 2, explain: '"The one habit worth forming early is reading the client name. The client you construct tells you... exactly which integration you are on."' },
-    { q: 'Đường hiện tại (Mantle) dùng model ID dạng nào?', options: ['anthropic. trần', 'Tiền tố global. đứng trước anthropic.', 'Tiền tố us. đứng trước anthropic.', 'Không có tiền tố nào, chỉ tên model'], answer: 0, explain: '"The current path is Bedrock Mantle, and it pairs a bare Anthropic prefix on model IDs with the Anthropic Bedrock Mantle client."' },
-    { q: 'Đường cũ (invoke model) dùng model ID dạng nào?', options: ['Tiền tố trần anthropic.', 'Tên model không có tiền tố', 'Chỉ dùng ARN', 'Tiền tố profile'], answer: 3, explain: '"The legacy path is the older invoke model or converse style, and it pairs profile prefixed identifiers, global dot, US dot, EU dot."' },
-    { q: 'Vì sao dễ dùng nhầm đường cũ?', options: ['Vì đường cũ rẻ hơn', 'Vì đường cũ vẫn chạy', 'Vì tài liệu chỉ có đường cũ', 'Vì Mantle chưa ra mắt'], answer: 1, explain: '"Because the legacy path still functions, it is easy to grab an old snippet and assume it is current. It isn\'t."' },
-    { q: 'Khi nào vẫn nên dùng invoke model?', options: ['Cho mọi dự án mới', 'Cho Opus 4.8', 'Opus 4.6 trở xuống', 'Khi cần streaming'], answer: 2, explain: '"Save invoke model for Opus 4.6 and earlier, or for code you are maintaining, rather than writing fresh."' },
-    { q: 'Bạn dùng client Mantle nhưng điền model ID "us.anthropic.claude-opus-4-8". Vấn đề là gì?', options: ['ID của đường cũ', 'Không có vấn đề', 'Thiếu tiền tố global.', 'Phải viết hoa'], answer: 0, explain: '"If your client is the Mantle client, use the bare Anthropic prefix. If you find yourself reaching for a profile prefixed identifier, you have quietly slipped back onto the legacy surface."' },
-    { q: 'Ở đường cũ, profile nào là mặc định khuyến nghị?', options: ['us.', 'eu.', 'apac.', 'global.'], answer: 3, explain: '"Those profile prefixed identifiers... where global is the recommended default, and the regional forms are an opt-in at about a 10% premium."' },
-    { q: 'Profile theo vùng (us., eu.) ở đường cũ tốn thêm bao nhiêu?', options: ['Không tốn thêm', 'Khoảng 10%', 'Gấp đôi', 'Khoảng 50%'], answer: 1, explain: 'Các dạng theo vùng là "an opt-in at about a 10% premium".' },
-    { q: 'Trên Bedrock, bạn xác thực bằng gì?', options: ['API key của Anthropic', 'Cả API key Anthropic lẫn AWS', 'Thông tin xác thực AWS', 'Không cần xác thực trong VPC'], answer: 2, explain: '"Because Bedrock rides on AWS, you never pass an Anthropic key. Instead, the client resolves your AWS credentials through a precedence order."' },
-    { q: 'Thứ tự ưu tiên tìm thông tin xác thực AWS là gì?', options: ['Constructor → biến môi trường → file cấu hình', 'File cấu hình → biến môi trường → constructor', 'Biến môi trường → constructor → file cấu hình', 'Ngẫu nhiên'], answer: 0, explain: 'Tham số constructor "wins over everything else"; không có thì đọc biến môi trường; không có nữa thì "falls back to your AWS config file and the standard credential chain."' },
-    { q: 'Request xác thực nhầm danh tính. Nên kiểm tra gì trước?', options: ['File cấu hình AWS', 'Phiên bản SDK', 'Giá endpoint', 'Constructor và biến môi trường'], answer: 3, explain: '"The practical takeaway is that explicit always beats implicit. So if a request authenticates as the wrong identity, check for stray constructor arguments or environment variables first."' },
-    { q: 'Nguồn thông tin xác thực được khuyến nghị nhất là gì?', options: ['Bearer token', 'Bedrock service role', 'IAM user có access key dài hạn', 'API key Anthropic'], answer: 1, explain: '"The recommended option is a Bedrock service role, where the platform assumes the role for you, and you manage nothing sensitive directly."' },
-    { q: 'IAM assumed role phù hợp cho trường hợp nào, và phiên tối đa bao lâu?', options: ['Ứng dụng di động, 1 giờ', 'Script chạy một lần, 30 phút', 'Chéo tài khoản, 12 giờ', 'Mọi trường hợp, phiên không giới hạn thời gian'], answer: 2, explain: '"Next are IAM assumed roles, which work well for cross-account access and cap out at a 12-hour session."' },
-    { q: 'Vì sao bearer token ít được khuyến nghị nhất?', options: ['Bí mật tĩnh phải tự giữ', 'Vì không chạy được với Claude', 'Vì chỉ dùng ở vùng us.', 'Vì phiên tối đa 1 phút'], answer: 0, explain: '"A bearer token, which shares the same 12-hour maximum, but is generated separately and passed like an API key. A static credential your code now has to handle."' },
-    { q: 'Điểm chung của cả ba nguồn thông tin xác thực trên Bedrock là gì?', options: ['Đều tồn tại vĩnh viễn', 'Đều là API key Anthropic', 'Đều cần nhập tay mỗi lần', 'Đều do AWS IAM quản lý'], answer: 3, explain: '"All three share one property. None of them is an Anthropic key. Your access to Claude here is entirely governed by AWS identity and access management."' },
-    { q: 'Gửi ảnh qua URL trên Bedrock thì sao?', options: ['Chạy bình thường', 'Phải gửi base64', 'Phải dùng Files API', 'Chỉ chạy với ảnh PNG'], answer: 1, explain: '"There is no URL image input and no files API, so any image or document has to be sent inline as base 64."' },
-    { q: 'Mỗi ảnh trên Bedrock tối đa bao nhiêu?', options: ['10 MB', '256 MB', '5 MB', '1 MB'], answer: 2, explain: '"And images are capped at five megabytes each."' },
-    { q: 'Tính năng nào KHÔNG có trên Bedrock?', options: ['Web search', 'Prompt caching', 'Extended thinking', 'Structured outputs'], answer: 0, explain: '"The server-side tools don\'t run here, so code execution, web search, and web fetch are off the table."' },
-    { q: 'Thiết kế của bạn dựa vào Message Batches để xử lý đêm. Trên Bedrock thì sao?', options: ['Chạy bình thường với nửa giá', 'Chạy nhưng giá gấp đôi', 'Chỉ chạy với Opus 4.6', 'Không có Batches API'], answer: 3, explain: '"The message batches API and the MCP connector are both unavailable... if your design leaned on batches or server tools, you\'ll need a different plan on Bedrock."' },
-    { q: 'Những gì VẪN chạy trên Bedrock?', options: ['Files API và URL image', 'Caching, thinking, client tools', 'Web fetch và code execution', 'Batches và MCP connector'], answer: 1, explain: '"Prompt caching works... Extended thinking works... Client-side tool use is fully supported... Citations and structured outputs both work as well."' },
-    { q: 'Client tool nào được nhắc là chạy đầy đủ trên Bedrock?', options: ['Chỉ text editor', 'Không client tool nào', 'Bash, editor, memory, computer use', 'Chỉ computer use'], answer: 2, explain: '"Client-side tool use is fully supported, including the bash, text editor, memory, and computer use tools."' },
-    { q: 'Endpoint global và regional trên Bedrock khác nhau thế nào về giá?', options: ['Regional thêm ~10%', 'Global đắt hơn 10%', 'Bằng nhau', 'Regional rẻ hơn một nửa'], answer: 0, explain: '"Global endpoints carry no premium, while regional endpoints add about 10% for tighter data locality."' },
-    { q: 'Một app hỏi đáp thông thường (không batch, không server tool) chuyển lên Bedrock. Đánh giá đúng là gì?', options: ['Không thể chạy', 'Phải viết lại toàn bộ prompt', 'Phải đổi định dạng stream', 'Gần như y hệt first-party'], answer: 3, explain: '"None of these block a typical request and response app... Design your app to the supported feature set, and a Bedrock deployment behaves almost exactly like a first-party one, just with AWS holding the keys."' },
-    { q: 'Code parse response, bộ đọc stream và vòng xử lý tool khi chuyển sang Bedrock thì sao?', options: ['Phải viết lại hết', 'Chuyển sang nguyên vẹn', 'Chỉ giữ được vòng tool', 'Chỉ giữ được bộ đọc stream'], answer: 1, explain: '"Because the body shape matches your parsing code, your streaming consumer and your tool handling loop all move over untouched."' },
-    { q: 'Câu tổng kết đúng của bài là gì?', options: ['Bedrock dùng API key Anthropic với endpoint khác', 'Invoke model là đường hiện tại', 'Cùng API, khác client/xác thực/ID', 'Bedrock không hỗ trợ caching'], answer: 2, explain: '"Bedrock serves Claude through AWS with the same messages API, but a different client, credentials, and model IDs... Bedrock mantle is current, and invoke model is legacy."' },
-  ],
+    { q: "An enterprise team must keep all Claude traffic inside its AWS account. They already have working Messages API code. What changes when they move to Bedrock?", options: ["The prompt logic and response parsing must be rewritten", "The endpoint, client, credentials, and model IDs", "Only the model name inside the prompt text", "The streaming event format and tool loop"], answer: 1, explain: "\"Your prompt logic doesn't change.\" Bedrock accepts \"the exact same messages API request body\"; \"what changes is the plumbing around that request.\"" },
+    { q: "A developer starts a new project on Bedrock using Opus 4.7. Which integration path is MOST appropriate?", options: ["InvokeModel with a global. profile ID", "The Converse API with a us. profile ID", "The first-party API with an AWS key", "Bedrock Mantle with the Mantle client"], answer: 3, explain: "Bedrock Mantle \"is the path Anthropic recommends for Opus 4.7 and later.\"" },
+    { q: "Which model ID matches the Bedrock Mantle path?", options: ["anthropic.claude-opus-4-8", "us.anthropic.claude-opus-4-8", "global.anthropic.claude-opus-4-8", "eu.anthropic.claude-opus-4-8"], answer: 0, explain: "On Mantle, \"the IDs carry a bare Anthropic prefix\" with \"no US prefix, no EU prefix, no regional profile wrapper.\"" },
+    { q: "A reviewer sees code that pairs a us. prefixed model ID with the plain Anthropic Bedrock client. What does this indicate?", options: ["The code uses Bedrock Mantle in the US region", "The code uses the first-party API", "The code uses the legacy InvokeModel path", "The code is misconfigured and cannot run"], answer: 2, explain: "Profile prefixed identifiers like \"global dot, US dot, EU dot\" with \"the plain Anthropic Bedrock client\" are the legacy path, which \"still works\"." },
+    { q: "A developer copies an old InvokeModel snippet for a new Opus 4.8 project because it runs without errors. What is the BEST response?", options: ["Keep it, since a working path is current", "Use Bedrock Mantle for new Opus 4.7+ work", "Keep it but switch to a regional ID", "Add the Mantle extra next to InvokeModel"], answer: 1, explain: "\"Because the legacy path still functions, it is easy to grab an old snippet and assume it is current. It isn't. For Opus 4.7 and later, reach for Bedrock Mantle.\"" },
+    { q: "When is the InvokeModel path still a reasonable choice?", options: ["For any new project that needs message batches", "For all streaming workloads", "For the lowest-cost global endpoint", "For Opus 4.6 and earlier, or maintained code"], answer: 3, explain: "\"Save invoke model for Opus 4.6 and earlier, or for code you are maintaining, rather than writing fresh.\"" },
+    { q: "A request on Bedrock authenticates as the wrong AWS identity. What should you check FIRST?", options: ["Stray constructor args or env variables", "The model ID prefix used in each request", "The AWS config file on the machine", "The Anthropic API key in the headers"], answer: 0, explain: "\"Explicit always beats implicit. So if a request authenticates as the wrong identity, check for stray constructor arguments or environment variables first.\"" },
+    { q: "In what order does the Bedrock client resolve AWS credentials, from highest to lowest precedence?", options: ["Config file, environment variables, constructor args", "Environment variables, constructor args, config file", "Constructor args, environment variables, config file", "Constructor args, config file, environment variables"], answer: 2, explain: "Constructor arguments \"win over everything else\"; then environment variables; then \"your AWS config file and the standard credential chain.\"" },
+    { q: "A security team wants the credential option Anthropic recommends for Bedrock. Which should you choose?", options: ["A bearer token passed like an API key", "A Bedrock service role", "An IAM assumed role from another account", "Static keys hardcoded in the constructor"], answer: 1, explain: "\"The recommended option is a Bedrock service role, where the platform assumes the role for you, and you manage nothing sensitive directly.\"" },
+    { q: "Which credential option is the LEAST preferred for Bedrock?", options: ["A Bedrock service role", "An IAM assumed role", "The default credential chain", "A bearer token"], answer: 3, explain: "\"The least preferred option is a bearer token\", \"a static credential your code now has to handle.\"" },
+    { q: "Which TWO statements about IAM assumed roles and bearer tokens on Bedrock are accurate? (Choose TWO.)", options: ["Both are capped at a 12-hour session", "Bearer tokens are the recommended default", "IAM assumed roles work well for cross-account access", "Bearer tokens are Anthropic API keys", "IAM assumed roles have no session limit"], answer: [0, 2], explain: "IAM assumed roles \"work well for cross-account access and cap out at a 12-hour session\"; the bearer token \"shares the same 12-hour maximum\"." },
+    { q: "Which TWO statements about Bedrock authentication are accurate? (Choose TWO.)", options: ["You pass an Anthropic key with each call", "Access is governed by AWS IAM", "The config file overrides constructor args", "Constructor args override environment variables", "Bearer tokens are the recommended option"], answer: [1, 3], explain: "\"Your access to Claude here is entirely governed by AWS identity and access management\", and constructor arguments \"win over everything else.\" The service role, not the bearer token, is recommended." },
+    { q: "A team's design depends on the Message Batches API for nightly jobs. They plan to move to Bedrock. What should they expect?", options: ["The Message Batches API is unavailable", "Batches run at the same half price", "Batches need the Mantle extra only", "Batches work only on regional endpoints"], answer: 0, explain: "\"The message batches API and the MCP connector are both unavailable\" on Bedrock, so a design that leaned on batches needs \"a different plan\"." },
+    { q: "Which TWO features are NOT available on Bedrock? (Choose TWO.)", options: ["Prompt caching", "Extended thinking", "Web search server tool", "Structured outputs", "The MCP connector"], answer: [2, 4], explain: "\"Code execution, web search, and web fetch are off the table\" and \"the MCP connector\" is unavailable. Caching, thinking, and structured outputs work." },
+    { q: "An app sends images by URL on the first-party API. How must images be sent on Bedrock?", options: ["Uploaded through the Files API first", "As S3 URLs in the source field", "Inline as base64, up to 5 MB each", "As URLs, if the bucket is public"], answer: 2, explain: "\"There is no URL image input and no files API, so any image or document has to be sent inline as base 64, and images are capped at five megabytes each.\"" },
+    { q: "Which TWO features carry over unchanged to Bedrock? (Choose TWO.)", options: ["Prompt caching", "Code execution", "The Files API", "Client-side computer use tool", "Message Batches"], answer: [0, 3], explain: "\"Prompt caching works\" and \"client-side tool use is fully supported, including the bash, text editor, memory, and computer use tools.\"" },
+    { q: "A team needs tighter data locality on Bedrock and accepts a higher price. Which endpoint type fits?", options: ["A global endpoint", "A regional endpoint", "The first-party endpoint", "Any endpoint with a bearer token"], answer: 1, explain: "\"Global endpoints carry no premium, while regional endpoints add about 10% for tighter data locality.\"" },
+    { q: "On the legacy InvokeModel path, which profile prefix is the recommended default?", options: ["us.", "eu.", "anthropic.", "global."], answer: 3, explain: "Profile prefixed IDs belong to the legacy path, \"where global is the recommended default, and the regional forms are an opt-in at about a 10% premium.\"" },
+    { q: "A developer using the Mantle client finds themselves writing a global. prefixed model ID. What does this suggest?", options: ["They have slipped back onto the legacy surface", "They have enabled a cheaper global endpoint", "They are now on the first-party API", "They must add a region constructor argument"], answer: 0, explain: "\"If you find yourself reaching for a profile prefixed identifier, you have quietly slipped back onto the legacy surface.\"" },
+    { q: "Why does the lesson recommend reading the client name in Bedrock code?", options: ["It sets the AWS region for the request", "It decides which credentials are loaded", "It shows which integration path the code is on", "It selects the streaming event format"], answer: 2, explain: "\"The client you construct tells you and anyone reviewing your code exactly which integration you are on.\"" },
+    { q: "What do you install to use Bedrock Mantle from your language SDK?", options: ["The AWS CLI only", "The Bedrock extra for that SDK", "A separate Mantle-only SDK", "The Converse API plugin"], answer: 1, explain: "\"To use it, you install the Bedrock Extra for whatever language SDK you work in, whether that's Python, TypeScript, or one of the others.\"" },
+    { q: "Where does the Bedrock Mantle integration route your requests?", options: ["To Anthropic's servers in the US", "To a global Anthropic edge network", "To the first-party Messages API", "To a region-scoped endpoint inside AWS"], answer: 3, explain: "Mantle \"exposes the messages API at a region scoped endpoint inside AWS. So you route to your own region, rather than to Anthropic's servers.\"" },
+    { q: "A team's existing streaming consumer and tool loop are tested against the first-party API. What happens on Bedrock Mantle?", options: ["Both move over untouched", "Both must be rewritten for AWS events", "Only the tool loop needs changes", "Streaming needs a separate parser"], answer: 0, explain: "\"Because the body shape matches your parsing code, your streaming consumer and your tool handling loop all move over untouched.\"" },
+    { q: "No credentials are passed to the Bedrock client constructor. Which TWO sources can it still resolve credentials from? (Choose TWO.)", options: ["The ANTHROPIC_API_KEY variable", "AWS environment variables", "A key stored in the Anthropic Console", "The model ID prefix", "The AWS config file and credential chain"], answer: [1, 4], explain: "Without constructor arguments, \"the SDK reads them from environment variables\", and if neither is set \"it falls back to your AWS config file and the standard credential chain.\" No Anthropic key is involved." },
+    { q: "Which statement BEST summarizes a Bedrock deployment designed to the supported features?", options: ["It needs a different prompt format", "It cannot use any tools", "It behaves almost exactly like a first-party one", "It always costs 10% more"], answer: 2, explain: "\"Design your app to the supported feature set, and a Bedrock deployment behaves almost exactly like a first-party one, just with AWS holding the keys.\"" },
+    { q: "Which of the following is NOT available on Bedrock?", options: ["Citations", "Web fetch", "Structured outputs", "The bash tool"], answer: 1, explain: "Server-side tools, including web fetch, \"don't run here\". Citations, structured outputs, and client tools like bash all work." },
+    { q: "A typical request-and-response chat app with client tools moves to Bedrock. Which statement is accurate?", options: ["The missing features block the app", "The app must switch to batches", "The app needs the Files API first", "The missing features do not block it"], answer: 3, explain: "\"None of these block a typical request and response app, but if your design leaned on batches or server tools, you'll need a different plan.\"" },
+    { q: "A product requires a PDF to be uploaded once and referenced by ID across many Bedrock calls. What is the problem?", options: ["Bedrock has no Files API", "PDFs are capped at 5 MB on Bedrock", "PDFs need a regional endpoint", "Bedrock rejects document inputs"], answer: 0, explain: "There is \"no files API, so any image or document has to be sent inline as base 64.\"" },
+    { q: "A regional endpoint is selected for Bedrock. What cost effect should the team expect versus global?", options: ["About 50% lower", "Exactly the same", "About 10% higher", "Twice the price"], answer: 2, explain: "\"Regional endpoints add about 10% for tighter data locality.\"" },
+    { q: "What is the lesson's bottom line on Bedrock integration paths?", options: ["Both paths are equally current", "Mantle is current, InvokeModel is legacy", "InvokeModel is current, Mantle is legacy", "Mantle is only for Opus 4.6 and earlier"], answer: 1, explain: "\"Remember, Bedrock mantle is current, and invoke model is legacy.\"" }
+  ]
 };

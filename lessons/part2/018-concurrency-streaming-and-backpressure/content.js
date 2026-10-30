@@ -1,137 +1,74 @@
 window.LESSON_CONTENT = {
   explanation: `
-<p class="key"><strong>Nói ngắn gọn:</strong> Gọi một lời gọi không chặn mới là một nửa câu chuyện. Khi cần 50 kết quả, bạn phải quản lý <strong>concurrency</strong>:
-chạy nhiều lời gọi cùng lúc nhưng <strong>có trần</strong> (semaphore), đọc <strong>stream</strong>, tôn trọng <strong>rate limit</strong> bằng backpressure và backoff có jitter,
-và <strong>cô lập lỗi</strong> để một nhánh hỏng không kéo đổ cả nhóm.</p>
+<p class="key"><strong>Nói ngắn gọn:</strong> Chạy nhiều call Claude an toàn = <strong>fan out có giới hạn</strong> (gather + semaphore), <strong>streaming</strong> để UX nhanh,
+<strong>backpressure + exponential backoff có jitter</strong> để ở dưới rate limit, và <strong>cô lập lỗi</strong> từng nhánh.</p>
 
-<h3>📌 Từ cần biết</h3>
+<h3>🔑 Keyword cần nhớ</h3>
 <ul class="terms">
-  <li><strong>Fan out:</strong> phát nhiều request độc lập cùng lúc.</li>
-  <li><strong>Gather:</strong> khởi động nhiều coroutine cùng lúc, chờ tất cả xong, trả về cả bộ kết quả.</li>
-  <li><strong>Semaphore:</strong> một bộ đếm có trần, giới hạn số request được chạy cùng lúc; request vượt trần phải chờ tới lượt.</li>
-  <li><strong>Bounded parallelism:</strong> chạy đồng thời nhưng chỉ tới một số nhất định (ví dụ 5 hay 10) mỗi lúc.</li>
-  <li><strong>Jitter:</strong> một lượng ngẫu nhiên cộng vào thời gian chờ, để các request lỗi không thử lại cùng một lúc.</li>
+  <li><strong>gather</strong>: khởi động nhiều coroutine cùng lúc, chờ tất cả xong, trả về toàn bộ kết quả.</li>
+  <li><strong>Semaphore</strong>: bộ đếm có trần, giới hạn số request chạy cùng lúc; vượt trần thì chờ slot.</li>
+  <li><strong>Bounded parallelism</strong>: chạy đồng thời nhưng chỉ N cái (ví dụ 5 hoặc 10).</li>
+  <li><strong>async for / deltas</strong>: stream trả async iterator; text đến dạng delta, nối theo thứ tự đến khi content block kết thúc.</li>
+  <li><strong>Rate limit</strong>: trần requests và tokens mỗi phút; vượt → <strong>429</strong>.</li>
+  <li><strong>Backpressure</strong>: để <strong>stage chậm nhất</strong> đặt nhịp; không nạp việc nhanh hơn tốc độ kết quả ra.</li>
+  <li><strong>Exponential backoff + jitter</strong>: chờ tăng dần, thêm ngẫu nhiên để không retry đồng loạt.</li>
+  <li><strong>Error isolation</strong>: thu kết cục từng nhánh riêng; giữ thành công, retry riêng phần lỗi.</li>
 </ul>
 
-<h3>Phần thưởng: tổng thời gian ≈ lời gọi chậm nhất</h3>
-<p>50 lời gọi độc lập chạy lần lượt thì tổng thời gian là <strong>tổng của cả 50</strong>. Chạy đồng thời: khởi động hết để tất cả cùng bay,
-rồi chờ cả nhóm và gom kết quả. Tổng thời gian khi đó tiến dần tới <strong>lời gọi chậm nhất</strong>, không phải tổng. Đó là thứ bạn "mua".
-Cái khó là làm vậy mà <strong>không đè bẹp API</strong>.</p>
-
-<h3>Ba công cụ khi fan out</h3>
+<h3>🎯 Trọng tâm thi</h3>
 <ul>
-  <li><strong>Gather:</strong> khởi động mọi coroutine cùng lúc, chờ tất cả, trả cả bộ kết quả.</li>
-  <li><strong>Semaphore:</strong> bộ đếm có trần, giới hạn số request chạy cùng lúc.</li>
-  <li><strong>Bounded parallelism:</strong> mục tiêu mà hai công cụ trên phục vụ: chạy đồng thời, nhưng chỉ chừng đó cái mỗi lúc.</li>
+  <li>50 call độc lập: tuần tự = <strong>tổng</strong> thời gian; đồng thời → gần <strong>call chậm nhất</strong>.</li>
+  <li><strong>Không bao giờ fan out unbounded</strong> với API có rate limit → bọc bằng semaphore.</li>
+  <li>Gặp 429 → <strong>không retry ngay</strong>; chờ, exponential backoff, thêm jitter.</li>
+  <li>Chỉ retry lỗi <strong>transient</strong>; lỗi permanent retry trên 50 nhánh đốt ngân sách nhanh gấp 50 lần.</li>
+  <li>Streaming: cùng tổng thời gian nhưng <strong>cảm giác nhanh hơn</strong> nhiều.</li>
+  <li>Có người đang chờ → <strong>async concurrency</strong> (giá đầy đủ, tính vào rate limit, trả trong vài giây). Không ai chờ, việc bulk → <strong>Batches API</strong> (<strong>nửa giá</strong>, đa số xong trong 1 giờ, trần <strong>24 giờ</strong>).</li>
 </ul>
 
-<h3>Lỗi ai cũng mắc đầu tiên: fan out không giới hạn</h3>
-<div class="box">🚪 <strong>Hình dung thế này:</strong> Một nhà hàng có 10 bàn. Mở cửa cho cả 500 người ùa vào cùng lúc thì hỗn loạn và nhiều người bị đuổi ra.
-Đặt người đứng cửa, chỉ cho vào khi có bàn trống: ai cũng được phục vụ, êm hơn nhiều. Người đứng cửa chính là <strong>semaphore</strong>.</div>
+<h3>⚠️ Bẫy hay gặp</h3>
 <ul>
-  <li><strong>Không giới hạn:</strong> phát cả 50 hay 5.000 request một lúc. Code đơn giản nhất, ổn với vài lời gọi, nhưng đẩy mạnh là vượt rate limit ngay;
-  API trả về hàng loạt <strong>429</strong>, và bạn phải xử lý một làn sóng lỗi do chính mình gây ra.</li>
-  <li><strong>Có giới hạn:</strong> bọc lời gọi trong một semaphore giữ chỉ khoảng 10 cái đang bay. Thêm chút code, nhưng ổn định hơn hẳn khi có tải thật.</li>
-</ul>
-<p>Quy tắc: <strong>không bao giờ fan out không giới hạn vào một API có rate limit</strong>.</p>
-
-<h3>Đọc stream</h3>
-<p>Khi bật streaming, lời gọi trả về một <strong>async iterator</strong>; bạn lặp qua nó (<code>async for</code>). Mỗi vòng là một sự kiện nhỏ;
-chữ đến dưới dạng <strong>delta</strong>, những mảnh nhỏ mà bạn <strong>nối theo đúng thứ tự</strong> cho tới khi content block báo xong.
-Lý do là trải nghiệm: người dùng thấy chữ hiện gần như ngay và tiếp tục chảy ra. <strong>Cùng tổng thời gian, nhưng cảm giác nhanh hơn nhiều.</strong></p>
-
-<h3>Backpressure: khi thứ gì đó đẩy ngược lại</h3>
-<ul>
-  <li>API có rate limit theo số request và số token mỗi phút; vượt là <strong>429 too many requests</strong>.</li>
-  <li><strong>Backpressure</strong>: để <strong>khâu chậm nhất</strong> trong pipeline đặt nhịp, để bạn không bao giờ nạp việc mới nhanh hơn tốc độ kết quả chảy ra.</li>
-  <li>Công cụ thực tế: semaphore, giữ số request đang bay cố định và giữ việc mới lại cho tới khi có chỗ trống.</li>
-  <li>Khi một 429 vẫn lọt qua: <strong>đừng thử lại ngay</strong> (làm tệ hơn); chờ và backoff tăng dần rồi mới thử.</li>
-</ul>
-
-<h3>Retry khi chạy đồng thời</h3>
-<ul>
-  <li>Ở quy mô lớn, lỗi tạm thời là bình thường. Quy tắc tạm thời/vĩnh viễn vẫn giữ nguyên; cái mới là <strong>lên lịch</strong> retry.</li>
-  <li><strong>Exponential backoff:</strong> chờ một chút sau lần lỗi đầu, lâu hơn sau lần hai, lâu hơn nữa sau lần ba.</li>
-  <li><strong>Cộng jitter ngẫu nhiên</strong> vào mỗi lần chờ, để cả loạt request lỗi không thử lại <strong>cùng nhịp</strong> rồi lại "giẫm đạp" API.</li>
-  <li>Chỉ retry lỗi <strong>tự hết được</strong>: một lỗi vĩnh viễn được retry trên 50 nhánh song song là đốt ngân sách nhanh gấp 50 lần.</li>
-</ul>
-
-<h3>Đừng nhầm: async concurrency không phải Batches API</h3>
-<ul>
-  <li><strong>Async concurrency:</strong> phát nhiều lời gọi realtime cùng lúc. Mỗi cái <strong>đủ giá</strong>, đều tính vào rate limit, nhưng có câu trả lời trong vài giây.
-  Dùng khi có người hay hệ thống đang chờ.</li>
-  <li><strong>Batches API:</strong> gửi một job bất đồng bộ, <strong>nửa giá</strong>, phần lớn xong trong một giờ, trần 24 giờ. Dùng cho việc lớn không ai chờ.</li>
-</ul>
-<p>Câu hỏi thật chỉ là: <strong>có ai đang chờ không?</strong> Trả lời được là lựa chọn tự hiện ra.</p>
-
-<h3>Cô lập lỗi: một nhánh hỏng thì hỏng một mình</h3>
-<p>Fan out 50 lời gọi, phải quyết định chuyện gì xảy ra nếu một cái lỗi. Sai: để một exception <strong>xé toạc cả nhóm</strong>, vứt 49 kết quả tốt vì một cái hỏng.
-Đúng: gom kết quả sao cho mỗi nhánh có <strong>kết cục riêng</strong> (trả kết quả hoặc ném lỗi). Khi cả nhóm về, đi qua từng kết cục:
-giữ cái thành công, xử lý hoặc retry riêng cái lỗi. Một lời gọi chập chờn, một timeout, một lần bị bộ lọc chặn không làm chìm cả lô.
-Ở quy mô lớn, <strong>luôn có nhánh nào đó lỗi</strong>; hãy đảm bảo nó lỗi một mình.</p>
-
-<h3>✅ Nhớ 3 điều</h3>
-<ul>
-  <li>Đồng thời: tổng thời gian ≈ lời gọi chậm nhất; nhưng luôn có trần (semaphore), không fan out không giới hạn.</li>
-  <li>Gặp 429 thì backoff tăng dần có jitter; chỉ retry lỗi tự hết; cô lập lỗi từng nhánh.</li>
-  <li>Nhiều lời gọi realtime cùng lúc không phải Batches API: có người chờ thì realtime, không ai chờ thì batch.</li>
-</ul>
-
-<h3>🇬🇧 Cụm từ tiếng Anh đáng nhớ trong bài</h3>
-<ul>
-  <li><em class="en">is only half the story</em>: mới là một nửa câu chuyện.</li>
-  <li><em class="en">the limits that push back when you go too fast</em>: những giới hạn đẩy ngược lại khi bạn đi quá nhanh.</li>
-  <li><em class="en">fanning out requests</em>: phát tỏa request ra nhiều nhánh.</li>
-  <li><em class="en">trends toward your single slowest call</em>: tiến dần tới lời gọi chậm nhất.</li>
-  <li><em class="en">waits its turn until a slot opens</em>: chờ tới lượt khi có chỗ trống.</li>
-  <li><em class="en">without flooding the API</em>: không làm ngập API.</li>
-  <li><em class="en">blow past your rate limit</em>: vượt vèo qua rate limit.</li>
-  <li><em class="en">a wave of failures you created yourself</em>: một làn sóng lỗi do chính bạn gây ra.</li>
-  <li><em class="en">in perfect lockstep</em>: đều răm rắp cùng nhịp.</li>
-  <li><em class="en">stampede the API</em>: giẫm đạp ồ ạt lên API.</li>
-  <li><em class="en">tear down the whole group</em>: xé toạc cả nhóm.</li>
-  <li><em class="en">make sure it fails alone</em>: đảm bảo nó lỗi một mình.</li>
+  <li>"Nhiều call real-time đồng thời = Batches API" → <strong>sai</strong>.</li>
+  <li>"Một exception được phép làm sập cả nhóm" → <strong>sai</strong>, mất 49 kết quả tốt.</li>
+  <li>"Retry 429 ngay lập tức" → <strong>sai</strong>, làm tệ hơn.</li>
+  <li>"Backoff không jitter là đủ" → <strong>sai</strong>, các request lỗi retry cùng nhịp và dồn lại API.</li>
 </ul>
 
 <h3>💻 Bài tập Java</h3>
-<p>Mở <code>java-app/src/main/java/part2/lesson18/Lesson18.java</code>. Có 4 bài: gather có trần bằng <code>Semaphore</code> (không bao giờ quá N task cùng lúc,
-kết quả giữ thứ tự), gather cô lập lỗi (mỗi nhánh một kết cục), backoff tăng dần có trần và jitter, và nối các delta của stream.
-Chấm bằng <code>./mvnw -q compile exec:java -Dexec.args="p2-18"</code>.</p>
-<p>Làm xong, chạy với Claude thật bằng <code>-Dexec.args="p2-18 --live"</code>: 8 lời gọi thật được fan out với trần 3 cùng lúc (in đỉnh đồng thời đo được),
-một nhánh gọi model không tồn tại để thấy các nhánh khác vẫn giữ kết quả, và một câu trả lời stream được nối từ các delta.</p>
+<p><code>part2/lesson18/Lesson18.java</code>: gather có trần bằng <code>Semaphore</code>, gather cô lập lỗi, backoff tăng dần có trần và jitter, nối delta của stream.
+Chấm: <code>./mvnw -q compile exec:java -Dexec.args="p2-18"</code>; chạy thật: thêm <code>--live</code>.</p>
 `,
 
-  // answer = index of the correct option in `options` (options are shuffled on screen).
+  // answer = index of the correct option (options are shuffled on screen); an array means "Choose TWO".
   quiz: [
-    { q: '50 lời gọi độc lập chạy đồng thời. Tổng thời gian tiến dần tới đâu?', options: ['Tổng thời gian của cả 50', 'Lời gọi chậm nhất', 'Lời gọi nhanh nhất', 'Trung bình của 50 lời gọi'], answer: 1, explain: '"Now your total time trends toward your single slowest call, not the sum of all of them."' },
-    { q: 'Gather làm gì?', options: ['Giới hạn số request cùng lúc', 'Thử lại request lỗi', 'Chạy hết, chờ hết, gom kết quả', 'Chia request thành batch'], answer: 2, explain: '"First, gather. That\'s a call that takes many coroutines, starts them all together, and waits until everyone has finished, handing you back the whole set of results."' },
-    { q: 'Semaphore là gì?', options: ['Một bộ đếm có trần', 'Một loại cache', 'Một hàng đợi kết quả', 'Một mã lỗi HTTP'], answer: 0, explain: '"It\'s just a counter with a cap. It limits how many requests are allowed to run at once."' },
-    { q: 'Request vượt trần của semaphore thì sao?', options: ['Bị hủy', 'Bị gửi sang batch', 'Bị trả về lỗi 429', 'Chờ tới lượt'], answer: 3, explain: '"Any request beyond the cap waits its turn until a slot opens."' },
-    { q: 'Bounded parallelism nghĩa là gì?', options: ['Chạy tuần tự từng cái', 'Đồng thời có trần', 'Chạy không giới hạn', 'Chạy trên nhiều máy'], answer: 1, explain: '"You run concurrently, but only so many at a time, say five or 10, instead of launching everything at once."' },
-    { q: 'Fan out không giới hạn 5.000 request vào API có rate limit. Kết quả?', options: ['Nhanh hơn mọi cách khác', 'API tự xếp hàng giúp bạn', 'Hàng loạt lỗi 429', 'Được giảm giá như batch'], answer: 2, explain: '"Push it, and you instantly blow past your rate limit. The API starts rejecting requests with 429 errors, and now you\'re handling a wave of failures you created yourself."' },
-    { q: 'Cách sửa fan out không giới hạn là gì?', options: ['Bọc lời gọi trong semaphore', 'Tăng max_tokens', 'Đổi API key', 'Dùng temperature thấp'], answer: 0, explain: '"The fix is bounded fan out. You wrap your calls in a semaphore that keeps only, say, 10 in flight at any moment."' },
-    { q: 'Quy tắc ngón tay cái về fan out là gì?', options: ['Luôn fan out tối đa', 'Chỉ fan out vào ban đêm', 'Fan out theo số nhân CPU', 'Luôn đặt trần'], answer: 3, explain: '"The rule of thumb is simple. Never fan out unbounded against a rate-limited API."' },
-    { q: 'Khi streaming, lời gọi trả về gì?', options: ['Một chuỗi hoàn chỉnh', 'Một async iterator', 'Một file', 'Một batch id'], answer: 1, explain: '"When you set streaming on, you don\'t wait for the whole response. Instead, the call gives you an async iterator, and you loop over it with async for."' },
-    { q: 'Các delta text khi streaming cần được xử lý thế nào?', options: ['Đọc mỗi delta như một câu trả lời riêng', 'Chỉ giữ delta cuối', 'Nối theo thứ tự', 'Sắp xếp theo độ dài'], answer: 2, explain: '"The text of the answer arrives as deltas, tiny fragments, and your job is to append them in order as they come."' },
-    { q: 'Streaming thay đổi điều gì?', options: ['Cảm giác nhanh hơn', 'Tổng thời gian giảm một nửa', 'Chi phí giảm', 'Câu trả lời chính xác hơn'], answer: 0, explain: '"The person sees words appear almost immediately... Same total time, but it feels far faster."' },
-    { q: 'Backpressure là nguyên tắc gì?', options: ['Gửi càng nhanh càng tốt', 'Gửi lại ngay mọi request lỗi', 'Bỏ qua rate limit', 'Để khâu chậm nhất đặt nhịp'], answer: 3, explain: '"You let the slowest stage in your pipeline set the pace, so you\'re never submitting new work faster than results are draining out."' },
-    { q: 'Một lỗi 429 vẫn lọt qua. Làm gì?', options: ['Thử lại ngay lập tức', 'Backoff rồi thử lại', 'Bỏ request đó', 'Tăng số request cùng lúc'], answer: 1, explain: '"When a 429 does slip through, you don\'t just retry instantly and make it worse. You wait and you back off exponentially before trying again."' },
-    { q: 'Vì sao cộng jitter ngẫu nhiên vào thời gian chờ?', options: ['Để tiết kiệm token', 'Để chờ ngắn hơn', 'Để không thử lại cùng lúc', 'Để vượt rate limit'], answer: 2, explain: '"You add random jitter to each wait, so that a whole batch of failed requests doesn\'t retry in perfect lockstep and stampede the API again."' },
-    { q: 'Retry một lỗi vĩnh viễn trên 50 nhánh song song thì sao?', options: ['Đốt tiền gấp 50', 'Lỗi tự hết sau vài lần', 'Không tốn gì', 'API tự sửa request'], answer: 0, explain: '"Only retry the errors that can clear, because a permanent failure retried across 50 parallel branches burns budget 50 times faster."' },
-    { q: 'Exponential backoff có nghĩa là gì?', options: ['Chờ cố định 1 giây mỗi lần', 'Thử lại ngay rồi dừng', 'Chờ ngẫu nhiên không có quy luật', 'Chờ lâu dần lên'], answer: 3, explain: '"Waiting a little after the first failure, longer after the second, longer still after the third."' },
-    { q: 'Nhiều lời gọi realtime cùng lúc có giá thế nào?', options: ['Nửa giá như batch', 'Đủ giá, tính vào rate limit', 'Miễn phí lời gọi thứ hai trở đi', 'Rẻ hơn 10%'], answer: 1, explain: '"Async concurrency means firing off many real-time calls at once. Everyone runs at full price, and they all count against your rate limit."' },
-    { q: 'Khi nào dùng async concurrency thay vì Batches API?', options: ['Khi muốn nửa giá', 'Khi job lớn chạy qua đêm', 'Khi có người đang chờ', 'Khi không cần kết quả'], answer: 2, explain: '"That\'s what you reach for when a user or a downstream system is waiting."' },
-    { q: 'Batches API khác async concurrency thế nào?', options: ['Job nền, nửa giá', 'Nhanh hơn và đắt hơn', 'Stream được', 'Chạy trên máy của bạn'], answer: 0, explain: '"The batch\'s API is the opposite trade. You submit one asynchronous job, it runs at half price, and most batches finish within the hour, with 24 hours as the ceiling."' },
-    { q: 'Câu hỏi quyết định giữa concurrency và batch là gì?', options: ['Có bao nhiêu request?', 'Model nào?', 'Có dùng tool không?', 'Có ai đang chờ không?'], answer: 3, explain: '"So the real question is simply whether someone is waiting. Answer that, and the choice makes itself."' },
-    { q: 'Fan out 50 lời gọi, 1 cái lỗi. Cách xử lý SAI là gì?', options: ['Giữ 49 kết quả, retry cái lỗi', 'Để một lỗi làm đổ cả nhóm', 'Ghi log cái lỗi, trả 49 cái tốt', 'Đánh dấu cái lỗi để xử lý sau'], answer: 1, explain: '"The wrong answer is letting a single exception tear down the whole group, throwing away 49 good results because one went bad."' },
-    { q: 'Mẫu cô lập lỗi đúng là gì?', options: ['Bắt lỗi rồi bỏ qua', 'Chạy lại cả nhóm khi có lỗi', 'Mỗi nhánh một kết cục riêng', 'Chỉ chạy một nhánh mỗi lần'], answer: 2, explain: '"Gather results in a way that captures each branch\'s outcome independently... keep the successes, and handle or retry just the failures."' },
-    { q: 'Câu chốt về lỗi ở quy mô lớn là gì?', options: ['Để nó lỗi một mình', 'Lỗi hiếm khi xảy ra', 'Một lỗi nên dừng cả hệ thống', 'Lỗi chỉ xảy ra khi không có semaphore'], answer: 0, explain: '"Designed for the fact that at scale, some branch always fails, and make sure it fails alone."' },
-    { q: 'Rate limit giới hạn những gì?', options: ['Chỉ độ dài câu trả lời', 'Số model dùng được', 'Số người dùng của app', 'Số request và số token mỗi phút'], answer: 3, explain: '"The API enforces rate limits, caps on requests, and tokens per minute. Cross one and you get a 429, too many requests."' },
-    { q: 'Semaphore giúp backpressure thế nào?', options: ['Tăng rate limit', 'Giữ cố định số đang bay', 'Giảm giá token', 'Tự retry mọi lỗi'], answer: 1, explain: '"Capping in-flight requests to a fixed number and holding new work until a slot frees up."' },
-    { q: 'Trần 3, mỗi lời gọi mất khoảng 1 giây, có 9 lời gọi. Thời gian thực khoảng bao nhiêu?', options: ['1 giây', '9 giây', '3 giây', '0,3 giây'], answer: 2, explain: 'Mỗi lúc chỉ 3 cái cùng bay: 9 lời gọi chia thành 3 đợt, mỗi đợt khoảng 1 giây, tổng khoảng 3 giây.' },
-    { q: 'Theo bài học, điều gì quan trọng hơn tên các công cụ?', options: ['Kỷ luật có trần, cô lập lỗi', 'Dùng đúng thư viện mới nhất', 'Viết code ngắn nhất', 'Dùng nhiều thread nhất có thể'], answer: 0, explain: '"The name matters less than the discipline behind them. Keep concurrency bounded and isolate failures."' },
-    { q: 'Với vài lời gọi, fan out không giới hạn có sao không?', options: ['Luôn gây 429', 'Bị API cấm', 'Tốn gấp đôi', 'Ổn'], answer: 3, explain: '"It\'s the simplest code you could write, and for a handful of calls it\'s totally fine, but push it, and you instantly blow past your rate limit."' },
-    { q: 'Bốn công cụ của concurrency trong phần tổng kết là gì?', options: ['Batch, cache, tool, thinking', 'Gather, semaphore, streaming, backoff', 'Model, prompt, schema, config', 'Thread, process, fork, join'], answer: 1, explain: '"Gather, semaphores, streaming, and backoff, each with its own job."' },
-    { q: 'Điều cần nhớ cuối bài là gì?', options: ['Async concurrency rẻ hơn batch', 'Batch nhanh hơn concurrency', 'Realtime song song khác batch', 'Streaming chỉ dùng trong batch'], answer: 2, explain: '"One thing to watch, many real-time calls is not the same as the batch\'s API."' },
-  ],
+    { q: "A developer has 50 independent Claude calls. Run sequentially, the total time is the sum of all calls. What does running them concurrently change?", options: ["Total time drops to the average call time", "Total time nears the slowest single call", "Each call becomes individually faster", "Total time stays the same but costs less"], answer: 1, explain: "Run concurrently, \"your total time trends toward your single slowest call, not the sum of all of them.\"" },
+    { q: "A script launches 5,000 Claude requests at once and immediately gets a wave of 429 errors. What is the BEST fix?", options: ["Retry every failed request right away", "Switch every request over to streaming mode", "Use a larger max_tokens value", "Cap in-flight calls with a semaphore"], answer: 3, explain: "\"The fix is bounded fan out. You wrap your calls in a semaphore that keeps only, say, 10 in flight at any moment.\"" },
+    { q: "What does a semaphore do in a fan-out of Claude calls?", options: ["Caps how many requests run at once", "Merges all the results into one response", "Retries failed requests with jitter", "Streams text deltas in order"], answer: 0, explain: "\"It's just a counter with a cap. It limits how many requests are allowed to run at once, and any request beyond the cap waits its turn.\"" },
+    { q: "What does gather do?", options: ["Limits concurrent requests to a fixed number", "Splits one request into smaller chunks", "Starts many coroutines and waits for all", "Sends requests as an asynchronous batch job"], answer: 2, explain: "Gather \"takes many coroutines, starts them all together, and waits until everyone has finished, handing you back the whole set of results.\"" },
+    { q: "Which rule of thumb does the lesson give for rate-limited APIs?", options: ["Fan out unbounded for small jobs only", "Never fan out unbounded", "Always run calls sequentially", "Fan out unbounded with retries"], answer: 1, explain: "\"Never fan out unbounded against a rate-limited API.\"" },
+    { q: "A chat UI shows a spinner for several seconds before the full answer appears. What is the MOST appropriate improvement?", options: ["Batch the requests to get half price on them", "Add a semaphore around the call", "Lower max_tokens to shorten replies", "Stream and render deltas as they arrive"], answer: 3, explain: "With streaming, \"the person sees words appear almost immediately\": \"same total time, but it feels far faster.\"" },
+    { q: "How should a streaming response's text be consumed?", options: ["Use async for and append deltas in order", "Wait for the last event, then read the full text", "Read only the first delta as the answer", "Sort deltas by length before joining"], answer: 0, explain: "\"The call gives you an async iterator, and you loop over it with async for... The text of the answer arrives as deltas... your job is to append them in order.\"" },
+    { q: "When should you stop accumulating text deltas for a block?", options: ["After a fixed number of deltas has arrived", "When a 429 error arrives", "When the content block signals completion", "After the first sentence ends"], answer: 2, explain: "\"You keep accumulating those pieces until the content block signals that it's complete.\"" },
+    { q: "Which statement about streaming is accurate?", options: ["It makes total generation time shorter", "Same total time, better perceived speed", "It runs at half the price", "It removes the need for rate limits"], answer: 1, explain: "\"Same total time, but it feels far faster.\" The benefit is user experience." },
+    { q: "A 429 slips through despite a semaphore. What should the client do?", options: ["Retry instantly to keep throughput", "Drop the failed request permanently", "Open more concurrent slots", "Wait and back off exponentially"], answer: 3, explain: "\"When a 429 does slip through, you don't just retry instantly and make it worse. You wait and you back off exponentially before trying again.\"" },
+    { q: "What does the backpressure principle say?", options: ["Let the slowest stage set the pace", "Let the fastest stage set the pace", "Submit all the work first, then drain results", "Pace work by the API's peak speed"], answer: 0, explain: "\"You let the slowest stage in your pipeline set the pace, so you're never submitting new work faster than results are draining out.\"" },
+    { q: "200 requests fail at once and all retry after exactly 2 seconds, causing another wave of failures. What is missing?", options: ["A longer max_tokens value", "A switch to streaming", "Random jitter on each retry wait", "A bigger semaphore cap"], answer: 2, explain: "\"You add random jitter to each wait, so that a whole batch of failed requests doesn't retry in perfect lockstep and stampede the API again.\"" },
+    { q: "A malformed request fails across 50 parallel branches, and the code retries all of them several times. Why is this costly?", options: ["Retries bypass the semaphore", "Permanent failures waste budget per branch", "Retries switch all requests to full price billing", "Retries disable prompt caching"], answer: 1, explain: "\"Only retry the errors that can clear, because a permanent failure retried across 50 parallel branches burns budget 50 times faster.\"" },
+    { q: "A fan-out of 50 calls loses all results when one call times out. What is the BEST pattern?", options: ["Wrap the whole group in a single try block", "Run all 50 calls sequentially", "Increase the timeout for every call in the group", "Capture each branch's outcome, retry failures"], answer: 3, explain: "\"Gather results in a way that captures each branch's outcome independently... keep the successes, and handle or retry just the failures.\"" },
+    { q: "A dashboard needs answers for a user who is waiting right now. Which approach fits?", options: ["Async concurrency with bounded fan-out", "The Batches API for half price", "A nightly job with a 24-hour ceiling", "Sequential calls with no concurrency"], answer: 0, explain: "Async concurrency gives \"every answer back within seconds. That's what you reach for when a user or a downstream system is waiting.\"" },
+    { q: "A team must classify 100,000 archived documents and nobody needs results soon. Which approach is MOST appropriate?", options: ["Async concurrency at full price", "Unbounded fan-out with retries", "The Message Batches API", "Streaming each response"], answer: 2, explain: "The Batches API \"runs at half price\" and is \"for bulk work, when nobody is waiting on any result.\"" },
+    { q: "What question decides between async concurrency and the Batches API?", options: ["How many tokens each call uses", "Whether someone is waiting on the result", "Which model the job uses", "Whether streaming is enabled"], answer: 1, explain: "\"The real question is simply whether someone is waiting. Answer that, and the choice makes itself.\"" },
+    { q: "Which statement about the Batches API timing is accurate?", options: ["Results come back within seconds", "Every batch takes exactly 24 hours", "Timing matches async concurrency", "Most finish within the hour, 24 hours max"], answer: 3, explain: "\"Most batches finish within the hour, with 24 hours as the ceiling.\"" },
+    { q: "What do rate limits cap, according to the lesson?", options: ["Requests and tokens per minute", "Only the number of client threads in use", "Only the size of each response", "The number of streams per day"], answer: 0, explain: "\"The API enforces rate limits, caps on requests, and tokens per minute. Cross one and you get a 429, too many requests.\"" },
+    { q: "Which of the following is NOT part of the toolkit for staying inside rate limits?", options: ["Backpressure", "A semaphore", "Unbounded fan-out", "Exponential backoff"], answer: 2, explain: "\"Rate limits, back pressure, a semaphore, and back off. That's the toolkit.\" Unbounded fan-out is what causes 429 waves." },
+    { q: "What does bounded parallelism mean in this lesson?", options: ["Run one call at a time", "Run concurrently, but only so many at once", "Run every call at once", "Run calls on a fixed schedule, one per second"], answer: 1, explain: "\"You run concurrently, but only so many at a time, say five or 10, instead of launching everything at once.\"" },
+    { q: "For a handful of calls, how does the lesson judge unbounded fan-out?", options: ["Always forbidden", "Only safe with streaming", "Required for low latency", "Totally fine for a handful"], answer: 3, explain: "\"For a handful of calls it's totally fine, but push it, and you instantly blow past your rate limit.\"" },
+    { q: "Why does the exponential backoff wait grow after each failure?", options: ["To give the API time to recover", "To raise the request priority", "To reduce token costs", "To keep retries in lockstep"], answer: 0, explain: "Waiting \"a little after the first failure, longer after the second, longer still after the third\" avoids making things worse while the API pushes back." },
+    { q: "What does the lesson say matters more than the names of the concurrency tools?", options: ["The SDK language", "Using the newest and largest model available", "Bounded concurrency and isolated failures", "Always enabling streaming on every call"], answer: 2, explain: "\"The name matters less than the discipline behind them. Keep concurrency bounded and isolate failures.\"" },
+    { q: "Which statement BEST describes the design principle for failures at scale?", options: ["Assume no branch will fail", "Some branch always fails; make it fail alone", "Fail the whole group fast", "Retry every failure forever until it succeeds"], answer: 1, explain: "\"At scale, some branch always fails, and make sure it fails alone.\"" },
+    { q: "Which TWO tools work together to fan out quickly without flooding the API? (Choose TWO.)", options: ["gather", "A sequential loop", "A semaphore", "Unbounded fan-out", "Instant retries"], answer: [0, 2], explain: "\"Gather, semaphore, bounded parallelism. Together they let you go fast without flooding the API.\"" },
+    { q: "Which TWO statements about async concurrency for many real-time calls are accurate? (Choose TWO.)", options: ["Each call runs at half price", "Each call counts against your rate limit", "It finishes within 24 hours", "Answers come back within seconds", "It is the same as the Batches API"], answer: [1, 3], explain: "Async concurrency means each call \"runs at full price, and they all count against your rate limit, but you get every answer back within seconds.\"" },
+    { q: "Which TWO practices belong to a production-grade retry strategy under concurrency? (Choose TWO.)", options: ["Retry every error, including permanent ones", "Retry 429s instantly", "Add random jitter to each wait", "Retry all branches in lockstep", "Use exponential backoff"], answer: [2, 4], explain: "\"You use exponential back off\" and \"on top of that, you add random jitter to each wait.\" Only transient errors should be retried." },
+    { q: "Which TWO statements about streaming are accurate? (Choose TWO.)", options: ["It returns an async iterator", "It shortens total generation time", "It is required for batches", "Text arrives as small deltas", "It replaces the need for a semaphore"], answer: [0, 3], explain: "\"The call gives you an async iterator\" and \"the text of the answer arrives as deltas, tiny fragments.\" Total time stays the same." },
+    { q: "After a fan-out returns, some branches raised exceptions. Which TWO steps follow the error-isolation pattern? (Choose TWO.)", options: ["Discard all results and rerun the group", "Keep the successful results", "Raise the first exception to the caller", "Double the semaphore cap", "Handle or retry only the failures"], answer: [1, 4], explain: "\"You walk through the outcomes, keep the successes, and handle or retry just the failures.\"" }
+  ]
 };

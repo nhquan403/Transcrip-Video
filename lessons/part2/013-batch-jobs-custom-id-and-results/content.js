@@ -1,131 +1,75 @@
 window.LESSON_CONTENT = {
   explanation: `
-<p class="key"><strong>Nói ngắn gọn:</strong> Kết quả batch <strong>không về theo thứ tự bạn gửi</strong>. Vì vậy mỗi request mang một <strong>custom_id</strong> duy nhất,
-và bạn <strong>ghép kết quả theo custom_id, không bao giờ theo vị trí</strong>. Batch vẫn hỗ trợ gần như mọi thứ (tool, vision, thinking, system);
-chỉ bỏ streaming và vài tham số.</p>
+<p class="key"><strong>Nói ngắn gọn:</strong> Mỗi entry của batch = <strong>custom_id</strong> + <strong>params</strong> (một Messages request bình thường).
+Kết quả về <strong>không theo thứ tự gửi</strong>, nên luôn ghép theo <strong>custom_id</strong>, không bao giờ theo vị trí.</p>
 
-<h3>📌 Từ cần biết</h3>
+<h3>🔑 Keyword cần nhớ</h3>
 <ul class="terms">
-  <li><strong>custom_id:</strong> nhãn duy nhất bạn gắn cho từng request trong batch; kết quả mang lại đúng nhãn đó.</li>
-  <li><strong>params:</strong> body Messages API bình thường của request (model, max_tokens, messages, tools...).</li>
-  <li><strong>Server tools:</strong> tool chạy phía Anthropic: web search, web fetch, code execution.</li>
-  <li><strong>Best effort:</strong> cố gắng nhưng không cam kết.</li>
+  <li><strong>Batch entry</strong>: cặp <code>custom_id</code> + <code>params</code>.</li>
+  <li><strong>params</strong>: body Messages chuẩn (model, max_tokens, messages, tools...).</li>
+  <li><strong>custom_id</strong>: nhãn duy nhất, 1–64 ký tự, chỉ chữ, số, <code>-</code>, <code>_</code>.</li>
+  <li><strong>Uniqueness</strong>: custom_id trùng → kết quả mơ hồ, việc ghép hỏng.</li>
+  <li><strong>Unordered results</strong>: kết quả về theo thứ tự bất kỳ.</li>
+  <li><strong>Silent corruption</strong>: ghép theo index không báo lỗi, chỉ gắn nhãn sai input.</li>
+  <li><strong>Best-effort caching</strong>: request chạy song song, thứ tự bất kỳ, nên cache không chắc trúng.</li>
+  <li><strong>1-hour cache</strong>: nên dùng khi các entry chung prefix lớn.</li>
 </ul>
 
-<h3>Một entry của batch gồm gì?</h3>
+<h3>🎯 Trọng tâm thi</h3>
 <ul>
-  <li><strong>custom_id:</strong> nhãn duy nhất của request. Giữ ý này trong đầu, nó là chìa khóa của mọi thứ phía sau.</li>
-  <li><strong>params:</strong> body Messages API chuẩn: model, max_tokens, messages, tools như một lời gọi thường.</li>
-  <li><strong>Quy tắc:</strong> mọi custom_id trong batch phải <strong>duy nhất</strong>. Dùng lại một id là kết quả mập mờ và bước ghép sụp đổ.</li>
+  <li>Ghép kết quả → nạp input vào <strong>dictionary keyed by custom_id</strong>, duyệt kết quả và tra theo custom_id.</li>
+  <li>Nên đặt custom_id <strong>có nghĩa</strong>: primary key của row, document ID.</li>
+  <li><strong>Bị từ chối</strong> trong batch: <code>stream</code>, <code>speed</code> (fast mode), thread params (<code>store</code>, previous thread), cache hint / context hint, <code>max_tokens</code> &lt; 1.</li>
+  <li><strong>Vẫn chạy</strong>: vision, tool use (cả server tools: web search, web fetch, code execution), system, multi-turn, adaptive thinking.</li>
+  <li>Chuyển code sync sang batch → <strong>xóa stream=true</strong> và các field cấm.</li>
+  <li>Entry chung system prompt lớn → chọn <strong>1-hour cache</strong> thay vì cache ngắn mặc định.</li>
 </ul>
 
-<h3>Định dạng custom_id (API kiểm tra chặt)</h3>
+<h3>⚠️ Bẫy hay gặp</h3>
 <ul>
-  <li>Dài từ <strong>1 tới 64 ký tự</strong>.</li>
-  <li>Chỉ gồm <strong>chữ cái, chữ số, gạch ngang (-), gạch dưới (_)</strong>. Không dấu cách, không gạch chéo, không ký hiệu đặc biệt.</li>
-  <li><strong>Duy nhất</strong> trong cả batch.</li>
-</ul>
-<p>💡 Mẹo: đặt custom_id <strong>có ý nghĩa</strong>, ví dụ khóa chính của dòng dữ liệu hay mã tài liệu. Khi kết quả về, ghép với nguồn trở nên dễ dàng.
-Id ngẫu nhiên hay dùng lại chỉ làm bạn khổ lúc ghép.</p>
-
-<h3>Quy tắc quan trọng nhất: ghép theo custom_id, không theo vị trí</h3>
-<div class="box">🧥 <strong>Hình dung thế này:</strong> Gửi áo ở phòng gửi đồ, bạn nhận một <strong>thẻ số</strong>. Lúc lấy, nhân viên tìm theo số trên thẻ,
-không phải "áo thứ ba trên giá là của người thứ ba xếp hàng". Kết quả batch là áo, custom_id là thẻ.</div>
-<p>Mỗi kết quả mang custom_id bạn đã gán; dùng nó để tra input tương ứng, dù kết quả về theo thứ tự nào.
-Cái bẫy: nghĩ rằng kết quả thứ ba khớp với input thứ ba. <strong>Không phải.</strong> Ghép theo chỉ số sẽ <strong>âm thầm làm hỏng dữ liệu</strong>,
-và "âm thầm" là phần nguy hiểm: không có lỗi nào, chỉ có câu trả lời bị dán nhầm sang input khác.</p>
-
-<h3>Một ví dụ thất bại</h3>
-<p>Bạn batch 1.000 ticket để phân loại, rồi viết vòng lặp <strong>zip</strong> input với output theo vị trí. Nó vui vẻ dán từng nhãn vào sai ticket,
-không ném lỗi nào. Mỗi dòng ghi ngược lại đều có một câu trả lời <strong>trông hợp lý nhưng sai</strong>, và không gì phía sau phát hiện được.</p>
-<p><strong>Cách sửa chỉ là một nếp kỷ luật:</strong> nạp input vào một dictionary có khóa là custom_id, rồi đi qua kết quả và tra từng cái theo custom_id nó mang.
-Coi thứ tự về là vô nghĩa, vì nó đúng là vô nghĩa.</p>
-
-<h3>Batch KHÔNG phải chế độ rút gọn</h3>
-<ul>
-  <li><strong>Vision</strong> chạy bình thường.</li>
-  <li><strong>Tool use</strong> chạy, kể cả mọi <strong>server tool</strong>: web search, web fetch, code execution, không chỉ client tool.</li>
-  <li><strong>System message</strong> và <strong>hội thoại nhiều lượt</strong> giữ nguyên.</li>
-  <li><strong>Adaptive thinking</strong> chạy trong batch, cùng extended thinking kiểu cũ trên những model cũ còn nhận.</li>
-</ul>
-<p>Batch là một request bình thường, chỉ là chạy bất đồng bộ và rẻ.</p>
-
-<h3>Cái gì KHÔNG chạy trong batch?</h3>
-<ul>
-  <li><strong>stream:</strong> batch chạy nền nên stream vô nghĩa và bị từ chối.</li>
-  <li><strong>Tham số speed</strong> (cờ fast mode) cũng không được.</li>
-  <li>Các tham số liên quan tới <strong>thread</strong> (như store và tham chiếu thread trước) bị từ chối; các tham số <strong>cache hint</strong> và <strong>context hint</strong> cũng vậy.</li>
-  <li><strong>max_tokens</strong> phải ít nhất là 1, không bao giờ bằng 0.</li>
-</ul>
-<p>⚠️ Lỗi hay gặp: tái dùng code tạo request đồng bộ để dựng entry batch, mà code đó hay đặt <code>stream: true</code>, và cờ sót lại làm hỏng entry. Hãy <strong>bỏ những trường đó</strong> khi chuyển một lời gọi thành entry batch.</p>
-
-<h3>Prompt caching trong batch</h3>
-<p>Caching <strong>có chạy</strong>, nhưng các request trong batch chạy <strong>đồng thời và theo thứ tự bất kỳ</strong>, nên caching chỉ là best effort:
-mục cache 5 phút có thể hết hạn trước khi các request cần dùng chung kịp chạy.
-Khi các entry có chung một prefix lớn (system prompt dài, tài liệu chính sách), hãy chọn <strong>TTL 1 giờ</strong> để ngữ cảnh chung còn ấm đủ lâu. Một thiết lập nhỏ, tác động chi phí thật khi quy mô lớn.</p>
-
-<h3>✅ Nhớ 3 điều</h3>
-<ul>
-  <li>Kết quả không theo thứ tự: ghép theo custom_id, không theo vị trí.</li>
-  <li>Tham số bị giới hạn: bỏ stream, speed, tham số thread và cache/context hint; max_tokens ≥ 1.</li>
-  <li>Batch vẫn đầy đủ tính năng: tool (kể cả server tool), vision, system, thinking.</li>
-</ul>
-
-<h3>🇬🇧 Cụm từ tiếng Anh đáng nhớ trong bài</h3>
-<ul>
-  <li><em class="en">that can bite you</em>: có thể làm bạn "dính đòn".</li>
-  <li><em class="en">they don't line up</em>: chúng không khớp hàng.</li>
-  <li><em class="en">Hold on to that idea</em>: giữ ý đó trong đầu.</li>
-  <li><em class="en">falls apart</em>: sụp đổ.</li>
-  <li><em class="en">enforces it strictly</em>: kiểm tra nó rất chặt.</li>
-  <li><em class="en">matching each one to its source is trivial</em>: ghép từng cái với nguồn trở nên dễ ợt.</li>
-  <li><em class="en">silently corrupts your data</em>: âm thầm làm hỏng dữ liệu.</li>
-  <li><em class="en">stapling each label to the wrong ticket</em>: dập ghim từng nhãn vào sai ticket.</li>
-  <li><em class="en">a plausible, but wrong, answer</em>: một câu trả lời nghe hợp lý nhưng sai.</li>
-  <li><em class="en">one line of discipline</em>: một dòng kỷ luật.</li>
-  <li><em class="en">a stripped-down mode</em>: một chế độ bị cắt bớt.</li>
-  <li><em class="en">keep the shared context warm</em>: giữ ngữ cảnh chung còn ấm.</li>
+  <li>"Kết quả thứ 3 ứng với input thứ 3" → <strong>sai</strong>.</li>
+  <li>"Batch là chế độ rút gọn, không có tool use/vision" → <strong>sai</strong>, gần như đủ tính năng.</li>
+  <li>"Batch chỉ hỗ trợ client tools" → <strong>sai</strong>, server tools cũng chạy.</li>
+  <li>"Prompt caching không chạy trong batch" → <strong>sai</strong>, chạy nhưng best effort.</li>
+  <li>"Ghép sai sẽ báo lỗi" → <strong>sai</strong>, nó im lặng.</li>
 </ul>
 
 <h3>💻 Bài tập Java</h3>
-<p>Mở <code>java-app/src/main/java/part2/lesson13/Lesson13.java</code>. Có 4 bài: kiểm tra định dạng custom_id, kiểm tra cả batch trước khi gửi
-(id sai, id trùng, stream hay speed sót lại, max_tokens nhỏ hơn 1), chuyển một request đồng bộ thành params của batch,
-và ghép kết quả về đúng input theo custom_id kèm danh sách cần chạy lại. Chấm bằng <code>./mvnw -q compile exec:java -Dexec.args="p2-13"</code>.</p>
-<p>Làm xong, chạy với Claude thật bằng <code>-Dexec.args="p2-13 --live"</code>: chương trình gửi một Message Batch thật gồm 4 ticket (custom_id là mã ticket),
-chờ tối đa 3 phút, tải kết quả JSONL, in thứ tự kết quả thật sự về, rồi ghép bằng code của bạn. Nếu batch chưa xong, chương trình in id để bạn xem sau.</p>
+<p><code>part2/lesson13/Lesson13.java</code>: kiểm tra định dạng custom_id, validate cả batch, chuyển request sync thành params, ghép kết quả theo custom_id.
+Chấm: <code>./mvnw -q compile exec:java -Dexec.args="p2-13"</code>; chạy thật: thêm <code>--live</code>.</p>
 `,
 
-  // answer = index of the correct option in `options` (options are shuffled on screen).
+  // answer = index of the correct option (options are shuffled on screen); an array means "Choose TWO".
   quiz: [
-    { q: 'Vấn đề chính bài học muốn giải quyết là gì?', options: ['Batch quá đắt cho job nhỏ', 'Kết quả không theo thứ tự gửi', 'Batch không hỗ trợ tool use', 'Batch không dùng được system prompt'], answer: 1, explain: '"You submit requests in a careful order, get results back, and they don\'t line up. Batches don\'t return results in the order that you sent them."' },
-    { q: 'Một entry trong batch gồm những gì?', options: ['prompt và priority', 'model và callback', 'custom_id và params', 'id ngẫu nhiên do server cấp và nội dung'], answer: 2, explain: '"A batch is a list of entries, and each entry pairs a custom ID with params."' },
-    { q: 'params của một entry là gì?', options: ['Một body Messages API chuẩn', 'Một định dạng riêng của batch, khác Messages API', 'Chỉ chuỗi prompt', 'Danh sách các custom_id liên quan'], answer: 0, explain: '"The params is just a standard messages request body. The same model, max tokens, messages, and tools you\'d send on a normal call."' },
-    { q: 'Điều gì xảy ra nếu hai entry dùng cùng một custom_id?', options: ['API tự đổi tên id thứ hai', 'Không sao, kết quả vẫn rõ ràng', 'Hai request được gộp làm một', 'Kết quả mập mờ'], answer: 3, explain: '"Every custom ID in the batch has to be unique. If you reuse one, your results get ambiguous, and the whole matching step falls apart."' },
-    { q: 'custom_id phải dài bao nhiêu ký tự?', options: ['Đúng 32 ký tự', 'Từ 1 tới 64', 'Từ 8 tới 128', 'Không giới hạn'], answer: 1, explain: '"It has to be between one and 64 characters long."' },
-    { q: 'custom_id nào HỢP LỆ?', options: ['ticket 1042', 'orders/1042', 'ticket_1042', 'ticket#1042'], answer: 2, explain: '"The allowed characters are letters, numbers, hyphens, and underscores. Nothing else. No spaces. No slashes. No special symbols."' },
-    { q: 'Theo bài học, custom_id tốt nên là gì?', options: ['Khóa chính hoặc mã tài liệu', 'Một số ngẫu nhiên', 'Số thứ tự trong danh sách gửi', 'Thời gian gửi request'], answer: 0, explain: '"Make your custom ID something meaningful. Like the primary key of the database row that request came from, or a document ID."' },
-    { q: 'Quy tắc quan trọng nhất của bài là gì?', options: ['Ghép kết quả theo thời gian hoàn thành', 'Ghép kết quả theo vị trí', 'Ghép theo độ dài câu trả lời', 'Ghép theo custom_id'], answer: 3, explain: '"When results come back, you match them by custom ID, never by position."' },
-    { q: 'Vì sao ghép kết quả theo chỉ số (index) đặc biệt nguy hiểm?', options: ['Vì API trả lỗi 400', 'Vì không báo lỗi gì', 'Vì tốn gấp đôi token', 'Vì batch bị hủy'], answer: 1, explain: '"Lining them up by index silently corrupts your data. And silently is the dangerous part. Nothing errors."' },
-    { q: 'Bạn batch 1.000 ticket rồi zip input và output theo vị trí. Kết quả là gì?', options: ['Lỗi ngay ở dòng đầu', 'Batch tự sắp xếp lại cho khớp', 'Sai nhãn, không lỗi', 'Chỉ mất vài kết quả cuối'], answer: 2, explain: '"It will happily produce garbage, stapling each label to the wrong ticket, and it won\'t throw a single error while doing it."' },
-    { q: 'Cách sửa đúng cho việc ghép kết quả là gì?', options: ['Tra từng kết quả theo custom_id', 'Sắp xếp kết quả theo thời gian rồi zip', 'Gửi lại batch cho tới khi thứ tự đúng', 'Chỉ gửi batch một request'], answer: 0, explain: '"Load your inputs into a dictionary keyed by custom ID, then walk the results and look each one up by the custom ID it carries."' },
-    { q: 'Theo bài học, nên coi thứ tự kết quả về là gì?', options: ['Thứ tự gửi', 'Thứ tự ưu tiên', 'Thứ tự độ khó', 'Vô nghĩa'], answer: 3, explain: '"Treat the arrival order as meaningless, because it is."' },
-    { q: 'Hiểu lầm nào bài học muốn sửa nhất?', options: ['Batch nhanh hơn API đồng bộ', 'Batch là chế độ rút gọn', 'Batch đắt hơn API đồng bộ', 'Batch cần API key riêng'], answer: 1, explain: '"People assume a batch is a stripped-down mode that drops the good features. It isn\'t. Batches keep almost everything."' },
-    { q: 'Trong batch, tool nào chạy được?', options: ['Chỉ client tool', 'Không tool nào', 'Mọi tool, kể cả server tool', 'Chỉ web search'], answer: 2, explain: '"Tool use works, and that includes every server tool, web search, web fetch, and code execution. Not just client tools."' },
-    { q: 'Adaptive thinking trong batch thì sao?', options: ['Chạy được', 'Bị từ chối', 'Chỉ chạy với budget_tokens', 'Chỉ chạy khi stream'], answer: 0, explain: '"Adaptive thinking runs inside batches too, along with legacy extended thinking on the older models that still accept it."' },
-    { q: 'Tham số nào bị từ chối trong batch?', options: ['system', 'tools', 'thinking', 'stream'], answer: 3, explain: '"Streaming is out. Since a batch runs in the background, stream has no meaning and gets rejected."' },
-    { q: 'Ngoài stream, nhóm tham số nào cũng bị từ chối trong batch?', options: ['model và max_tokens', 'speed, thread, cache/context hint', 'system và messages', 'tools và tool_choice'], answer: 1, explain: '"The speed parameter, the fast mode flag, isn\'t allowed either. Thread-related params, like store... are rejected. And so are the cache hint and context hint parameters."' },
-    { q: 'Entry có max_tokens: 0. Kết quả?', options: ['Chạy bình thường, trả câu rỗng', 'Server tự đặt 1024', 'Không qua kiểm tra', 'Chỉ trả về usage'], answer: 2, explain: '"And max tokens has to be at least one, never zero. Send any of those. And the request fails validation."' },
-    { q: 'Vì sao lỗi "stream sót lại" hay xảy ra khi chuyển sang batch?', options: ['Do tái dùng code đồng bộ', 'Vì batch tự thêm stream', 'Vì SDK bắt buộc stream', 'Vì custom_id chứa chữ stream'], answer: 0, explain: '"This tends to bite when you build batch entries by reusing your synchronous request code, because that code often sets stream to true."' },
-    { q: 'Khi chuyển một lời gọi đồng bộ thành entry batch, bạn nên làm gì?', options: ['Thêm stream: true cho nhanh', 'Bỏ system prompt', 'Bỏ tools vì batch không hỗ trợ', 'Bỏ các trường batch không nhận'], answer: 3, explain: '"Strip those fields when you convert a call into a batch entry. But notice what\'s not on this list. Tool use, vision, thinking, and system messages are all fine."' },
-    { q: 'Prompt caching trong batch hoạt động thế nào?', options: ['Không chạy', 'Chạy, nhưng chỉ best effort', 'Luôn trúng cache 100%', 'Chỉ chạy với TTL 5 phút'], answer: 1, explain: '"Prompt caching does work in a batch... Requests in a batch execute concurrently and in any order. So caching is best effort."' },
-    { q: 'Các entry trong batch dùng chung một system prompt dài. Nên chọn TTL nào?', options: ['5 phút', 'Không cache', '1 giờ', 'TTL càng ngắn càng tốt'], answer: 2, explain: '"The practical move is to prefer the one-hour cache lifetime instead of the default short one when your batch entries share a common prefix."' },
-    { q: 'Vì sao TTL 5 phút dễ trượt cache trong batch?', options: ['Có thể hết hạn trước khi dùng tới', 'Vì batch không đọc được cache 5 phút', 'Vì 5 phút đắt hơn 1 giờ', 'Vì batch luôn đổi model'], answer: 0, explain: '"A short cache lifetime can easily expire before the requests that would have shared it actually run."' },
-    { q: 'Batch có hỗ trợ hội thoại nhiều lượt và system message không?', options: ['Không hỗ trợ cả hai', 'Chỉ system', 'Chỉ nhiều lượt', 'Có, cả hai'], answer: 3, explain: '"System messages and full multi-turn conversations carry straight over."' },
-    { q: 'Ba điều "hay làm người ta vấp" được tóm lại là gì?', options: ['Giá, tốc độ, model', 'Không theo thứ tự, ít tham số, đủ tính năng', 'Stream, cache, thinking', 'Endpoint, header, status'], answer: 1, explain: '"Unordered results, limited params, still full-featured. Those three keep you out of trouble."' },
-    { q: 'Kết quả về theo thứ tự [TCK-3, TCK-1, TCK-2]. Bạn gửi theo thứ tự [TCK-1, TCK-2, TCK-3]. Nhãn đầu tiên trong kết quả thuộc về ticket nào?', options: ['TCK-1, vì là ticket gửi đầu tiên', 'Không xác định được', 'TCK-3, theo custom_id nó mang', 'TCK-2, vì nằm giữa'], answer: 2, explain: 'Thứ tự về là vô nghĩa; mỗi kết quả "carries the custom ID you assigned", nên nó thuộc TCK-3.' },
-    { q: 'custom_id "đơn-hàng-1" có hợp lệ không?', options: ['Không hợp lệ', 'Có, vì không có dấu cách', 'Có, vì dưới 64 ký tự', 'Có, vì có gạch ngang'], answer: 0, explain: 'Chỉ cho phép "letters, numbers, hyphens, and underscores". Chữ có dấu như "đ", "ơ", "à" nằm ngoài tập ký tự chuẩn đó.' },
-    { q: 'Mô hình tư duy đúng về một batch là gì?', options: ['Một API khác hoàn toàn với định dạng riêng', 'Một chế độ thử nghiệm', 'Một bản rút gọn chỉ cho văn bản', 'Request thường, chạy nền, rẻ'], answer: 3, explain: '"A batch is a normal request that happens to run asynchronously and cheaply."' },
-    { q: 'Vì sao chọn TTL cache đúng trong batch "có tác động chi phí thật"?', options: ['Vì batch tính phí cache gấp đôi', 'Prefix chung được đọc lại nhiều lần', 'Vì TTL quyết định giá output', 'Vì TTL quyết định số request tối đa'], answer: 1, explain: '"That keeps the shared context warm long enough that later requests in the job can hit the cache. It\'s a small setting with a real cost impact at scale."' },
-    { q: 'Câu chốt cuối bài là gì?', options: ['Batch bỏ tool use và vision', 'Batch luôn trả kết quả theo thứ tự', 'Vẫn đủ tool, vision, thinking', 'Batch chỉ dùng cho phân loại'], answer: 2, explain: '"Just remember, batches still support tool use, vision, and thinking. They only drop streaming and a few parameters."' },
-  ],
+    { q: "A developer submits 1,000 support tickets as a batch and writes the labels back by zipping inputs and outputs by position. No errors appear. What is the MOST likely outcome?", options: ["Results are correct because batches preserve order", "Labels are silently attached to the wrong tickets", "The API rejects the results file", "Only the first 64 results are matched"], answer: 1, explain: "Batch results \"aren't returned in submission order\", so a positional zip \"will happily produce garbage, stapling each label to the wrong ticket, and it won't throw a single error.\"" },
+    { q: "What is the BEST way to match batch results back to their inputs?", options: ["Sort results by creation time, then match by index", "Match each result to the input with the most similar text", "Submit entries one at a time so order is preserved", "Key inputs by custom ID and look up each result"], answer: 3, explain: "\"Load your inputs into a dictionary keyed by custom ID, then walk the results and look each one up by the custom ID it carries.\"" },
+    { q: "What does each entry in a batch request consist of?", options: ["A custom ID and a standard Messages body", "A model name and a prompt string", "A sequence number and a messages array", "A custom ID and a webhook callback URL for results"], answer: 0, explain: "\"Each entry pairs a custom ID with params\", and \"the params is just a standard messages request body.\"" },
+    { q: "Which custom ID is valid?", options: ["order 4471", "tickets/4471", "ticket_4471", "ticket#4471"], answer: 2, explain: "Allowed characters are \"letters, numbers, hyphens, and underscores. Nothing else. No spaces. No slashes. No special symbols.\"" },
+    { q: "What are the length limits for a custom ID?", options: ["1 to 32 characters", "1 to 64 characters", "8 to 128 characters", "No limit if it is unique"], answer: 1, explain: "The custom ID \"has to be between one and 64 characters long.\"" },
+    { q: "A team reuses the same custom ID for two entries in one batch. What is the main consequence?", options: ["The second entry overwrites the first input", "The batch runs at full price", "The two requests share one cached prefix", "Results become ambiguous to match"], answer: 3, explain: "\"Every custom ID in the batch has to be unique. If you reuse one, your results get ambiguous, and the whole matching step falls apart.\"" },
+    { q: "Which custom ID choice does the lesson recommend?", options: ["The source row's primary key", "A random UUID per entry", "The position of the entry in the batch", "A timestamp of submission"], answer: 0, explain: "\"Make your custom ID something meaningful. Like the primary key of the database row that request came from, or a document ID.\"" },
+    { q: "A developer converts synchronous request code into batch entries and every entry fails validation. What is the MOST likely cause?", options: ["The entries include image inputs", "The entries include a system message", "A leftover stream: true flag", "The entries define client tools"], answer: 2, explain: "Synchronous code \"often sets stream to true\", which batches reject. Images, system messages, and tools are all fine in a batch." },
+    { q: "Which TWO parameters cause a batch entry to fail validation? (Choose TWO.)", options: ["speed", "system", "stream", "tools", "messages"], answer: [0, 2], explain: "\"Streaming is out\" and \"the speed parameter, the fast mode flag, isn't allowed either.\" System, tools, and messages are normal params." },
+    { q: "Which TWO features work inside a batch? (Choose TWO.)", options: ["Streaming responses", "Server tools such as web search", "The fast mode speed flag", "Image inputs (vision)", "max_tokens set to 0"], answer: [1, 3], explain: "\"Vision works\" and \"tool use works, and that includes every server tool, web search, web fetch, and code execution.\" Streaming, speed, and max_tokens of 0 are rejected." },
+    { q: "A team believes batches drop tool use and vision, so they plan a separate sync pipeline for those requests. What should you tell them?", options: ["Correct, batches only support plain text", "Batches support tool use and vision", "Correct for vision, but tools work", "Only client tools work in batches"], answer: 1, explain: "\"The mental model to drop is that batches lack tool use or vision. They don't.\" A batch is \"a normal request that happens to run asynchronously and cheaply.\"" },
+    { q: "Which statement about thinking in batches is accurate?", options: ["Thinking is disabled in all batch requests", "Only legacy extended thinking is allowed", "Thinking requires streaming, so it fails", "Adaptive thinking runs inside batches"], answer: 3, explain: "\"Adaptive thinking runs inside batches too, along with legacy extended thinking on the older models that still accept it.\"" },
+    { q: "Why is prompt caching only best effort inside a batch?", options: ["Requests run concurrently, in any order", "Batches ignore cache_control markers", "Caching is billed separately in batches", "Each entry uses a different model"], answer: 0, explain: "\"Requests in a batch execute concurrently and in any order. So caching is best effort.\"" },
+    { q: "Batch entries share a large policy document as a system prompt. Which setting gives the BEST chance of cache hits?", options: ["Use the default short cache lifetime", "Disable caching for the batch", "Use the one-hour cache lifetime", "Add a cache hint parameter to each entry"], answer: 2, explain: "\"Prefer the one-hour cache lifetime instead of the default short one when your batch entries share a common prefix.\" Cache hint parameters are rejected in batches." },
+    { q: "Which max_tokens value is rejected in a batch entry?", options: ["1", "0", "1024", "4096"], answer: 1, explain: "\"Max tokens has to be at least one, never zero.\"" },
+    { q: "Which TWO request fields belong to the rejected list for batch entries? (Choose TWO.)", options: ["A multi-turn messages array", "A tools array with code execution", "The store thread parameter", "A model name", "The context hint parameter"], answer: [2, 4], explain: "\"Thread-related params, like store and the previous thread reference, are rejected. And so are the cache hint and context hint parameters.\"" },
+    { q: "Why is position-based matching especially dangerous with batches?", options: ["It throws an error that stops the job", "It doubles the cost of the batch", "It only works for batches under 100 entries", "It fails silently with wrong answers"], answer: 3, explain: "\"Silently is the dangerous part. Nothing errors. You just get answers stapled to the wrong inputs.\"" },
+    { q: "Which statement BEST describes a batch?", options: ["A normal request run async and cheaply", "A reduced mode without tools or vision", "A streaming request split into chunks", "A real-time request at full price"], answer: 0, explain: "\"A batch is a normal request that happens to run asynchronously and cheaply.\"" },
+    { q: "Which of the following is NOT one of the three things the lesson says trip people up with batches?", options: ["Unordered results", "Limited parameters", "No system messages", "Still full-featured"], answer: 2, explain: "The three: \"Unordered results, limited params, still full-featured.\" System messages \"carry straight over\"." },
+    { q: "A developer processes batch results in the order they arrive and stores each one at results[i]. What should they change FIRST?", options: ["Sort inputs alphabetically before submitting", "Key results by custom ID instead of index", "Use a shorter custom ID format", "Switch to streaming"], answer: 1, explain: "\"Treat the arrival order as meaningless, because it is, and build your mapping from that key every time.\"" },
+    { q: "A team migrates a sync workload to batches. Which TWO parts of their requests carry straight over? (Choose TWO.)", options: ["System messages", "The stream: true flag", "The store thread parameter", "Full multi-turn conversations", "max_tokens set to 0"], answer: [0, 3], explain: "\"System messages and full multi-turn conversations carry straight over.\" Stream, thread params, and max_tokens of zero are rejected." },
+    { q: "Which item does every batch result carry so it can be matched?", options: ["Its submission index", "A hash of the prompt", "The input token count only", "The custom ID you assigned"], answer: 3, explain: "\"Every result carries the custom ID you assigned. So you use that key to look up which input it belongs to.\"" },
+    { q: "A batch entry includes a code execution server tool. What happens?", options: ["It works as it would synchronously", "It fails because server tools need streaming", "It is converted to a client tool", "The tool is silently dropped"], answer: 0, explain: "Tool use in batches \"includes every server tool, web search, web fetch, and code execution. Not just client tools.\"" },
+    { q: "Which custom ID is invalid?", options: ["doc_2024_17", "row-88412", "invoice 77", "ABC123"], answer: 2, explain: "Spaces are not allowed: \"No spaces. No slashes. No special symbols.\"" },
+    { q: "A pipeline validates batch entries before submission. Which check is NOT required by the API rules in the lesson?", options: ["custom ID is unique across the batch", "Entries are sorted by custom ID", "custom ID is 1 to 64 allowed characters", "max_tokens is at least 1"], answer: 1, explain: "Uniqueness, format, and max_tokens of at least one are enforced. Order is irrelevant because results are matched by key." },
+    { q: "Which TWO statements about prompt caching in batches are accurate? (Choose TWO.)", options: ["It is rejected like stream", "It works but is best effort", "It always hits for shared prefixes", "It requires the cache hint parameter", "A one-hour lifetime helps shared prefixes"], answer: [1, 4], explain: "\"Prompt caching does work in a batch\" but \"caching is best effort\", so \"prefer the one-hour cache lifetime\" for shared prefixes. Cache hint parameters are rejected." },
+    { q: "Which parameter is described as \"the fast mode flag\"?", options: ["stream", "store", "max_tokens", "speed"], answer: 3, explain: "\"The speed parameter, the fast mode flag, isn't allowed either.\"" },
+    { q: "What is the single habit that makes batches reliable, according to the lesson?", options: ["Always keying on custom ID", "Retrying failed entries immediately", "Keeping batches under 64 entries", "Submitting entries in a fixed order"], answer: 0, explain: "\"Always key on custom ID.\" \"Get that one habit right, and batches become reliable.\"" },
+    { q: "Why does a short cache lifetime often fail to help a batch?", options: ["Short caches are disabled in batches", "Batches bill cache writes twice", "It expires before later entries run", "It applies only to the first entry"], answer: 2, explain: "\"A short cache lifetime can easily expire before the requests that would have shared it actually run.\"" },
+    { q: "According to the bottom line, what do batches drop compared with normal requests?", options: ["Tool use and image vision inputs", "Streaming and a few parameters", "Thinking and system messages", "Multi-turn conversation history"], answer: 1, explain: "\"Batches still support tool use, vision, and thinking. They only drop streaming and a few parameters.\"" }
+  ]
 };

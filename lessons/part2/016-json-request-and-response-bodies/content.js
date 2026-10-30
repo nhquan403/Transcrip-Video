@@ -1,138 +1,74 @@
 window.LESSON_CONTENT = {
   explanation: `
-<p class="key"><strong>Nói ngắn gọn:</strong> Lời gọi REST đã chạy mà request vẫn bị từ chối, hoặc không tìm thấy câu trả lời trong response?
-Gần như luôn là chuyện <strong>body JSON</strong>. Một lời gọi Claude là <strong>một object JSON đi</strong> và <strong>một object JSON về</strong>.
-Hiểu ba viên gạch của JSON và hình dạng hai object đó, code tự viết ra được.</p>
+<p class="key"><strong>Nói ngắn gọn:</strong> Một call Claude = <strong>một JSON object gửi đi</strong> (model, messages, max_tokens) và <strong>một JSON object nhận về</strong> (content, stop_reason, usage).
+Bẫy lớn nhất: coi <strong>content là một string</strong>; thực ra nó là <strong>mảng typed blocks</strong>.</p>
 
-<h3>📌 Từ cần biết</h3>
+<h3>🔑 Keyword cần nhớ</h3>
 <ul class="terms">
-  <li><strong>Object:</strong> cặp khóa và giá trị trong ngoặc nhọn <code>{ }</code>. Cả request là một object lớn.</li>
-  <li><strong>Array:</strong> danh sách có thứ tự trong ngoặc vuông <code>[ ]</code>, như mảng messages.</li>
-  <li><strong>Scalar:</strong> giá trị lá: string, number, boolean, null.</li>
-  <li><strong>UTF-8:</strong> cách mã hóa chữ thành byte; JSON đi trên đường truyền dưới dạng text UTF-8.</li>
-  <li><strong>Base64:</strong> cách biến dữ liệu nhị phân (ảnh, tài liệu) thành chuỗi chữ.</li>
+  <li><strong>Object / array / scalar</strong>: key-value trong <code>{}</code>; danh sách có thứ tự trong <code>[]</code>; string, number, boolean, null.</li>
+  <li><strong>model, messages, max_tokens</strong>: 3 khóa cốt lõi của request; quên <code>max_tokens</code> là lỗi hay gặp.</li>
+  <li><strong>system, temperature, tools</strong>: khóa tùy chọn (system prompt, độ ngẫu nhiên, hàm cho Claude gọi).</li>
+  <li><strong>role</strong>: <code>user</code> hoặc <code>assistant</code>.</li>
+  <li><strong>Content blocks</strong>: text, image, tool_use, tool_result; cho phép một lượt trộn chữ và ảnh.</li>
+  <li><strong>stop_reason</strong>: vì sao dừng sinh.</li>
+  <li><strong>usage</strong>: số input/output tokens, dùng theo dõi chi phí và ngân sách context.</li>
+  <li><strong>Base64</strong>: mã hóa ảnh/tài liệu nhị phân thành string, lớn hơn khoảng <strong>1/3</strong>.</li>
 </ul>
 
-<h3>Ba viên gạch của JSON</h3>
-<div class="box">🪆 <strong>Hình dung thế này:</strong> Như búp bê Nga lồng nhau. Object chứa array, array chứa object, và trong cùng là các giá trị đơn giản (scalar).
-Sự lồng nhau đó chính là toàn bộ "ngôn ngữ" JSON.</div>
+<h3>🎯 Trọng tâm thi</h3>
 <ul>
-  <li><strong>Object:</strong> cả request bạn gửi là một object lớn; các khóa như <code>model</code>, <code>messages</code> nằm bên trong.</li>
-  <li><strong>Array:</strong> mảng messages giữ các lượt theo thứ tự, và content trong mỗi lượt cũng là một array.</li>
-  <li><strong>Scalar:</strong> điền dữ liệu thật như nội dung tin nhắn hay số token.</li>
+  <li>Đọc câu trả lời: <strong>duyệt mảng content</strong>, lấy các block <code>type: "text"</code>, nối nếu nhiều hơn một; đọc field <code>text</code>.</li>
+  <li><strong>Kiểm tra stop_reason trước khi tin output</strong>: <code>end_turn</code> xong tự nhiên; <code>max_tokens</code> bị cắt; <code>tool_use</code> code của bạn phải chạy tool; <code>stop_sequence</code> chuỗi dừng tùy chỉnh đã kích hoạt.</li>
+  <li>Mỗi response: (1) lấy text blocks, (2) check stop_reason, (3) log usage.</li>
+  <li>Hội thoại nhiều lượt: Claude đọc theo <strong>thứ tự mảng</strong> → append lượt user/assistant mới vào cuối.</li>
+  <li>Body là text <strong>UTF-8</strong>, <code>application/json</code>; ảnh lớn → resize để giảm kích thước request.</li>
+  <li>Response còn có metadata: <strong>message ID</strong> và <strong>model đã chạy</strong>.</li>
 </ul>
 
-<h3>Object request</h3>
+<h3>⚠️ Bẫy hay gặp</h3>
 <ul>
-  <li><strong>Ba khóa cốt lõi</strong> gần như mọi lời gọi cần: <code>model</code> (chuỗi tên model), <code>messages</code> (mảng các lượt),
-  và <code>max_tokens</code> (trần độ dài câu trả lời), cái mà <strong>người ta hay quên</strong>.</li>
-  <li><strong>Khóa tùy chọn</strong> mở thêm hành vi: <code>system</code> (system prompt), <code>temperature</code> (độ ngẫu nhiên), <code>tools</code> (các hàm Claude gọi được).</li>
-</ul>
-<p>Hình dung đơn giản: một object JSON, vài khóa bắt buộc, vài khóa tùy chọn thêm khi cần.</p>
-
-<h3>Mảng messages: chỗ người mới hay mô hình sai</h3>
-<ul>
-  <li>Mỗi phần tử là <strong>một lượt</strong>, gồm <strong>role</strong> (user hoặc assistant) và <strong>content</strong>.</li>
-  <li>Điều mấu chốt: content <strong>không phải một chuỗi trơn</strong> mà là danh sách <strong>block có kiểu</strong>: text, image, tool_use, tool_result.
-  Nhờ vậy một lượt trộn được chữ với ảnh, hay mang một lời gọi tool cạnh câu trả lời.</li>
-  <li>Thứ tự quan trọng: Claude đọc các lượt theo thứ tự mảng. Muốn nói tiếp thì <strong>nối</strong> lượt user và assistant mới vào cuối.</li>
-</ul>
-
-<h3>Object response: ba trường gánh việc</h3>
-<ul>
-  <li><strong>content:</strong> cũng là mảng block. Chữ của model nằm trong <strong>trường text của block text</strong>, không phải một chuỗi ở cấp cao nhất.</li>
-  <li><strong>stop_reason:</strong> lý do dừng: <code>end_turn</code> (xong tự nhiên), <code>max_tokens</code> (hết chỗ), <code>tool_use</code> (muốn gọi tool, đang chờ bạn), <code>stop_sequence</code> (chuỗi dừng của bạn vừa xuất hiện).</li>
-  <li><strong>usage:</strong> số token vào và ra, dùng để theo dõi chi phí và tính ngân sách context.</li>
-</ul>
-
-<h3>Ba bước đọc response</h3>
-<ol>
-  <li><strong>Duyệt mảng content</strong>, tìm các block có type là text; có nhiều thì nối lại.</li>
-  <li><strong>Kiểm tra stop_reason</strong> trước khi tin output: max_tokens nghĩa là bị cắt (có thể viết tiếp); tool_use nghĩa là code của bạn còn việc phải làm.</li>
-  <li><strong>Đọc usage</strong> và ghi log số token.</li>
-</ol>
-<p>Làm đủ ba bước mỗi lần là bạn đang đối xử với body như <strong>dữ liệu có cấu trúc</strong>, thay vì hy vọng chuỗi nằm đúng chỗ.</p>
-
-<h3>Request và response soi gương nhau</h3>
-<ul>
-  <li><strong>Request:</strong> bạn nắm quyền: model, messages, max_tokens, các tham số tùy chọn. Mọi trường là thứ bạn quyết định.</li>
-  <li><strong>Response:</strong> bạn đọc thứ server tạo ra: mảng content, stop_reason, usage, và metadata như id của message và model đã thật sự chạy.</li>
-</ul>
-<p>Cả hai đều là object JSON, đều dùng mảng block cho content, và lồng nhau theo cùng một kiểu. Hiểu ra điều đó thì lời gọi Claude hết "phép màu".</p>
-
-<h3>Mã hóa và kích thước body</h3>
-<p>JSON là text thuần, <code>content-type: application/json</code>, đi trên đường truyền dưới dạng <strong>UTF-8</strong>. Với chữ thì ổn.
-Ảnh hay tài liệu là dữ liệu nhị phân, không nhét thẳng vào text được, nên phải <strong>mã hóa Base64</strong> thành chuỗi trước.
-⚠️ Base64 làm dữ liệu <strong>to thêm khoảng một phần ba</strong>, nên vài ảnh độ phân giải cao có thể làm request phình rất nhanh.
-Thu nhỏ ảnh khi được, và đừng ngạc nhiên khi một bức ảnh chiếm chỗ trong body nhiều hơn hẳn một đoạn văn.</p>
-
-<h3>Từ JSON thô tới code</h3>
-<p>Ngôn ngữ của bạn biến JSON thành cấu trúc gốc: object thành dictionary trong Python (hoặc class có kiểu nếu dùng SDK), array thành list để lặp.
-Lấy câu trả lời chỉ là <strong>điều hướng</strong>: vào list content, lấy block text, đọc trường text. SDK còn trao object có thuộc tính đặt tên để editor tự gợi ý.
-Dù cách nào, bài học vẫn vậy: <strong>từ trên xuống dưới đều là dữ liệu có cấu trúc</strong>.</p>
-
-<h3>✅ Nhớ 3 điều</h3>
-<ul>
-  <li>Đi ra: model, messages, max_tokens. Trở về: content, stop_reason, usage.</li>
-  <li>Content là mảng block, không phải chuỗi: duyệt theo type để lấy text.</li>
-  <li>Ảnh đi dưới dạng Base64, to hơn khoảng một phần ba; để ý tổng kích thước request.</li>
-</ul>
-
-<h3>🇬🇧 Cụm từ tiếng Anh đáng nhớ trong bài</h3>
-<ul>
-  <li><em class="en">every builder hits early</em>: ai làm cũng gặp từ sớm.</li>
-  <li><em class="en">Let's ground JSON in three building blocks</em>: hãy neo JSON vào ba viên gạch.</li>
-  <li><em class="en">That nesting is the whole language</em>: sự lồng nhau đó là toàn bộ ngôn ngữ.</li>
-  <li><em class="en">piece by piece</em>: từng mảnh một.</li>
-  <li><em class="en">layered on when you need them</em>: chồng thêm khi cần.</li>
-  <li><em class="en">this is where beginners model things wrong</em>: đây là chỗ người mới hay mô hình sai.</li>
-  <li><em class="en">carry the weight</em>: gánh phần chính.</li>
-  <li><em class="en">reaching for those three fields</em>: quen tay lấy ba trường đó.</li>
-  <li><em class="en">hoping a string is where you left it</em>: hy vọng chuỗi vẫn nằm chỗ bạn để.</li>
-  <li><em class="en">balloon your request</em>: làm request phình to.</li>
-  <li><em class="en">It's structured data all the way down</em>: từ trên xuống dưới đều là dữ liệu có cấu trúc.</li>
-  <li><em class="en">the code writes itself</em>: code gần như tự viết ra.</li>
+  <li>"Câu trả lời nằm ở một string cấp cao nhất" → <strong>sai</strong>, nằm trong text block.</li>
+  <li>"content của một turn luôn là string" → <strong>sai</strong>, là list typed blocks.</li>
+  <li>"Có response là output đầy đủ" → <strong>sai</strong>, có thể bị cắt (<code>max_tokens</code>).</li>
+  <li>"Gửi bytes ảnh thô trong JSON" → <strong>sai</strong>, phải Base64.</li>
 </ul>
 
 <h3>💻 Bài tập Java</h3>
-<p>Mở <code>java-app/src/main/java/part2/lesson16/Lesson16.java</code>. Có 5 bài: nhận loại của một giá trị JSON, tìm khóa cốt lõi bị thiếu,
-lấy câu trả lời từ JSON thô bằng cách duyệt content, tính độ dài Base64, và ước lượng kích thước body (byte UTF-8 của chữ cộng Base64 của ảnh).
-Chấm bằng <code>./mvnw -q compile exec:java -Dexec.args="p2-16"</code>.</p>
-<p>Làm xong, chạy với Claude thật bằng <code>-Dexec.args="p2-16 --live"</code>: chương trình tự dựng body JSON có một ảnh Base64, cho thấy kích thước body,
-phát hiện thiếu max_tokens trước khi gửi, rồi đọc câu trả lời từ JSON thô bằng code của bạn.</p>
+<p><code>part2/lesson16/Lesson16.java</code>: nhận loại giá trị JSON, tìm khóa cốt lõi bị thiếu, lấy câu trả lời bằng cách duyệt content, tính độ dài Base64, ước lượng kích thước body.
+Chấm: <code>./mvnw -q compile exec:java -Dexec.args="p2-16"</code>; chạy thật: thêm <code>--live</code>.</p>
 `,
 
-  // answer = index of the correct option in `options` (options are shuffled on screen).
+  // answer = index of the correct option (options are shuffled on screen); an array means "Choose TWO".
   quiz: [
-    { q: 'Request bị từ chối hoặc không tìm thấy câu trả lời trong response. Theo bài học, nguyên nhân thường nằm ở đâu?', options: ['Ở mạng chập chờn', 'Ở body JSON', 'Ở model quá tải', 'Ở API key hết hạn'], answer: 1, explain: '"The request keeps getting rejected, or you can\'t find the model\'s answer in what comes back. Almost always, it points to the JSON body."' },
-    { q: 'Ba viên gạch của JSON là gì?', options: ['Header, body, footer', 'Model, messages, max_tokens', 'Object, array, scalar', 'String, number, boolean'], answer: 2, explain: '"First, objects... Second, arrays... Third, scalars." Ba thứ đó lồng nhau tạo nên mọi lời gọi Claude.' },
-    { q: 'Toàn bộ request gửi cho Claude là gì về mặt JSON?', options: ['Một object lớn', 'Một array các chuỗi', 'Một chuỗi dài', 'Nhiều object rời nhau'], answer: 0, explain: '"The entire request you send is one big object, and keys, like model and messages, live inside it."' },
-    { q: 'Giá trị nào là scalar?', options: ['{"role": "user"}', '[1, 2, 3]', 'Một lượt trong messages', 'null'], answer: 3, explain: '"Those are the simple leaf values. Strings, numbers, booleans, and null."' },
-    { q: 'Khóa cốt lõi nào người ta HAY QUÊN nhất?', options: ['model', 'max_tokens', 'messages', 'role trong từng lượt'], answer: 1, explain: '"The third one people forget is max tokens, which caps how long the reply can get."' },
-    { q: 'Khóa nào là TÙY CHỌN trong request?', options: ['model (tên model)', 'messages', 'temperature', 'max_tokens'], answer: 2, explain: '"On top of that, you\'ve got optional keys that unlock more behavior. A system field... Temperature nudges randomness. A tools array..."' },
-    { q: 'Mỗi phần tử trong mảng messages gồm hai phần nào?', options: ['role (user/assistant) và content', 'model và text', 'id và value', 'user và assistant'], answer: 0, explain: '"Each item in the array is one turn, and every turn has two parts. A role... and content."' },
-    { q: '"Điều mấu chốt" về content của một lượt là gì?', options: ['Content luôn là một chuỗi trơn', 'Content chỉ chứa được text', 'Content phải viết bằng tiếng Anh', 'Danh sách block có kiểu'], answer: 3, explain: '"Here\'s the key insight. Content isn\'t a plain string. It\'s a list of typed blocks."' },
-    { q: 'Thiết kế content dạng block cho phép điều gì?', options: ['Gửi nhiều model trong một request', 'Trộn chữ, ảnh, tool trong một lượt', 'Bỏ qua max_tokens', 'Không cần role'], answer: 1, explain: '"That design is what lets a single turn mix text and images, or carry a tool call alongside a reply."' },
-    { q: 'Muốn tiếp tục hội thoại, bạn làm gì với mảng messages?', options: ['Thay mảng bằng lượt mới nhất', 'Chèn lượt mới lên đầu', 'Nối lượt mới vào cuối', 'Gộp mọi lượt thành một chuỗi'], answer: 2, explain: '"Claude reads the turns in array order. So to continue a conversation, you append each new user and assistant message on to the end."' },
-    { q: 'Chữ trả lời của Claude nằm ở đâu trong response?', options: ['Trong block text của content', 'Trong một trường "completion" ở cấp cao nhất', 'Trong usage, cạnh số token', 'Trong stop_reason'], answer: 0, explain: '"The model\'s text sits inside a text block in its text field. You pull the answer out of there, not from some top-level string."' },
-    { q: 'stop_reason "stop_sequence" nghĩa là gì?', options: ['Claude muốn gọi tool', 'Hết chỗ output', 'Claude từ chối', 'Gặp chuỗi dừng tự đặt'], answer: 3, explain: '"And stop sequence means one of your custom stop strings fired."' },
-    { q: 'usage dùng để làm gì?', options: ['Chọn model', 'Theo dõi chi phí', 'Đặt giới hạn rate', 'Lưu lịch sử hội thoại'], answer: 1, explain: '"Third, usage. That\'s your input and output token counts, which you read for cost tracking and for budgeting context."' },
-    { q: 'Bước đầu tiên khi đọc response là gì?', options: ['Đọc usage', 'Đọc id của message', 'Duyệt content lấy text', 'Đọc model đã chạy'], answer: 2, explain: '"Step one, loop over the content array and find the blocks with type text. That\'s where the answer lives."' },
-    { q: 'Vì sao phải kiểm tra stop_reason trước khi tin output?', options: ['Vì output có thể bị cắt hoặc còn việc', 'Vì stop_reason chứa câu trả lời', 'Vì stop_reason quyết định giá', 'Vì không kiểm tra thì API báo lỗi'], answer: 0, explain: '"Step two, check stop reason before you trust the output. If it says max tokens, your reply got cut off... If it says tool use, your code has work to do."' },
-    { q: 'Response có content = [thinking, text "REST là ", tool_use, text "phong cách API."]. Câu trả lời đầy đủ là gì?', options: ['"REST là "', '"phong cách API."', 'Không lấy được vì block đầu là thinking', '"REST là phong cách API."'], answer: 3, explain: 'Duyệt cả mảng, lấy mọi block text và "concatenate them if there\'s more than one".' },
-    { q: 'Request và response giống nhau ở điểm nào?', options: ['Cùng do bạn quyết định mọi trường', 'Cùng là object JSON, content đều là mảng block lồng nhau', 'Cùng có trường usage', 'Cùng có trường max_tokens'], answer: 1, explain: '"Notice the symmetry. Both are JSON objects, both use arrays of blocks for content, and both nest the same way."' },
-    { q: 'Metadata nào có trong response mà bài học nhắc tới?', options: ['API key của bạn', 'Temperature đã dùng', 'Id message và model đã chạy', 'Địa chỉ IP của server'], answer: 2, explain: '"Some metadata, like the message ID and which model actually ran."' },
-    { q: 'JSON đi trên đường truyền dưới dạng gì?', options: ['Text UTF-8', 'Nhị phân nén', 'XML', 'Base64'], answer: 0, explain: '"The content type is application slash JSON, and the body goes over the wire as UTF-8 text."' },
-    { q: 'Vì sao ảnh phải Base64 trước khi gửi trong JSON?', options: ['Để nén ảnh nhỏ hơn', 'Để mã hóa bảo mật', 'Để Claude đọc nhanh hơn', 'Vì JSON là text, ảnh là nhị phân'], answer: 3, explain: '"You can\'t drop raw binary into text, so those get Base64 encoded into a string first."' },
-    { q: 'Base64 làm dữ liệu thay đổi kích thước thế nào?', options: ['Nhỏ đi một nửa', 'To hơn ~1/3', 'Giữ nguyên', 'To gấp đôi'], answer: 1, explain: '"Base64 makes data bigger, roughly a third larger than the original bytes."' },
-    { q: 'Ảnh 3 MB gửi dạng Base64 chiếm khoảng bao nhiêu trong body?', options: ['Khoảng 1,5 MB vì Base64 nén ảnh', '3 MB', 'Khoảng 4 MB', '6 MB'], answer: 2, explain: 'Base64 to hơn khoảng một phần ba: 3 MB × 4/3 ≈ 4 MB.' },
-    { q: 'Khi làm prompt nhiều ảnh, nên chú ý điều gì?', options: ['Tổng kích thước request', 'Chỉ dùng ảnh GIF', 'Đặt ảnh sau text', 'Tắt max_tokens'], answer: 0, explain: '"When you\'re building multimodal prompts, keep an eye on total request size. Resize images when you can."' },
-    { q: 'Trong Python không dùng SDK, object JSON của response thành gì?', options: ['Một chuỗi', 'Một list', 'Một tuple bất biến các cặp khóa', 'Một dictionary'], answer: 3, explain: '"A JSON object becomes a dictionary in Python, or a typed class if you\'re using the SDK. Arrays become lists you can loop over."' },
-    { q: 'Lấy câu trả lời từ response, về bản chất là việc gì?', options: ['Tìm kiếm toàn văn', 'Điều hướng theo cấu trúc', 'Dùng regex trên chuỗi thô', 'Gọi thêm một API khác'], answer: 1, explain: '"So reaching Claude\'s answer is just navigation. You go into the content list, grab the first text block, and read its text field."' },
-    { q: 'SDK giúp thêm gì khi đọc response?', options: ['Bỏ qua stop_reason', 'Tự gộp mọi block thành một chuỗi', 'Trao object có kiểu', 'Tự retry mọi lỗi 400'], answer: 2, explain: '"The SDK smooths this further by handing you typed objects with named attributes, so your editor auto-completes the fields."' },
-    { q: '"Cái bẫy" mà bài học cảnh báo cuối cùng là gì?', options: ['Coi content như một chuỗi trơn ở cấp cao nhất', 'Dùng quá nhiều khóa tùy chọn', 'Đặt max_tokens quá lớn', 'Dùng temperature'], answer: 0, explain: '"The trap is treating content like a string."' },
-    { q: 'Body thiếu khóa nào? {"model": "...", "messages": [...], "system": "..."}', options: ['model', 'messages (mảng các lượt)', 'system (tùy chọn)', 'max_tokens'], answer: 3, explain: 'Ba khóa cốt lõi là model, messages, max_tokens. system là tùy chọn; ở đây thiếu max_tokens.' },
-    { q: 'Câu "Xin chào" chiếm bao nhiêu byte UTF-8 so với số ký tự?', options: ['Bằng số ký tự', 'Nhiều hơn, vì chữ có dấu chiếm 2-3 byte', 'Ít hơn số ký tự', 'Luôn đúng 2 byte mỗi ký tự'], answer: 1, explain: 'Body đi dưới dạng UTF-8; chữ ASCII 1 byte, chữ có dấu như "à" chiếm nhiều byte hơn, nên "Xin chào" nhiều byte hơn 8.' },
-    { q: 'Câu tổng kết của bài là gì?', options: ['Một lời gọi gồm nhiều object JSON rời rạc', 'Câu trả lời luôn ở cấp cao nhất', 'Một object đi, một object về', 'JSON chỉ dùng cho request'], answer: 2, explain: '"A Claude call is one JSON object out and another back. Look for model, messages, and max tokens going out, and content, stop reason, and usage coming back."' },
-  ],
+    { q: "A developer's code reads response.text and gets nothing, although the call succeeded. Where is Claude's answer?", options: ["In a top-level completion string field", "In text blocks of the content array", "In the stop_reason field", "In the usage object"], answer: 1, explain: "\"The output is an array of blocks, and the model's text sits inside a text block in its text field. You pull the answer out of there, not from some top-level string.\"" },
+    { q: "A request keeps getting rejected. It includes model and messages. Which core key is MOST likely missing?", options: ["system", "temperature", "tools", "max_tokens"], answer: 3, explain: "Model, messages, and max tokens are \"the core you need on nearly every call\", and max tokens is \"the one people forget\". The others are optional." },
+    { q: "A response comes back with stop_reason set to max_tokens. What does this mean?", options: ["The reply was cut off", "Claude finished its answer naturally", "A custom stop string was matched", "Claude is waiting for a tool result"], answer: 0, explain: "\"Max tokens means it ran out of room.\" \"If it says max tokens, your reply got cut off, and you may want to continue it.\"" },
+    { q: "A response has stop_reason tool_use. What should the application do?", options: ["Display the text as the final answer", "Resend the request with more tokens", "Run the requested tool before continuing", "Treat it as a server error and retry"], answer: 2, explain: "\"Tool use means it wants to call a tool and is waiting on you.\" \"Your code has work to do before the conversation moves on.\"" },
+    { q: "Which stop_reason means Claude finished naturally?", options: ["stop_sequence", "end_turn", "max_tokens", "tool_use"], answer: 1, explain: "\"End turn means Claude finished naturally.\"" },
+    { q: "Which stop_reason indicates that one of your custom stop strings fired?", options: ["end_turn", "max_tokens", "tool_use", "stop_sequence"], answer: 3, explain: "\"Stop sequence means one of your custom stop strings fired.\"" },
+    { q: "A finance team wants to track cost per call. Which response field should they log?", options: ["usage", "stop_reason", "content", "role"], answer: 0, explain: "Usage holds \"your input and output token counts, which you read for cost tracking and for budgeting context.\"" },
+    { q: "A developer models a turn as {role: \"user\", content: \"hi\"} and now needs to send an image in the same turn. What is the key insight?", options: ["Images must go in a separate request", "Images belong in the system field", "Content is a list of typed blocks", "Each image needs its own user role"], answer: 2, explain: "\"Content isn't a plain string. It's a list of typed blocks.\" \"That design is what lets a single turn mix text and images.\"" },
+    { q: "How do you continue a multi-turn conversation in the messages array?", options: ["Replace the array with the newest turn", "Append each new message to the end", "Put new turns at the start of the array", "Store prior turns in the system field"], answer: 1, explain: "\"Claude reads the turns in array order. So to continue a conversation, you append each new user and assistant message on to the end.\"" },
+    { q: "Which roles can a turn in the messages array have?", options: ["user or system", "assistant or tool", "client or server", "user or assistant"], answer: 3, explain: "Each turn has \"a role, which is either user or assistant, telling Claude who spoke, and content.\"" },
+    { q: "A developer needs to send a PDF document inside a JSON request. What must they do?", options: ["Base64-encode it into the content", "Attach the raw bytes after the JSON", "Send it as a multipart file field", "Put the file path in the system field"], answer: 0, explain: "\"You can't drop raw binary into text, so those get Base64 encoded into a string first, and you send that string as part of the content.\"" },
+    { q: "A request with several high-resolution images becomes surprisingly large. Why?", options: ["JSON adds a fixed header per image", "Images are sent twice for caching", "Base64 makes data about a third larger", "UTF-8 doubles the size of any binary data"], answer: 2, explain: "\"Base64 makes data bigger, roughly a third larger than the original bytes. So a few high-resolution images can balloon your request.\"" },
+    { q: "A multimodal request is close to size limits. What is the MOST practical fix suggested in the lesson?", options: ["Switch the body to XML", "Resize images when you can", "Remove the max_tokens key", "Send images as raw binary"], answer: 1, explain: "\"When you're building multimodal prompts, keep an eye on total request size. Resize images when you can.\"" },
+    { q: "Which statement about the request body encoding is accurate?", options: ["It is raw binary with JSON headers added", "It is UTF-16 with text/plain", "It is Base64 for the whole body", "It is UTF-8 text with application/json"], answer: 3, explain: "\"The content type is application slash JSON, and the body goes over the wire as UTF-8 text.\"" },
+    { q: "A response has two text blocks in its content array. How should you build the answer?", options: ["Concatenate the text blocks", "Use only the first text block", "Use only the last text block", "Read the top-level text field"], answer: 0, explain: "\"Loop over the content array and find the blocks with type text. That's where the answer lives, and concatenate them if there's more than one.\"" },
+    { q: "According to the lesson, what should you do BEFORE you trust a response's output?", options: ["Count the content blocks", "Compare it with the prompt", "Check stop_reason", "Verify the message ID format"], answer: 2, explain: "\"Step two, check stop reason before you trust the output.\"" },
+    { q: "In Python without the SDK, what does a JSON object from the response become?", options: ["A tuple", "A dictionary", "A string", "A list"], answer: 1, explain: "\"A JSON object becomes a dictionary in Python, or a typed class if you're using the SDK.\"" },
+    { q: "What extra benefit does the SDK give when reading responses?", options: ["It hides stop_reason from you", "It converts all content into one plain string", "It removes the need to read usage", "It returns typed objects with attributes"], answer: 3, explain: "\"The SDK smooths this further by handing you typed objects with named attributes, so your editor auto-completes the fields.\"" },
+    { q: "Which statement BEST describes how request and response bodies relate?", options: ["They mirror each other", "They use different formats", "Only the request uses blocks", "Only the response is JSON"], answer: 0, explain: "\"Both are JSON objects, both use arrays of blocks for content, and both nest the same way.\"" },
+    { q: "Which value is a JSON scalar?", options: ["The messages array", "A content block", "A token count", "The whole request"], answer: 2, explain: "Scalars are \"strings, numbers, booleans, and null\", like \"the text of a message, or a token count.\"" },
+    { q: "What does the temperature key do in a request?", options: ["Caps the reply length", "Nudges randomness", "Sets the system prompt", "Lists callable tools"], answer: 1, explain: "\"Temperature nudges randomness.\" max_tokens caps length, system sets the prompt, tools hands Claude functions." },
+    { q: "Which of the following is NOT a content block type mentioned in the lesson?", options: ["text", "image", "tool_result", "stop_sequence"], answer: 3, explain: "\"A block might be text, but it could also be an image, a tool use block, or a tool result.\" stop_sequence is a stop_reason value." },
+    { q: "What is the main trap the lesson warns about when reading responses?", options: ["Treating content like a string", "Reading usage on every call", "Checking stop_reason first", "Looping over content blocks"], answer: 0, explain: "\"The trap is treating content like a string.\"" },
+    { q: "A developer's code reads only the first text block and ignores stop_reason. Long answers look truncated. What is the BEST fix?", options: ["Raise temperature", "Add a system prompt", "Check stop_reason for max_tokens", "Switch to a larger, smarter model"], answer: 2, explain: "Checking stop reason tells you if \"your reply got cut off, and you may want to continue it.\"" },
+    { q: "Which part of the request is entirely under your control?", options: ["The usage counts", "The messages array", "The stop_reason", "The message ID"], answer: 1, explain: "\"On the request side, you're in control. You send the model, the messages array, max tokens, and any optional params.\" The rest are produced by the server." },
+    { q: "Which TWO keys are optional in a Claude request? (Choose TWO.)", options: ["system", "model", "tools", "messages", "max_tokens"], answer: [0, 2], explain: "Model, messages, and max tokens are the core. \"A system field sets the system prompt\" and \"a tools array hands Claude functions\" are optional keys." },
+    { q: "Which TWO fields are part of a Claude response? (Choose TWO.)", options: ["max_tokens", "stop_reason", "temperature", "usage", "system"], answer: [1, 3], explain: "\"Content, stop reason, and usage coming back.\" max_tokens, temperature, and system are request keys." },
+    { q: "Which TWO block types can appear in a turn's content array? (Choose TWO.)", options: ["role", "usage", "image", "stop_reason", "tool_use"], answer: [2, 4], explain: "A block \"might be text, but it could also be an image, a tool use block, or a tool result.\" Role, usage, and stop_reason are fields, not blocks." },
+    { q: "Which TWO are metadata a response can include besides content, stop_reason, and usage? (Choose TWO.)", options: ["The message ID", "The API key used", "The client IP address", "The model that actually ran", "The request's temperature"], answer: [0, 3], explain: "You get \"some metadata, like the message ID and which model actually ran.\"" },
+    { q: "Which TWO steps belong to the lesson's routine for reading every response? (Choose TWO.)", options: ["Re-sort the content blocks by length", "Log the usage token counts", "Strip images from the content", "Retry if stop_reason is end_turn", "Find and join the text blocks"], answer: [1, 4], explain: "The three steps: find and concatenate the text blocks, check stop reason, and \"read the usage field and log those token counts.\"" }
+  ]
 };
