@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mindmap Phần 2</title>
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  main.wide { max-width: none; padding: 0 16px; }
+  .mm-wrap { position: relative; height: calc(100vh - 220px); min-height: 460px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .mm-wrap svg { width: 100%; height: 100%; display: block; }
+  .mm-wrap .markmap { --markmap-text-color: #eee; --markmap-a-color: #79b8ff; --markmap-code-bg: #262626; --markmap-code-color: #eee; --markmap-circle-open-bg: #111; }
+  .mm-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 8px 0; }
+  .mm-tools button { background: #333; color: var(--text); border: 0; border-radius: 6px; padding: 6px 12px; cursor: pointer; font: inherit; font-size: 14px; }
+</style>
+</head>
+<body>
+<main class="wide">
+  <nav class="nav"><a href="index.html#part-2">← Danh sách bài học</a></nav>
+  <h1>🧠 Mindmap Phần 2</h1>
+  <p class="muted">Nhóm theo các sub-skill của domain <strong>Applications and Integration</strong> (33,1% đề CCDV-F) và Claude Code (3,1%).
+  Bấm vào chấm tròn để mở hoặc đóng một nhánh, kéo để di chuyển, cuộn để phóng to. Bấm vào tên bài để mở bài học.</p>
+  <div class="mm-tools">
+    <button data-level="1">Chỉ các nhóm</button>
+    <button data-level="2">Mở tới tên bài</button>
+    <button data-level="9">Mở tất cả</button>
+  </div>
+  <div class="mm-wrap">
+<svg id="mm"></svg>
+<script type="text/template" id="mm-src">
+---
+markmap:
+  maxWidth: 360
+  spacingVertical: 6
+---
+
+# Phần 2 · Xây dựng, triển khai, vận hành ứng dụng Claude
+
+## 🎯 Understanding Requirements (3,4%)
+### [01 · Business need → testable spec](lesson.html?part=2&id=001)
+- Thứ tự: **outcome → capability → interaction**
+- Chọn **simplest tier**: single call → workflow → agent
+- Agent chỉ khi qua đủ 4 check: complexity, value, viability, cost of error
+- "Nhanh / rẻ / chịu tải" là **operating constraint** → sửa ở architecture, không ở prompt
+### [02 · Functional requirements](lesson.html?part=2&id=002)
+- Requirement nói **what**, không nêu tên prompt
+- Testable = viết được một **assert**
+- 4 unhappy path: edge case, **refusal**, out-of-scope, ambiguous
+- Refusal: xử lý cả `stop_reason: refusal` lẫn lời từ chối bằng chữ
+### [03 · Latency, throughput, region](lesson.html?part=2&id=003)
+- 4 nhóm: latency, throughput, residency, cost
+- **Latency budget** loại thiết kế (đếm lời gọi tuần tự)
+- Chat → **streaming**; việc qua đêm → **batch**
+- Throughput: tính theo **peak minute** và rate limit
+- Residency cứng → chạy trên cloud platform để **pin region**
+- 3 đòn bẩy chi phí: caching, batches, right-size model
+### [04 · Matching architecture](lesson.html?part=2&id=004)
+- Phân loại lỗi trước: **transient** → retry + backoff; **permanent** → fix / fallback
+- Chọn **fallback model** trước khi có sự cố; có **degraded path**
+- 3 fit failure
+  - **Over-provisioning**: real-time cho việc chờ được
+  - **Under-provisioning**: không failover, không headroom
+  - **Wrong placement**: bỏ qua residency / region
+
+## 🔄 Systems Life Cycle (2,8%)
+### [05 · Develop → Implement](lesson.html?part=2&id=005)
+- Mỗi request cần: **endpoint, `x-api-key`, `anthropic-version`**
+- Develop = "can this work?"; Implement = "will it keep working under load?"
+- **429 / 5xx** → backoff + retry; **401** → sửa key, không retry
+- Commit: CLAUDE.md, project settings, **pinned model ID**; ignore `settings.local.json`
+### [06 · Operate & maintain](lesson.html?part=2&id=006)
+- Đo từ ngày đầu: **latency, tokens, error/refusal rate**
+- Model mới = **ID mới**; pin snapshot đã test
+- Migrate: chạy **frozen eval set** → so side by side → chỉ cut over khi chất lượng giữ
+- Prompt sửa cũng có thể regress → review, version, test như code
+
+## ⚙️ Claude API Mechanics (6,8%)
+### [07 · Messages API](lesson.html?part=2&id=007)
+- 3 trường bắt buộc: `model`, `max_tokens`, `messages`
+- Turn đầu phải là **user**; 2 turn cùng role liền nhau → bị gộp
+- Content: string hoặc **list of blocks** (text, image, tool_use, tool_result)
+- API **stateless** → gửi lại cả lịch sử; `system` là tham số riêng
+### [08 · stop_reason & usage](lesson.html?part=2&id=008)
+- `end_turn` · `tool_use` · `max_tokens` · `stop_sequence` · `refusal` · `pause_turn`
+- Tool loop: read → run → append → call lại tới khi `end_turn`
+- `pause_turn` → gửi lại assistant content để tiếp tục
+- Prompt size = `input_tokens` + cache write + cache read
+### [09 · Streaming SSE & vision](lesson.html?part=2&id=009)
+- message_start → content_block_start / delta / stop → message_delta → message_stop
+- Tool input stream qua `input_json_delta` (partial JSON)
+- **Batches không stream**
+- Ảnh: JPEG, PNG, GIF, WebP; đặt **ảnh trước câu hỏi**
+- Trần cứng 8000×8000 px, 10 MB → bị reject; vượt tier → chỉ downscale
+### [10 · Adaptive thinking & effort](lesson.html?part=2&id=010)
+- **effort** điều chỉnh độ sâu (mặc định high)
+- `budget_tokens` cũ → **400** trên model mới
+- Thinking + tools: `tool_choice` chỉ **auto / none**
+- Trả lại thinking block **nguyên vẹn** ở turn assistant mới nhất
+- `display` đổi cái bạn thấy, **không đổi chi phí**
+### [11 · Prompt caching](lesson.html?part=2&id=011)
+- `cache_control` breakpoint, tối đa **4 / request**
+- Thứ tự prefix: tools → system → messages; **ổn định trước, thay đổi sau**
+- TTL **5 phút** (mặc định) hoặc **1 giờ**; đọc cache **0.1×**, ghi 1.25× / 2×
+- Dưới ngưỡng tối thiểu → không lỗi, chỉ không cache
+- Đổi model → **cache miss** toàn bộ
+### [12 · Realtime vs batch](lesson.html?part=2&id=012)
+- Có người chờ / cần stream → **real-time**
+- Khối lượng lớn, không ai chờ → **Message Batches** (giảm **50%**)
+- Submit → poll → retrieve; xử lý tối đa **24h**, kết quả giữ **29 ngày**
+- Trần: **100.000 request / 256 MB** mỗi batch
+- Cần **ZDR** → chạy synchronous
+### [13 · Batch: custom_id](lesson.html?part=2&id=013)
+- Kết quả **không theo thứ tự** → ghép theo **custom_id** (duy nhất)
+- Bị cấm trong batch: `stream`, fast mode, max_tokens < 1...
+- Vẫn chạy: vision, tools (cả server tools), thinking, multi-turn
+- System prompt dùng chung → **1-hour cache**
+### [14 · Claude trên Amazon Bedrock](lesson.html?part=2&id=014)
+- Opus 4.7+ / code mới → **Mantle**; model cũ → InvokeModel
+- Credential: constructor args > env vars > AWS config
+- Auth do **AWS IAM**, không phải Anthropic key
+- Không có: Files API, URL image, server tools, **Batches**, MCP connector
+- Endpoint global (mặc định) vs regional (~+10%) để giữ dữ liệu theo vùng
+
+## 🧱 Software Engineering Foundations (7,4%)
+### [15 · REST fundamentals](lesson.html?part=2&id=015)
+- Một endpoint cho mọi model; **model nằm trong body**
+- POST **không idempotent** → retry mù có thể sinh completion thứ hai
+- **401** sai/thiếu key · **403** không có quyền · **429** rate limit · **400** body hỏng · **5xx** retry
+- SDK chỉ là convenience client
+### [16 · JSON bodies](lesson.html?part=2&id=016)
+- Đọc: lấy các block `type: "text"` → check `stop_reason` → log `usage`
+- Hội thoại: **append** lượt mới vào cuối mảng
+- Base64 làm ảnh nặng thêm ~1/3 → resize trước
+### [17 · Async / await](lesson.html?part=2&id=017)
+- Gọi async → coroutine; **await** → event loop "park" task
+- Concurrency **≠** parallelism
+- 3 bẫy: thư viện blocking trong coroutine, **quên await**, việc nặng CPU trên loop
+### [18 · Concurrency & backpressure](lesson.html?part=2&id=018)
+- gather: tổng thời gian ≈ call chậm nhất
+- Rate limit → bọc bằng **semaphore** (bounded parallelism)
+- 429 → **exponential backoff + jitter**; chỉ retry lỗi transient
+- Có người chờ → async; không ai chờ → **Batches**
+### [19 · Git workflows](lesson.html?part=2&id=019)
+- Commit = snapshot · branch = pointer · tag = release label
+- **Rebase local, merge shared**
+- Cái gì **steers behavior** → thuộc repo, versioned cạnh code
+### [20 · Config vào life cycle](lesson.html?part=2&id=020)
+- Commit: CLAUDE.md, project settings, prompts, schemas, model ID
+- Không dùng "latest" → commit **exact model ID**
+- SemVer: major = breaking · minor = thêm, tương thích · patch = sửa nhỏ
+- CI: validate config → check schemas → gate prompts
+### [21 · Review integration code](lesson.html?part=2&id=021)
+- "Chỉ retry lỗi có thể tự hết?"; không có catch-all
+- Validate → **re-prompt kèm lỗi** (không phải one-shot check)
+- Defensive parsing: tolerant extraction, explicit failure, no blind trust
+- Claude hỗ trợ review; **approval stays human**
+### [22 · Refactor prompts & code](lesson.html?part=2&id=022)
+- Refactor = **giữ nguyên hành vi**, tests làm lưới an toàn
+- Cô lập API call sau **một client module**
+- Prompt trùng → shared fragment; config inline → config module
+- Không gộp refactor với đổi hành vi trong **cùng commit**
+
+## 🧩 Claude Application Design (8,6%)
+### [23 · One model, many surfaces](lesson.html?part=2&id=023)
+- Cùng model, khác **scaffolding** (prompt, tools, config được nạp)
+- Raw API: chỉ có `system`; Agent SDK: prompt **tối giản**; Claude Code: nạp đầy đủ
+- SDK nạp CLAUDE.md nhờ **setting sources**, không phải preset
+- Debug: tái hiện trên raw API, so cái mỗi bề mặt đã nạp
+### [24 · Portable instructions](lesson.html?part=2&id=024)
+- **CLAUDE.md = user message** sau system prompt, không đổi cache
+- Output style / append → **sửa system prompt**
+- Quy tắc claude.ai **không** đi theo vào code
+- Rule bị "phớt lờ" thường là **chưa được nạp**
+### [25 · Content & data boundaries](lesson.html?part=2&id=025)
+- Untrusted: user input, tài liệu, web, **tool results**
+- Chỉ dẫn ở system, dữ liệu trong **thẻ XML có nhãn** ở user
+- **Least privilege**; che PII **trước khi** vào prompt / log
+- Validate output: schema → business rules → fail loudly
+### [26 · Context & session state](lesson.html?part=2&id=026)
+- Context phình → tốn tiền, chậm, **drift**
+- Thủ phạm chính: **tool output** cũ, lớn → prune
+- Cần nhớ lâu → ghi ra **durable state** (CLAUDE.md, memory)
+### [27 · Clear, compact, start fresh](lesson.html?part=2&id=027)
+- **/compact**: đi tiếp nhưng nhẹ hơn (mất chi tiết)
+- **/clear**: xóa sạch, làm lại tại chỗ
+- Start fresh: drift, bloat, đổi task không liên quan
+- Root CLAUDE.md được nạp lại sau compact; **nested thì không**
+- `cleanupPeriodDays` mặc định **30 ngày**
+### [28 · Install & configure plugins](lesson.html?part=2&id=028)
+- `marketplace add` → `install name@marketplace`
+- **Disable** = tạm dừng; **uninstall** = gỡ hẳn
+- Plugin = capability · CLAUDE.md = chỉ dẫn · settings.json = permissions
+### [29 · Plugins cho team](lesson.html?part=2&id=029)
+- Scope: **user** (mặc định) · **project** (commit) · **local** · **managed** (admin khóa)
+- Project settings: `enabledPlugins`, `extraKnownMarketplaces`
+- Gỡ marketplace → gỡ **mọi plugin** từ nó
+- Pull repo về → **audit lại** plugin
+
+## 🗂️ Configuration Management (4,1%)
+### [30 · Viết CLAUDE.md hiệu quả](lesson.html?part=2&id=030)
+- Nên có: **structure, conventions, commands (verbatim)**
+- CLAUDE.md là **guidance**; muốn chặn chắc chắn → **PreToolUse hook**
+- Nạp **toàn bộ** mỗi phiên → coi là ngân sách token (~200 dòng)
+### [31 · Thứ bậc CLAUDE.md](lesson.html?part=2&id=031)
+- **managed → user → project → local**
+- Nested CLAUDE.md nạp khi Claude **đọc file trong thư mục đó**
+- `@path` import: tương đối với file import, tối đa **4 hop**
+- Rule bắt buộc cho cả công ty → **managed policy**
+### [32 · settings.json: permissions & hooks](lesson.html?part=2&id=032)
+- Permissions: **deny > ask > allow**
+- Chặn trước khi chạy → **PreToolUse**; log sau khi chạy → **PostToolUse**
+- `permissionDecision`: allow / deny / ask / **defer**
+- Model, output style cần **restart**; permissions, hooks áp dụng ngay
+### [33 · Các lớp cấu hình](lesson.html?part=2&id=033)
+- **managed > CLI args > local > project > user**
+- Secrets, giá trị riêng máy → **local** (tự git-ignore)
+- Giá trị không đổi dù sửa gì → nghi **managed** trước
+### [34 · Versioning prompt & config](lesson.html?part=2&id=034)
+- Version cùng nhau: **prompt + model ID + config**
+- Header `anthropic-version` **bắt buộc**
+- Promote khi **match or beat** trên frozen eval set
+- Rollback: model ID cũ → prompt khớp → chạy lại eval
+### [35 · Plugin dependencies](lesson.html?part=2&id=035)
+- Range: `~2.1.0` (patch) · `^2.0` (minor) · `>=1.4`
+- **Highest compatible wins**; range xung đột → giữ nguyên setup
+- Bật plugin → bật luôn dependency (**transitive**)
+- `plugin prune` chỉ xóa **orphan**
+### [36 · Chia sẻ dependencies](lesson.html?part=2&id=036)
+- Resolve theo **git tag** `name--vX.Y.Z` (`plugin tag --push`)
+- Lỗi: đọc `plugin list --json` → field **errors**
+- Cross-marketplace: **chặn mặc định**, cần allow list; trust không chain
+
+## 💻 Claude Code Operation (domain 3,1%)
+### [37 · Rules, skills, slash commands](lesson.html?part=2&id=037)
+- Rule: **luôn nạp**; skill: chỉ nạp body **khi được gọi**
+- Tên lệnh lấy từ **tên folder**
+- Trùng tên command và skill → **skill thắng**
+- `.claude/` = cả team; `~/.claude/` = cá nhân
+### [38 · Subagents & agent memory](lesson.html?part=2&id=038)
+- Subagent: **context riêng**, trả về bản tóm tắt
+- File subagent: frontmatter `name` + `description`, body = system prompt
+- Bỏ `tools` → kế thừa **toàn bộ tools**
+- Gọi: ngôn ngữ tự nhiên → **@-mention** → `--agent` (cả phiên)
+- Chọn: luôn áp dụng → rule · theo yêu cầu → skill · cần cô lập → subagent
+</script>
+  </div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0"></script>
+<script src="https://cdn.jsdelivr.net/npm/markmap-view@0.18.12"></script>
+<script src="https://cdn.jsdelivr.net/npm/markmap-lib@0.18.12"></script>
+<script>
+  const { Transformer, Markmap, deriveOptions } = window.markmap;
+  const { root, frontmatter } = new Transformer().transform(document.getElementById('mm-src').textContent);
+  const mm = Markmap.create('#mm', deriveOptions(frontmatter && frontmatter.markmap), root);
+
+  // Fold every node at or below `level` (root = 0, groups = 1, lessons = 2), then redraw.
+  function expandTo(level) {
+    (function walk(node, depth) {
+      node.payload = { ...node.payload, fold: depth >= level ? 1 : 0 };
+      (node.children || []).forEach(c => walk(c, depth + 1));
+    })(mm.state.data, 0);
+    return mm.renderData().then(() => mm.fit());
+  }
+  expandTo(2);
+  document.querySelectorAll('.mm-tools button').forEach(btn =>
+    btn.addEventListener('click', () => expandTo(Number(btn.dataset.level))));
+</script>
+</body>
+</html>
