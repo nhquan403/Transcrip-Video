@@ -32,9 +32,9 @@
     section.querySelector('.part-meta').textContent = part.quiz === false
       ? `${lessons.length} bài · video + giải thích`
       : `${lessons.length} bài · đã làm xong trắc nghiệm ${done} bài`;
-    if (part.id === 2) {
+    if (part.mindmap) {
       const link = document.createElement('p');
-      link.innerHTML = '<a href="mindmap.html">🧠 Mindmap Phần 2: toàn bộ keyword theo nhóm kỹ năng của đề thi</a>';
+      link.innerHTML = `<a href="mindmap.html?part=${part.id}">🧠 Mindmap ${part.title}: toàn bộ keyword theo nhóm chủ đề của đề thi</a>`;
       section.querySelector('details').insertBefore(link, section.querySelector('.lesson-list'));
     }
     const list = section.querySelector('.lesson-list');
