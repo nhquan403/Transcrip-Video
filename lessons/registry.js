@@ -3,9 +3,9 @@
 window.PARTS = [
   { id: 1, title: 'Phần 1', name: 'Thiết kế agent và Claude Agent SDK' },
   { id: 2, title: 'Phần 2', name: 'Xây dựng, triển khai và vận hành ứng dụng Claude', mindmap: true },
-  { id: 3, title: 'Phần 3', name: 'Vận hành Claude Code và phân loại lỗi', quiz: false },
-  { id: 4, title: 'Phần 4', name: 'Gỡ lỗi, khôi phục và ngân sách token', quiz: false },
-  { id: 5, title: 'Phần 5', name: 'Nền tảng LLM, prompting, SDK và chọn model', quiz: false },
+  { id: 3, title: 'Phần 3', name: 'Vận hành Claude Code và phân loại lỗi', quiz: false, mindmap: true },
+  { id: 4, title: 'Phần 4', name: 'Gỡ lỗi, khôi phục và ngân sách token', quiz: false, mindmap: true },
+  { id: 5, title: 'Phần 5', name: 'Nền tảng LLM, prompting, SDK và chọn model', quiz: false, mindmap: true },
   { id: 6, title: 'Phần 6', name: 'Prompt engineering và context engineering', quiz: false },
 ];
 
