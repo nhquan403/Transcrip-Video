@@ -1,0 +1,268 @@
+1
+00:00:00,000 --> 00:00:04,000
+Hello. A failing request and a bad answer look identical from the outside,
+
+2
+00:00:04,000 --> 00:00:09,000
+but they live in completely different layers. One is your integration code. The other is the
+
+3
+00:00:09,000 --> 00:00:14,000
+model's output. Knowing which layer broke is the first move before you touch anything.
+
+4
+00:00:14,000 --> 00:00:20,000
+This lesson maps that line. Let's dig in. Let's start with three ideas that anchor the
+
+5
+00:00:20,000 --> 00:00:26,000
+whole debugging process. First, trace analysis. A trace is the ordered record of everything that
+
+6
+00:00:26,000 --> 00:00:31,000
+happened, your prompts, the tool calls, the tool results, any thinking, and the errors.
+
+7
+00:00:32,000 --> 00:00:36,000
+Reading it top to bottom shows you where behavior first diverged from what you intended.
+
+8
+00:00:37,000 --> 00:00:45,000
+Second, problem origin isolation. Before you edit a single line, you localize the failure to one
+
+9
+00:00:45,000 --> 00:00:52,000
+layer, either your integration code or the model's output. And third, origin evidence. That is the
+
+10
+00:00:52,000 --> 00:00:58,000
+specific mid-trace tell, a wrong tool argument, an empty tool result, or a truncated response
+
+11
+00:00:58,000 --> 00:01:03,000
+that points you at the layer that actually broke. Nail these three and the fix gets obvious.
+
+12
+00:01:04,000 --> 00:01:10,000
+Here's the split that organizes everything. On one side is the integration layer. That's
+
+13
+00:01:10,000 --> 00:01:16,000
+everything wrapping the model, your API request, the endpoint, auth, how you parse the response,
+
+14
+00:01:16,000 --> 00:01:23,000
+and your tool harness. When this layer breaks, you get an HTTP status of 400 or higher,
+
+15
+00:01:23,000 --> 00:01:29,000
+or a transport error writing inside the event stream. The request never produced a usable
+
+16
+00:01:29,000 --> 00:01:34,000
+answer. On the other side is the model output. That's the generation itself, and it rides on
+
+17
+00:01:34,000 --> 00:01:41,000
+a successful 200 response. The integration worked fine, but the content or the stop reason tells you
+
+18
+00:01:41,000 --> 00:01:48,000
+the answer is wrong, refused, or truncated. Same bad outcome, two completely different layers,
+
+19
+00:01:48,000 --> 00:01:54,000
+and the fix depends entirely on which one you're in. So how do you actually isolate the layer?
+
+20
+00:01:55,000 --> 00:02:02,000
+Read the trace from the outside in, one checkpoint at a time. Start with the HTTP status.
+
+21
+00:02:02,000 --> 00:02:08,000
+Anything in the 400 or 500 range is the integration layer, and you branch on the error type.
+
+22
+00:02:08,000 --> 00:02:14,000
+If the status was 200, don't stop there. Read the event stream, because an error can arrive
+
+23
+00:02:14,000 --> 00:02:21,000
+late, after the 200, as a streamed error event. And if you only check the status code, you'll miss
+
+24
+00:02:21,000 --> 00:02:28,000
+it entirely. If it's a clean 200 with content, now you inspect the stop reason and what the model
+
+25
+00:02:28,000 --> 00:02:34,000
+actually returned. And if there's a tool call that threw an exception or came back empty,
+
+26
+00:02:34,000 --> 00:02:40,000
+that points right back at your own harness. Stop at the first checkpoint that explains the
+
+27
+00:02:40,000 --> 00:02:48,000
+divergence. That checkpoint is your origin. Each layer announces itself in a different place,
+
+28
+00:02:48,000 --> 00:02:55,000
+so know where to look. An HTTP status code in the 400s or 500s means the request never produced
+
+29
+00:02:55,000 --> 00:03:01,000
+a usable answer, and you branch on the error type to pick a recovery. A streamed error event,
+
+30
+00:03:01,000 --> 00:03:07,000
+the late arrival you just met, still means integration failure, even though the status
+
+31
+00:03:07,000 --> 00:03:13,000
+said 200. That happens because streaming returns the status code up front, before generation
+
+32
+00:03:13,000 --> 00:03:20,000
+finishes, so a failure halfway through can only surface inside the stream. And the stop reason is
+
+33
+00:03:20,000 --> 00:03:27,000
+your model output tell. On a clean 200, it tells you whether the model finished naturally, ran out
+
+34
+00:03:27,000 --> 00:03:34,000
+of tokens, refused, or stopped for some other reason. Three places, three different meanings.
+
+35
+00:03:35,000 --> 00:03:40,000
+When you've confirmed you're on a clean 200, the stop reason tells you exactly what happened
+
+36
+00:03:40,000 --> 00:03:47,000
+in the generation, and three values are the model output tell. Max tokens means the response hit the
+
+37
+00:03:47,000 --> 00:03:54,000
+cap you set, truncated but valid. Model context window exceeded means the response filled the
+
+38
+00:03:54,000 --> 00:04:00,000
+model's total context window, not your requested cap. And refusal means Claude declined on policy
+
+39
+00:04:00,000 --> 00:04:06,000
+grounds, with the stop details carrying the category. You met the fix for each of these
+
+40
+00:04:06,000 --> 00:04:12,000
+in the previous lesson, so here the job is simpler. Recognize the signal, and you've isolated the
+
+41
+00:04:12,000 --> 00:04:18,000
+failure to the model output layer. Let's ground the integration layer in the usual suspects.
+
+42
+00:04:18,000 --> 00:04:23,000
+These bugs live in your code, even when the model's answer looks wrong on the surface.
+
+43
+00:04:24,000 --> 00:04:29,000
+A malformed request or a call to the wrong endpoint is common, and so is parsing the
+
+44
+00:04:29,000 --> 00:04:35,000
+response incorrectly and mangling it before your app ever sees it. Auth failures, billing problems,
+
+45
+00:04:35,000 --> 00:04:42,000
+and rate limit responses all sit in this layer, too. In the wrapper around the model. And a big
+
+46
+00:04:42,000 --> 00:04:48,000
+one for agents, a tool that threw an exception or returned an empty result. In every one of these,
+
+47
+00:04:48,000 --> 00:04:54,000
+the model may have behaved perfectly. The fix belongs in the harness, so resist the urge to go
+
+48
+00:04:54,000 --> 00:05:01,000
+rewrite your prompt. Now flip to the model output side. These originate in the generation itself,
+
+49
+00:05:01,000 --> 00:05:07,000
+even though every API call succeeded and every response parsed cleanly. Maybe the model chose
+
+50
+00:05:07,000 --> 00:05:13,000
+a wrong plan, despite having all the information it needed. Maybe it misread a tool result and fed
+
+51
+00:05:13,000 --> 00:05:19,000
+a bad value into the next step. Maybe it picked a bad tool argument, or the output came back as a
+
+52
+00:05:19,000 --> 00:05:27,000
+refusal or truncated and incomplete. Notice the pattern here. No HTTP error ever fired, so a
+
+53
+00:05:27,000 --> 00:05:33,000
+network retry does nothing. These are prompt and eval problems. You improve the instructions,
+
+54
+00:05:33,000 --> 00:05:40,000
+add examples, tighten the context, or run an evaluation to measure whether the change actually
+
+55
+00:05:40,000 --> 00:05:47,000
+helped. Retrying the identical request just reproduces the same answer. There's one more
+
+56
+00:05:47,000 --> 00:05:53,000
+origin question that trips up agent debugging, and it comes down to two possibilities when an eval
+
+57
+00:05:53,000 --> 00:05:59,000
+trial fails. The first, the agent genuinely made a mistake. The transcript shows flawed reasoning,
+
+58
+00:05:59,000 --> 00:06:05,000
+a wrong tool call, or a misread result. And the generation owns that failure, so you fix the
+
+59
+00:06:05,000 --> 00:06:10,000
+prompt or the model. The second, and this one's easy to miss, the agent was actually right, and
+
+60
+00:06:10,000 --> 00:06:16,000
+your grader or harness marked a valid answer as wrong. That's an integration bug in your eval,
+
+61
+00:06:16,000 --> 00:06:21,000
+not a model failure. The reliable way to tell them apart is to read the transcript,
+
+62
+00:06:21,000 --> 00:06:25,000
+checking both the process the agent followed and the final outcome in the environment.
+
+63
+00:06:27,000 --> 00:06:32,000
+Here's the bottom line. Origin isolation comes before the fix. The trace is your evidence,
+
+64
+00:06:32,000 --> 00:06:39,000
+not just the final output. HTTP codes and stream errors point to the integration layer.
+
+65
+00:06:39,000 --> 00:06:44,000
+A stop reason on a 200 points to the model output. Transcripts tell you whether the
+
+66
+00:06:44,000 --> 00:06:49,000
+agent or your grader failed. Isolate first, then edit only what diverged.
+
+67
+00:06:49,000 --> 00:06:52,000
+That wraps up this lesson. I'll see you in the next one.
+

@@ -1,0 +1,276 @@
+1
+00:00:00,000 --> 00:00:06,000
+Welcome back. The system prompt and the user turn look similar, but they play different roles.
+
+2
+00:00:06,000 --> 00:00:13,000
+One carries your durable rules, the other carries the request of the moment. This lesson maps which
+
+3
+00:00:13,000 --> 00:00:18,000
+content goes where, why it matters for prompt caching, and how far an output constraint can
+
+4
+00:00:18,000 --> 00:00:24,000
+actually be trusted. Let's dive in. Let's name the three places content can live in a Claude
+
+5
+00:00:24,000 --> 00:00:31,000
+request, because each one carries a different kind of trust. First, the system prompt. This is
+
+6
+00:00:31,000 --> 00:00:37,000
+where persistent role, behavior, and constraints go. Anything you set here applies to every single
+
+7
+00:00:37,000 --> 00:00:44,000
+turn of the session. Second, the user turn. This carries the immediate per request input,
+
+8
+00:00:44,000 --> 00:00:50,000
+the actual question, the document, the data you want Claude to act on right now. Third,
+
+9
+00:00:50,000 --> 00:00:57,000
+the tool result. That's content a tool hands back. And here's the key part. Claude is trained to treat
+
+10
+00:00:57,000 --> 00:01:05,000
+tool result content as untrusted data, not as instructions to follow. System, user, tool result.
+
+11
+00:01:05,000 --> 00:01:11,000
+Keeping straight what belongs in each is the whole game for this lesson. Let's put the two side by
+
+12
+00:01:11,000 --> 00:01:17,000
+side, because the split is simple once you see it. The system prompt is the stable layer. Your role
+
+13
+00:01:17,000 --> 00:01:22,000
+definition, the tone you want, house rules, hard constraints, all the things that should hold, no
+
+14
+00:01:22,000 --> 00:01:28,000
+matter what the user asks. You write them once, and they govern every turn without you repeating them.
+
+15
+00:01:28,000 --> 00:01:35,000
+The user turn is the volatile layer. It's the specific input for this one call, the ticket text
+
+16
+00:01:35,000 --> 00:01:41,000
+to summarize, the fields to extract, the question of the moment. That content would just be noise
+
+17
+00:01:41,000 --> 00:01:46,000
+sitting in the system prompt. So the test is easy. Ask whether a piece of content is true for every
+
+18
+00:01:46,000 --> 00:01:55,000
+request or only this one. Stable goes to system, per request goes to user. A high return move in the
+
+19
+00:01:55,000 --> 00:02:01,000
+system prompt is giving Claude a role. Telling Claude who it is focuses both its behavior and
+
+20
+00:02:01,000 --> 00:02:07,000
+its tone, and it doesn't take much. Even a single sentence helps. Something as short as, you are a
+
+21
+00:02:07,000 --> 00:02:13,000
+helpful coding assistant specializing in Python, measurably sharpens the output. So when you set a
+
+22
+00:02:13,000 --> 00:02:20,000
+role, name the specialty, name the audience it's writing for, and name the standard you want it to
+
+23
+00:02:20,000 --> 00:02:25,000
+hold. And because the role belongs in the system prompt, it stays stable and shapes every response
+
+24
+00:02:25,000 --> 00:02:32,000
+in the session, instead of you restating it on each turn. A clear role up front is genuinely
+
+25
+00:02:32,000 --> 00:02:38,000
+one of the cheapest quality gains you'll find. Let's turn placement into four working rules.
+
+26
+00:02:38,000 --> 00:02:44,000
+Rule one, durable rules go in the system prompt. Standing behavior and constraints get written
+
+27
+00:02:44,000 --> 00:02:52,000
+once up top, not copy pasted into every user turn. Rule two, per request data goes in the user
+
+28
+00:02:52,000 --> 00:02:59,000
+message. The specific input for this call doesn't belong crammed into the system prompt. Rule three,
+
+29
+00:02:59,000 --> 00:03:06,000
+untrusted content goes in tool results. Anything third party or fetched from the web stays there.
+
+30
+00:03:06,000 --> 00:03:12,000
+Where Claude treats it as data rather than commands. Rule four, and this one surprises people,
+
+31
+00:03:12,000 --> 00:03:18,000
+keep your own instructions with you in a user turn. If you tuck your instructions inside a
+
+32
+00:03:18,000 --> 00:03:25,000
+tool result, Claude may treat them as untrusted and ignore them. Four rules and placement stops
+
+33
+00:03:25,000 --> 00:03:32,000
+being guesswork. Here's a reason placement pays off that goes beyond neatness. It interacts directly
+
+34
+00:03:32,000 --> 00:03:38,000
+with prompt caching. Caching works by reusing a stable prefix of your request instead of
+
+35
+00:03:38,000 --> 00:03:45,000
+reprocessing it every call. So if your durable rules sit up top in the system prompt, that whole
+
+36
+00:03:45,000 --> 00:03:52,000
+prefix can be cached and reused across many requests, which cuts both cost and latency. But
+
+37
+00:03:52,000 --> 00:03:59,000
+the moment volatile per request content is mixed into that prefix, it changes on every call and
+
+38
+00:03:59,000 --> 00:04:06,000
+the cache can't hold it. That's the hidden cost of dumping this request data into the system prompt.
+
+39
+00:04:06,000 --> 00:04:13,000
+You don't just clutter it, you break the cacheable section. So durable rules up top and per request
+
+40
+00:04:13,000 --> 00:04:21,000
+data down in the user turn is what keeps that prefix stable and reusable. Now let's apply
+
+41
+00:04:21,000 --> 00:04:26,000
+instruction clarity to output constraints themselves because how you word a constraint
+
+42
+00:04:26,000 --> 00:04:33,000
+decides how well it works. Compare two versions. The loose one says respond in JSON. That names
+
+43
+00:04:33,000 --> 00:04:38,000
+the container and nothing else. So the model still picks the fields, the nesting, and any extras on
+
+44
+00:04:38,000 --> 00:04:44,000
+its own, and every run decides those details differently. The precise one says return a JSON
+
+45
+00:04:44,000 --> 00:04:51,000
+object with exactly two fields, summary and service, and nothing outside the object. Now the shape is
+
+46
+00:04:51,000 --> 00:04:57,000
+fully specified and there's nothing left for the model to guess. One honest caveat before we move
+
+47
+00:04:57,000 --> 00:05:03,000
+on. Even the sharpest prose constraint stays best effort, and when the shape absolutely has to hold,
+
+48
+00:05:03,000 --> 00:05:10,000
+structured outputs make it enforceable. A later lesson walks through exactly how. For now, the
+
+49
+00:05:10,000 --> 00:05:14,000
+win is wording the constraint so precisely that guessing never enters the picture.
+
+50
+00:05:15,000 --> 00:05:22,000
+Output constraints come in three flavors worth naming. First, format constraints. You specify the
+
+51
+00:05:22,000 --> 00:05:30,000
+container, JSON, a table, prose, a list, and the exact fields the answer has to carry. That's the
+
+52
+00:05:30,000 --> 00:05:37,000
+shape. Second, value constraints. You restrict what an answer is allowed to contain, say a fixed set
+
+53
+00:05:37,000 --> 00:05:42,000
+of categories to choose from, so the model stays inside a known vocabulary instead of inventing
+
+54
+00:05:43,000 --> 00:05:51,000
+labels. Third, length constraints. You bound the size, two sentences, five bullets, a word cap,
+
+55
+00:05:51,000 --> 00:05:58,000
+so responses stay consistent and cheap for your code to handle. Format, value, length. Each one
+
+56
+00:05:58,000 --> 00:06:04,000
+narrows Claude toward a machine-consumable answer and cuts the post-processing you'd otherwise write.
+
+57
+00:06:05,000 --> 00:06:11,000
+Reach for them deliberately and back them with real enforcement when the constraint truly has to hold.
+
+58
+00:06:11,000 --> 00:06:15,000
+Let's connect constraints back to your actual workload because this is where they earn their
+
+59
+00:06:15,000 --> 00:06:22,000
+keep. Every constraint you state up front is code you don't have to write afterward. Name the format
+
+60
+00:06:22,000 --> 00:06:28,000
+and you skip the fragile parsing you'd otherwise do to pull data out of free-form text. Restrict
+
+61
+00:06:28,000 --> 00:06:35,000
+the allowed values and you avoid a pile of logic mapping messy, unexpected labels back onto the
+
+62
+00:06:36,000 --> 00:06:41,000
+categories you support. Bound the length and every response comes back in a predictable,
+
+63
+00:06:41,000 --> 00:06:47,000
+uniform size that's trivial to handle. The pattern is the same each time. Shaping you push into the
+
+64
+00:06:47,000 --> 00:06:53,000
+prompt is shaping you don't bolt on downstream. So a few extra words of constraint in the ask
+
+65
+00:06:53,000 --> 00:07:00,000
+routinely save you real parsing and cleanup code on the other side. And here's the bottom line.
+
+66
+00:07:00,000 --> 00:07:05,000
+Placement gives you a clean frame. Durable rules live in the system prompt.
+
+67
+00:07:05,000 --> 00:07:11,000
+Per-request data lives in the user turn. And that split even feeds prompt caching.
+
+68
+00:07:12,000 --> 00:07:16,000
+One thing to watch. A prose constraint shapes output but never guarantees it.
+
+69
+00:07:16,000 --> 00:07:22,000
+And that covers system versus user placement and output constraints. Join me in the next video.
+

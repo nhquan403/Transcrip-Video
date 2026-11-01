@@ -1,0 +1,612 @@
+1
+00:00:00,000 --> 00:00:03,000
+Welcome back. When you build on the Cloud API,
+
+2
+00:00:03,000 --> 00:00:05,000
+cost hides in plain sight.
+
+3
+00:00:05,000 --> 00:00:08,000
+Every response hands you the exact token counts,
+
+4
+00:00:08,000 --> 00:00:10,000
+but it's easy to read them wrong and
+
+5
+00:00:10,000 --> 00:00:12,000
+model your spend off the wrong number.
+
+6
+00:00:12,000 --> 00:00:15,000
+This lesson covers what each usage field
+
+7
+00:00:15,000 --> 00:00:18,000
+means and how to count tokens before you call.
+
+8
+00:00:18,000 --> 00:00:20,000
+Let's dig in. Let's lock down
+
+9
+00:00:20,000 --> 00:00:22,000
+three terms before anything else
+
+10
+00:00:22,000 --> 00:00:25,000
+because everything downstream builds on them.
+
+11
+00:00:25,000 --> 00:00:28,000
+First, the usage object itself.
+
+12
+00:00:28,000 --> 00:00:31,000
+It rides back on every single response
+
+13
+00:00:31,000 --> 00:00:34,000
+and it reports the token counts for that one call.
+
+14
+00:00:34,000 --> 00:00:37,000
+That's your source of truth for spend.
+
+15
+00:00:37,000 --> 00:00:39,000
+Second, input tokens.
+
+16
+00:00:39,000 --> 00:00:41,000
+This one's subtle, so hold on to it.
+
+17
+00:00:41,000 --> 00:00:44,000
+It counts the uncached input,
+
+18
+00:00:44,000 --> 00:00:48,000
+the prompt tokens the model actually read fresh at full price.
+
+19
+00:00:48,000 --> 00:00:50,000
+When caching kicks in,
+
+20
+00:00:50,000 --> 00:00:51,000
+it isn't your whole prompt.
+
+21
+00:00:51,000 --> 00:00:54,000
+Third, output tokens.
+
+22
+00:00:54,000 --> 00:00:58,000
+These are the tokens the model generated in its reply,
+
+23
+00:00:58,000 --> 00:00:59,000
+and on every current model,
+
+24
+00:00:59,000 --> 00:01:02,000
+they carry a higher price than input.
+
+25
+00:01:02,000 --> 00:01:06,000
+Usage object, input tokens, output tokens.
+
+26
+00:01:06,000 --> 00:01:09,000
+Get those three straight and the rest follows.
+
+27
+00:01:09,000 --> 00:01:12,000
+Where does this data actually come from?
+
+28
+00:01:12,000 --> 00:01:15,000
+The nice part is you don't make a second call to get it.
+
+29
+00:01:15,000 --> 00:01:17,000
+The usage object comes back attached to
+
+30
+00:01:17,000 --> 00:01:21,000
+the same response as your content right there in the payload.
+
+31
+00:01:21,000 --> 00:01:23,000
+But here's the catch worth internalizing.
+
+32
+00:01:23,000 --> 00:01:26,000
+It reports counts for that one request only.
+
+33
+00:01:26,000 --> 00:01:28,000
+It isn't a running total,
+
+34
+00:01:28,000 --> 00:01:31,000
+and the API doesn't add anything up for you across calls.
+
+35
+00:01:31,000 --> 00:01:35,000
+So if you want a daily spend number or a per user total,
+
+36
+00:01:35,000 --> 00:01:37,000
+that aggregation is your job.
+
+37
+00:01:37,000 --> 00:01:40,000
+Your code reads the usage off each response
+
+38
+00:01:40,000 --> 00:01:43,000
+and writes those numbers into your own ledger.
+
+39
+00:01:43,000 --> 00:01:46,000
+Whatever that is, a database row or a log line.
+
+40
+00:01:46,000 --> 00:01:50,000
+Track it per call and your spend picture stays honest.
+
+41
+00:01:50,000 --> 00:01:54,000
+Let's put input and output side-by-side
+
+42
+00:01:54,000 --> 00:01:55,000
+because they're priced differently,
+
+43
+00:01:55,000 --> 00:01:58,000
+and that difference drives your bill.
+
+44
+00:01:58,000 --> 00:02:01,000
+Input tokens are everything the model reads.
+
+45
+00:02:01,000 --> 00:02:03,000
+Hold that as the pre-caching picture
+
+46
+00:02:03,000 --> 00:02:05,000
+because caching splits this reading side
+
+47
+00:02:05,000 --> 00:02:07,000
+into separate fields.
+
+48
+00:02:07,000 --> 00:02:09,000
+And we'll get to that split in a moment.
+
+49
+00:02:09,000 --> 00:02:13,000
+It covers your system prompt, the full conversation history,
+
+50
+00:02:13,000 --> 00:02:16,000
+your tool definitions, and the current message.
+
+51
+00:02:16,000 --> 00:02:19,000
+All of it counts and it's billed at the base input rate.
+
+52
+00:02:19,000 --> 00:02:23,000
+Output tokens are everything the model generates back,
+
+53
+00:02:23,000 --> 00:02:25,000
+the visible answer, plus any thinking tokens
+
+54
+00:02:25,000 --> 00:02:27,000
+it produced along the way.
+
+55
+00:02:27,000 --> 00:02:29,000
+Here's the part that surprises people.
+
+56
+00:02:29,000 --> 00:02:33,000
+On every current model, output is priced higher than input,
+
+57
+00:02:33,000 --> 00:02:34,000
+several times higher in fact.
+
+58
+00:02:34,000 --> 00:02:38,000
+So a short prompt that triggers a long, chatty response
+
+59
+00:02:38,000 --> 00:02:42,000
+can cost far more than its small input suggests.
+
+60
+00:02:42,000 --> 00:02:43,000
+Watch the output side.
+
+61
+00:02:44,000 --> 00:02:47,000
+Now let's name all four fields you'll see
+
+62
+00:02:47,000 --> 00:02:50,000
+because caching splits your input into pieces.
+
+63
+00:02:50,000 --> 00:02:54,000
+First, input tokens, that's the uncached prompt,
+
+64
+00:02:54,000 --> 00:02:56,000
+read at full input price.
+
+65
+00:02:56,000 --> 00:02:59,000
+Second, output tokens, what the model generated
+
+66
+00:02:59,000 --> 00:03:01,000
+at the higher output rate.
+
+67
+00:03:01,000 --> 00:03:04,000
+Third, cache creation input tokens.
+
+68
+00:03:04,000 --> 00:03:07,000
+These are prompt tokens written into the cache on this call
+
+69
+00:03:07,000 --> 00:03:11,000
+and they carry a small write premium over base input.
+
+70
+00:03:11,000 --> 00:03:14,000
+Fourth, cache read input tokens.
+
+71
+00:03:14,000 --> 00:03:16,000
+These were served straight from the cache
+
+72
+00:03:16,000 --> 00:03:21,000
+instead of reprocessed and they bill at a deep discount.
+
+73
+00:03:21,000 --> 00:03:24,000
+So one logical prompt can land across three of these buckets
+
+74
+00:03:24,000 --> 00:03:26,000
+at three different prices.
+
+75
+00:03:26,000 --> 00:03:28,000
+Read all four every time.
+
+76
+00:03:29,000 --> 00:03:30,000
+I want to slow down on input tokens
+
+77
+00:03:30,000 --> 00:03:33,000
+because this is the single most common
+
+78
+00:03:33,000 --> 00:03:35,000
+cost tracking mistake.
+
+79
+00:03:35,000 --> 00:03:36,000
+The moment caching is on,
+
+80
+00:03:36,000 --> 00:03:39,000
+input tokens stops meaning your whole prompt.
+
+81
+00:03:39,000 --> 00:03:41,000
+It counts only the fresh part,
+
+82
+00:03:41,000 --> 00:03:43,000
+the tokens that weren't already cached.
+
+83
+00:03:43,000 --> 00:03:45,000
+The cached tokens have moved
+
+84
+00:03:45,000 --> 00:03:47,000
+into those two cache fields instead.
+
+85
+00:03:47,000 --> 00:03:49,000
+So if you glance at input tokens alone
+
+86
+00:03:49,000 --> 00:03:51,000
+and call it your prompt size,
+
+87
+00:03:51,000 --> 00:03:53,000
+you'll under count, sometimes badly.
+
+88
+00:03:53,000 --> 00:03:56,000
+Picture a huge cached system prompt
+
+89
+00:03:56,000 --> 00:03:58,000
+with a tiny new question on top.
+
+90
+00:03:58,000 --> 00:04:01,000
+Input tokens look small, almost like nothing,
+
+91
+00:04:01,000 --> 00:04:04,000
+even though the model attended to a massive context.
+
+92
+00:04:04,000 --> 00:04:06,000
+So never read that one field in isolation
+
+93
+00:04:06,000 --> 00:04:08,000
+and treat it as your full input.
+
+94
+00:04:08,000 --> 00:04:10,000
+It's a remainder, not the total.
+
+95
+00:04:11,000 --> 00:04:14,000
+So how do you get the real prompt size?
+
+96
+00:04:14,000 --> 00:04:17,000
+You add three fields together, not just read one.
+
+97
+00:04:17,000 --> 00:04:19,000
+Start with input tokens,
+
+98
+00:04:19,000 --> 00:04:21,000
+the uncached remainder we just talked about.
+
+99
+00:04:21,000 --> 00:04:24,000
+Then add cache creation input tokens,
+
+100
+00:04:24,000 --> 00:04:27,000
+the ones written into the cache on this call.
+
+101
+00:04:27,000 --> 00:04:29,000
+Then add cache read input tokens,
+
+102
+00:04:29,000 --> 00:04:32,000
+the ones served from the cache.
+
+103
+00:04:32,000 --> 00:04:34,000
+That sum, all three together,
+
+104
+00:04:34,000 --> 00:04:38,000
+is the true input the model saw for this request.
+
+105
+00:04:38,000 --> 00:04:40,000
+This matters for two reasons.
+
+106
+00:04:40,000 --> 00:04:43,000
+One, it's the honest number for your cost math.
+
+107
+00:04:43,000 --> 00:04:46,000
+Once you weight each piece by its price.
+
+108
+00:04:46,000 --> 00:04:50,000
+Two, it tells you how full your context window really is,
+
+109
+00:04:50,000 --> 00:04:53,000
+which pure input tokens would hide.
+
+110
+00:04:53,000 --> 00:04:55,000
+Three fields, add it up.
+
+111
+00:04:55,000 --> 00:04:56,000
+That's your actual prompt.
+
+112
+00:04:57,000 --> 00:05:01,000
+Everything so far reads usage after the fact,
+
+113
+00:05:01,000 --> 00:05:04,000
+but often you want the number before you spend anything.
+
+114
+00:05:04,000 --> 00:05:07,000
+That's what the count tokens endpoint is for.
+
+115
+00:05:07,000 --> 00:05:10,000
+You hand it a request and it returns the input token count
+
+116
+00:05:10,000 --> 00:05:12,000
+without running any generation.
+
+117
+00:05:12,000 --> 00:05:14,000
+So there's no output charge at all.
+
+118
+00:05:14,000 --> 00:05:16,000
+It's a pure estimate.
+
+119
+00:05:16,000 --> 00:05:18,000
+A few things to get right.
+
+120
+00:05:18,000 --> 00:05:21,000
+Pass the same inputs you actually plan to send,
+
+121
+00:05:21,000 --> 00:05:25,000
+the model, the messages, the system prompt, and your tools.
+
+122
+00:05:25,000 --> 00:05:27,000
+So the count reflects the real call
+
+123
+00:05:27,000 --> 00:05:29,000
+and not a stripped down version.
+
+124
+00:05:29,000 --> 00:05:32,000
+And remember, counts are model specific.
+
+125
+00:05:32,000 --> 00:05:35,000
+Pass the same model you'll infer with
+
+126
+00:05:35,000 --> 00:05:38,000
+because a different model can tokenize the very same text
+
+127
+00:05:38,000 --> 00:05:40,000
+into a different number of tokens.
+
+128
+00:05:40,000 --> 00:05:42,000
+Estimate first, then send.
+
+129
+00:05:43,000 --> 00:05:45,000
+One more layer, because the usage object
+
+130
+00:05:45,000 --> 00:05:48,000
+can carry more than plain input and output.
+
+131
+00:05:48,000 --> 00:05:50,000
+When your call uses server tools,
+
+132
+00:05:50,000 --> 00:05:53,000
+that activity shows up in its own section
+
+133
+00:05:53,000 --> 00:05:57,000
+under server tool use, separate from your text tokens.
+
+134
+00:05:57,000 --> 00:05:59,000
+And when you attach tool definitions,
+
+135
+00:05:59,000 --> 00:06:02,000
+those definitions quietly add system prompt tokens
+
+136
+00:06:02,000 --> 00:06:04,000
+to your input before you've sent
+
+137
+00:06:04,000 --> 00:06:07,000
+a single message of your own.
+
+138
+00:06:07,000 --> 00:06:09,000
+The amount of that overhead varies by model
+
+139
+00:06:09,000 --> 00:06:11,000
+and by your tool choice setting.
+
+140
+00:06:11,000 --> 00:06:14,000
+So it isn't one fixed number you can memorize.
+
+141
+00:06:14,000 --> 00:06:17,000
+The takeaway for cost modeling is simple.
+
+142
+00:06:17,000 --> 00:06:20,000
+Don't count only the obvious input and output.
+
+143
+00:06:20,000 --> 00:06:23,000
+Fold in the cache fields, the tool overhead,
+
+144
+00:06:23,000 --> 00:06:25,000
+and any server tool activity.
+
+145
+00:06:25,000 --> 00:06:28,000
+Miss a category and your estimate runs light,
+
+146
+00:06:28,000 --> 00:06:29,000
+always in the wrong direction.
+
+147
+00:06:31,000 --> 00:06:35,000
+The usage object turns every response into a cost record.
+
+148
+00:06:35,000 --> 00:06:36,000
+It matters because those counts
+
+149
+00:06:36,000 --> 00:06:40,000
+are the only honest basis for your spend math.
+
+150
+00:06:40,000 --> 00:06:44,000
+One thing to watch, input tokens is the uncached remainder.
+
+151
+00:06:44,000 --> 00:06:48,000
+So add all three input fields for true prompt sets.
+
+152
+00:06:48,000 --> 00:06:51,000
+That covers reading the usage fields on a response.
+
+153
+00:06:51,000 --> 00:06:53,000
+I'll see you in the next one.
+

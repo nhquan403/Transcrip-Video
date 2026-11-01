@@ -1,0 +1,580 @@
+1
+00:00:00,000 --> 00:00:04,000
+WebSockets and ServerSendEvents sound like two flavors of the same thing,
+
+2
+00:00:04,000 --> 00:00:10,000
+but they're different territory, and mixing them up leads to a common, incorrect assumption about Clod.
+
+3
+00:00:10,000 --> 00:00:16,000
+This lesson maps the line between them, shows why Clod streaming isn't a WebSocket,
+
+4
+00:00:16,000 --> 00:00:20,000
+and covers the connection concerns you plan for on a live stream.
+
+5
+00:00:20,000 --> 00:00:22,000
+Let's break it down.
+
+6
+00:00:22,000 --> 00:00:27,000
+Let's define three terms up front, because the whole comparison rests on them.
+
+7
+00:00:27,000 --> 00:00:32,000
+First, a WebSocket. That's a persistent, full-duplex connection.
+
+8
+00:00:32,000 --> 00:00:36,000
+Once it's open, both the client and the server can send messages at any time,
+
+9
+00:00:36,000 --> 00:00:40,000
+in either direction, over that same channel.
+
+10
+00:00:40,000 --> 00:00:44,000
+Second, ServerSendEvents. That's a one-way stream.
+
+11
+00:00:44,000 --> 00:00:49,000
+The server pushes events to the client over a single HTTP response,
+
+12
+00:00:49,000 --> 00:00:52,000
+but the client can't send anything back on that same channel.
+
+13
+00:00:52,000 --> 00:00:55,000
+And third, the word full-duplex itself.
+
+14
+00:00:55,000 --> 00:00:58,000
+It just means traffic flowing both directions at once,
+
+15
+00:00:58,000 --> 00:01:02,000
+like a phone call where both people can talk simultaneously.
+
+16
+00:01:02,000 --> 00:01:06,000
+A one-way channel, by contrast, only carries traffic in a single direction.
+
+17
+00:01:06,000 --> 00:01:10,000
+Full-duplex WebSocket, one-way ServerSendEvents.
+
+18
+00:01:10,000 --> 00:01:14,000
+That contrast is the heart of the lesson.
+
+19
+00:01:14,000 --> 00:01:17,000
+Let's put the two side-by-side and see where each shines.
+
+20
+00:01:17,000 --> 00:01:21,000
+A WebSocket is bidirectional and persistent.
+
+21
+00:01:21,000 --> 00:01:25,000
+It's built for applications where both sides push messages constantly.
+
+22
+00:01:25,000 --> 00:01:29,000
+Think live chat, collaborative editing, or a multiplayer game.
+
+23
+00:01:29,000 --> 00:01:31,000
+The tradeoff is more setup.
+
+24
+00:01:31,000 --> 00:01:37,000
+A WebSocket has its own protocol and an opening handshake to establish the connection.
+
+25
+00:01:37,000 --> 00:01:39,000
+ServerSendEvents are simpler.
+
+26
+00:01:39,000 --> 00:01:43,000
+Traffic flows one direction only, from server to client,
+
+27
+00:01:43,000 --> 00:01:46,000
+and it rides over plain HTTP.
+
+28
+00:01:46,000 --> 00:01:48,000
+There's no special handshake,
+
+29
+00:01:48,000 --> 00:01:51,000
+and because it looks like an ordinary HTTP response,
+
+30
+00:01:51,000 --> 00:01:56,000
+it tends to pass through firewalls and proxies without trouble.
+
+31
+00:01:56,000 --> 00:01:59,000
+Here's the punchline for builders.
+
+32
+00:01:59,000 --> 00:02:04,000
+The Cloud API uses ServerSendEvents for streaming, not WebSockets.
+
+33
+00:02:04,000 --> 00:02:09,000
+So when you stream from Cloud, you're on the simpler one-way path.
+
+34
+00:02:09,000 --> 00:02:11,000
+Now let's kill the myth directly,
+
+35
+00:02:11,000 --> 00:02:14,000
+because it's the most common misconception in this area.
+
+36
+00:02:14,000 --> 00:02:18,000
+People assume that because Cloud streams tokens in real time,
+
+37
+00:02:18,000 --> 00:02:21,000
+there has to be a WebSocket behind it. There isn't.
+
+38
+00:02:21,000 --> 00:02:25,000
+Cloud's token streaming uses ServerSendEvents. Full stop.
+
+39
+00:02:25,000 --> 00:02:29,000
+You never open a WebSocket to talk to the Cloud API.
+
+40
+00:02:29,000 --> 00:02:32,000
+Every call you make, whether you're streaming or not,
+
+41
+00:02:32,000 --> 00:02:36,000
+is a plain HTTPS request to the same endpoint.
+
+42
+00:02:36,000 --> 00:02:39,000
+Streaming just changes how the response comes back,
+
+43
+00:02:39,000 --> 00:02:41,000
+not the kind of connection you open.
+
+44
+00:02:41,000 --> 00:02:42,000
+Why does this matter?
+
+45
+00:02:42,000 --> 00:02:46,000
+Because if you sketch an architecture that assumes a two-way socket to Cloud,
+
+46
+00:02:46,000 --> 00:02:49,000
+that design rests on a false premise.
+
+47
+00:02:49,000 --> 00:02:53,000
+The channel to Cloud is request and response over HTTP,
+
+48
+00:02:53,000 --> 00:02:56,000
+with streaming layered on as one-way events.
+
+49
+00:02:56,000 --> 00:02:58,000
+So if Cloud doesn't use them,
+
+50
+00:02:58,000 --> 00:03:01,000
+when are WebSockets actually the right tool?
+
+51
+00:03:01,000 --> 00:03:05,000
+It's worth knowing, because the pattern is genuinely useful elsewhere.
+
+52
+00:03:05,000 --> 00:03:09,000
+WebSockets shine when your app needs constant, low-latency traffic
+
+53
+00:03:09,000 --> 00:03:11,000
+in both directions at once.
+
+54
+00:03:11,000 --> 00:03:14,000
+Live collaboration, where several people edit one document
+
+55
+00:03:14,000 --> 00:03:16,000
+and every keystroke syncs.
+
+56
+00:03:16,000 --> 00:03:21,000
+Multiplayer games, where the server and every client push state continuously.
+
+57
+00:03:21,000 --> 00:03:25,000
+A chat server that both sends and receives in real time.
+
+58
+00:03:25,000 --> 00:03:29,000
+In all of those, a persistent two-way channel earns its keep.
+
+59
+00:03:29,000 --> 00:03:33,000
+But reaching Cloud is a different shape of problem.
+
+60
+00:03:33,000 --> 00:03:35,000
+You send a request, you get a response,
+
+61
+00:03:35,000 --> 00:03:37,000
+and if you want it incrementally,
+
+62
+00:03:37,000 --> 00:03:40,000
+you turn on streaming and read server-sent events.
+
+63
+00:03:40,000 --> 00:03:44,000
+There's no scenario in the Cloud API where you'd open a WebSocket.
+
+64
+00:03:44,000 --> 00:03:47,000
+Right tool, wrong place.
+
+65
+00:03:47,000 --> 00:03:49,000
+Let's shift to something practical.
+
+66
+00:03:49,000 --> 00:03:52,000
+Once you're working with a long-lived streaming connection,
+
+67
+00:03:52,000 --> 00:03:55,000
+you have to plan for it dropping, because eventually one will.
+
+68
+00:03:55,000 --> 00:03:57,000
+Start with timeouts.
+
+69
+00:03:57,000 --> 00:04:02,000
+The SDK sets a generous request timeout, around 10 minutes by default.
+
+70
+00:04:02,000 --> 00:04:07,000
+That sounds like plenty, but a big generation can genuinely run long.
+
+71
+00:04:07,000 --> 00:04:09,000
+Here's a related detail.
+
+72
+00:04:09,000 --> 00:04:12,000
+If you ask for a very large response without streaming,
+
+73
+00:04:12,000 --> 00:04:15,000
+the SDK may refuse the call,
+
+74
+00:04:15,000 --> 00:04:19,000
+because it estimates the blocking request would blow past that timeout.
+
+75
+00:04:19,000 --> 00:04:24,000
+The fix is to stream it, which keeps data flowing and the connection alive.
+
+76
+00:04:24,000 --> 00:04:26,000
+And when a connection drops midstream,
+
+77
+00:04:26,000 --> 00:04:29,000
+you don't get a clean, complete response.
+
+78
+00:04:29,000 --> 00:04:33,000
+You get, whatever arrived before the break, a partial message.
+
+79
+00:04:33,000 --> 00:04:36,000
+So treat the stream as something that can fail,
+
+80
+00:04:36,000 --> 00:04:39,000
+and don't assume it always runs to completion.
+
+81
+00:04:39,000 --> 00:04:43,000
+Let's name three concerns every builder plans for on a streaming connection.
+
+82
+00:04:43,000 --> 00:04:45,000
+First, timeouts.
+
+83
+00:04:45,000 --> 00:04:49,000
+That's the ceiling on how long a request can run before the client gives up.
+
+84
+00:04:49,000 --> 00:04:53,000
+Large streamed responses can push toward that ceiling,
+
+85
+00:04:53,000 --> 00:04:56,000
+which is exactly why streaming keeps the data moving.
+
+86
+00:04:56,000 --> 00:04:58,000
+Second, retries with backoff.
+
+87
+00:04:58,000 --> 00:05:01,000
+When a request fails for a temporary reason,
+
+88
+00:05:01,000 --> 00:05:05,000
+the client resends it, waiting a little longer between each attempt.
+
+89
+00:05:05,000 --> 00:05:09,000
+The SDK does this automatically for transient errors,
+
+90
+00:05:09,000 --> 00:05:11,000
+a couple of times by default.
+
+91
+00:05:11,000 --> 00:05:14,000
+Third, ping and error events.
+
+92
+00:05:14,000 --> 00:05:16,000
+Your stream can carry more than content.
+
+93
+00:05:16,000 --> 00:05:20,000
+A ping is just a keep alive, you can ignore,
+
+94
+00:05:20,000 --> 00:05:23,000
+and an error event signals that something went wrong.
+
+95
+00:05:23,000 --> 00:05:26,000
+Timeouts, retries, and the odd interleaved event.
+
+96
+00:05:26,000 --> 00:05:30,000
+Plan for all three, and your streaming code stays robust.
+
+97
+00:05:30,000 --> 00:05:33,000
+Let's zoom in on those interleaved events,
+
+98
+00:05:33,000 --> 00:05:36,000
+because a naive reader trips over them.
+
+99
+00:05:36,000 --> 00:05:40,000
+Your stream is mostly content events, but not only content events.
+
+100
+00:05:40,000 --> 00:05:42,000
+Every so often you'll get a ping.
+
+101
+00:05:42,000 --> 00:05:45,000
+A ping is a keep alive with no real payload.
+
+102
+00:05:45,000 --> 00:05:48,000
+Its only job is keeping the connection from going idle,
+
+103
+00:05:48,000 --> 00:05:51,000
+so you ignore it and move on.
+
+104
+00:05:51,000 --> 00:05:53,000
+You'll also sometimes get an error event,
+
+105
+00:05:53,000 --> 00:05:55,000
+and this one you can't ignore.
+
+106
+00:05:55,000 --> 00:05:58,000
+An error can arrive right in the middle of a stream,
+
+107
+00:05:58,000 --> 00:06:00,000
+and it needs real handling.
+
+108
+00:06:00,000 --> 00:06:04,000
+Logging it, surfacing it, maybe retrying the request.
+
+109
+00:06:04,000 --> 00:06:06,000
+And here's a defensive habit.
+
+110
+00:06:06,000 --> 00:06:08,000
+If you see an event type you don't recognize,
+
+111
+00:06:08,000 --> 00:06:10,000
+skip it rather than crashing,
+
+112
+00:06:10,000 --> 00:06:13,000
+since new types can be added over time.
+
+113
+00:06:13,000 --> 00:06:15,000
+So read defensively.
+
+114
+00:06:15,000 --> 00:06:19,000
+Ignore pings, handle errors, skip anything unexpected,
+
+115
+00:06:19,000 --> 00:06:22,000
+and one stray event won't take down your loop.
+
+116
+00:06:23,000 --> 00:06:27,000
+This brings up a distinction that saves real debugging time.
+
+117
+00:06:27,000 --> 00:06:30,000
+Not every failure deserves a retry.
+
+118
+00:06:30,000 --> 00:06:32,000
+Split your errors into two buckets.
+
+119
+00:06:32,000 --> 00:06:34,000
+The first is transient errors.
+
+120
+00:06:34,000 --> 00:06:39,000
+Timeouts, rate limits, network blips, and 500 series server errors.
+
+121
+00:06:39,000 --> 00:06:42,000
+These are expected to clear on their own,
+
+122
+00:06:42,000 --> 00:06:44,000
+so the right move is to retry,
+
+123
+00:06:44,000 --> 00:06:46,000
+ideally with exponential backoff,
+
+124
+00:06:46,000 --> 00:06:48,000
+waiting a bit longer each attempt.
+
+125
+00:06:48,000 --> 00:06:52,000
+The SDK already does this on the errors it recognizes.
+
+126
+00:06:52,000 --> 00:06:55,000
+The second bucket is permanent errors.
+
+127
+00:06:55,000 --> 00:06:59,000
+A bad request, a malformed schema, an auth failure.
+
+128
+00:06:59,000 --> 00:07:03,000
+Retrying these is pointless, because the input itself is wrong.
+
+129
+00:07:03,000 --> 00:07:05,000
+Sending the same broken request again
+
+130
+00:07:05,000 --> 00:07:08,000
+just reproduces the same failure and burns budget.
+
+131
+00:07:08,000 --> 00:07:11,000
+So classify first, then act.
+
+132
+00:07:11,000 --> 00:07:14,000
+If it's transient, retry with backoff.
+
+133
+00:07:14,000 --> 00:07:17,000
+If it's permanent, fix the request.
+
+134
+00:07:17,000 --> 00:07:20,000
+Matching the response to the type is the whole skill.
+
+135
+00:07:21,000 --> 00:07:23,000
+Here's the bottom line.
+
+136
+00:07:23,000 --> 00:07:26,000
+WebSockets and server-sent events are different animals.
+
+137
+00:07:26,000 --> 00:07:28,000
+A WebSocket is a persistent two-way channel
+
+138
+00:07:28,000 --> 00:07:30,000
+for constant back-and-forth.
+
+139
+00:07:30,000 --> 00:07:33,000
+Claude's streaming is a one-way server-sent event
+
+140
+00:07:33,000 --> 00:07:36,000
+over plain HTTPS.
+
+141
+00:07:36,000 --> 00:07:37,000
+Never a WebSocket.
+
+142
+00:07:37,000 --> 00:07:41,000
+So plan for dropped streams, retry transient errors,
+
+143
+00:07:41,000 --> 00:07:44,000
+and ignore pings while handling real errors.
+
+144
+00:07:44,000 --> 00:07:47,000
+That wraps up WebSockets versus SSE for Claude.
+
+145
+00:07:47,000 --> 00:07:49,000
+Catch you in the next one.
+

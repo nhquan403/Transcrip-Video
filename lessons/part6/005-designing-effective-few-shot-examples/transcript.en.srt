@@ -1,0 +1,452 @@
+1
+00:00:00,000 --> 00:00:03,000
+We talked about one-shot and few-shot examples in a previous lesson.
+
+2
+00:00:03,000 --> 00:00:08,000
+Now we're going to dig deeper into how to design effective few-shot examples.
+
+3
+00:00:09,000 --> 00:00:12,000
+More examples isn't a win like people would expect.
+
+4
+00:00:12,000 --> 00:00:17,000
+The real skill is choosing how many and making each one pull its weight.
+
+5
+00:00:17,000 --> 00:00:22,000
+This lesson covers designing a small, diverse set that actually steers behavior.
+
+6
+00:00:23,000 --> 00:00:28,000
+Let's start by naming the three modes, because the choice among them is deliberate, not a ladder.
+
+7
+00:00:29,000 --> 00:00:32,000
+Zero-shot means you give the task with no worked examples at all,
+
+8
+00:00:32,000 --> 00:00:36,000
+leaning on the model's pre-trained knowledge and a clear instruction.
+
+9
+00:00:37,000 --> 00:00:40,000
+For common, well-defined tasks, that's often enough.
+
+10
+00:00:41,000 --> 00:00:45,000
+One-shot means you provide exactly one input-output example.
+
+11
+00:00:46,000 --> 00:00:49,000
+It fits cases where a single, canonical example
+
+12
+00:00:49,000 --> 00:00:52,000
+fully defines the pattern and a second would add nothing.
+
+13
+00:00:53,000 --> 00:00:56,000
+Multi-shot, which people also call few-shot,
+
+14
+00:00:56,000 --> 00:01:02,000
+means two or more examples that demonstrate the format, the tone, or the reasoning you want.
+
+15
+00:01:02,000 --> 00:01:04,000
+Here's the part to hold on to.
+
+16
+00:01:04,000 --> 00:01:09,000
+Diversity and quality of those examples matter far more than how many you cram in.
+
+17
+00:01:10,000 --> 00:01:13,000
+Now, why do I keep saying this isn't a fallback ladder?
+
+18
+00:01:13,000 --> 00:01:16,000
+Because people treat zero-shot as the weak option
+
+19
+00:01:16,000 --> 00:01:19,000
+and reach for examples the moment output wobbles.
+
+20
+00:01:19,000 --> 00:01:20,000
+That's backwards.
+
+21
+00:01:20,000 --> 00:01:25,000
+A clear zero-shot instruction can match few-shot on common tasks,
+
+22
+00:01:25,000 --> 00:01:27,000
+and it stays leaner and cheaper.
+
+23
+00:01:27,000 --> 00:01:31,000
+The right way to think about it is matching the mode to the job.
+
+24
+00:01:31,000 --> 00:01:36,000
+How complex is the task, and how specific does the output format have to be?
+
+25
+00:01:37,000 --> 00:01:42,000
+If the format is subtle or the reasoning is easy to get wrong, examples earn their place.
+
+26
+00:01:43,000 --> 00:01:45,000
+If a plain instruction already lands it,
+
+27
+00:01:45,000 --> 00:01:50,000
+adding examples just burns tokens and can even lock in a pattern you didn't want.
+
+28
+00:01:51,000 --> 00:01:54,000
+Add examples when they improve coverage, not out of reflex.
+
+29
+00:01:56,000 --> 00:01:58,000
+Let's compare two ways to build a set.
+
+30
+00:01:58,000 --> 00:02:02,000
+Picture a big pile of examples that all look basically the same.
+
+31
+00:02:02,000 --> 00:02:06,000
+It feels thorough, but it teaches Claude one narrow pattern,
+
+32
+00:02:06,000 --> 00:02:08,000
+and the prompt overfits to that happy path.
+
+33
+00:02:09,000 --> 00:02:12,000
+Feed it something outside the pile, and it stumbles.
+
+34
+00:02:12,000 --> 00:02:19,000
+Now picture a small set of well-chosen examples that deliberately span the input range. Easy cases. Tricky cases.
+
+35
+00:02:19,000 --> 00:02:21,000
+The odd shapes you actually see in production.
+
+36
+00:02:22,000 --> 00:02:25,000
+That smaller set steers far more reliably,
+
+37
+00:02:25,000 --> 00:02:29,000
+because Claude learns the boundaries of the behavior, not just the center.
+
+38
+00:02:29,000 --> 00:02:33,000
+So, when you're tempted to add a tenth near-duplicate, stop.
+
+39
+00:02:33,000 --> 00:02:36,000
+Quality and coverage beat raw count every single time.
+
+40
+00:02:37,000 --> 00:02:40,000
+A few good examples outperform a heap of mediocre ones.
+
+41
+00:02:41,000 --> 00:02:44,000
+So what makes an example strong? Three marks.
+
+42
+00:02:45,000 --> 00:02:47,000
+First, relevant.
+
+43
+00:02:47,000 --> 00:02:50,000
+Each example should mirror your actual use case closely,
+
+44
+00:02:50,000 --> 00:02:55,000
+so the pattern Claude picks up is the one you genuinely need, not a near miss.
+
+45
+00:02:56,000 --> 00:02:57,000
+Second, diverse.
+
+46
+00:02:57,000 --> 00:03:01,000
+Your examples should vary enough to cover edge cases,
+
+47
+00:03:01,000 --> 00:03:03,000
+because if they're too similar,
+
+48
+00:03:03,000 --> 00:03:08,000
+Claude latches onto some accidental feature they share and generalizes the wrong thing.
+
+49
+00:03:08,000 --> 00:03:10,000
+Third, structured.
+
+50
+00:03:10,000 --> 00:03:13,000
+Each example needs to be clearly separated from your instructions,
+
+51
+00:03:13,000 --> 00:03:16,000
+so the model reads it as a demonstration to imitate,
+
+52
+00:03:16,000 --> 00:03:19,000
+not as a fresh directive to follow.
+
+53
+00:03:19,000 --> 00:03:22,000
+Relevant, diverse, structured.
+
+54
+00:03:22,000 --> 00:03:26,000
+Run any example set against those three, and the weak spots show up fast.
+
+55
+00:03:27,000 --> 00:03:32,000
+Here's the trap that catches almost everyone, and it's worth slowing down on.
+
+56
+00:03:32,000 --> 00:03:36,000
+When you write examples, the easy inputs come to mind first,
+
+57
+00:03:36,000 --> 00:03:39,000
+so your set ends up all clean, all happy path.
+
+58
+00:03:40,000 --> 00:03:44,000
+The problem is that examples don't just show the model what good looks like.
+
+59
+00:03:44,000 --> 00:03:46,000
+They quietly tell it what to expect.
+
+60
+00:03:47,000 --> 00:03:53,000
+A set that only shows tidy inputs teaches Claude to assume every input is tidy,
+
+61
+00:03:53,000 --> 00:03:55,000
+and it falls apart on the messy ones.
+
+62
+00:03:56,000 --> 00:03:59,000
+So deliberately reach for the hard cases.
+
+63
+00:03:59,000 --> 00:04:07,000
+Include boundary inputs, an empty ticket body, a 40-page paste, a request that reads two ways.
+
+64
+00:04:08,000 --> 00:04:12,000
+Include adversarial inputs, the ones designed to trip it up,
+
+65
+00:04:12,000 --> 00:04:15,000
+and show how each of those should be handled.
+
+66
+00:04:15,000 --> 00:04:17,000
+Cover the cases that actually break things.
+
+67
+00:04:19,000 --> 00:04:21,000
+Let's turn that into a checklist of failure modes.
+
+68
+00:04:21,000 --> 00:04:24,000
+Four ways an example set goes wrong.
+
+69
+00:04:24,000 --> 00:04:27,000
+One, too few and too alike.
+
+70
+00:04:27,000 --> 00:04:31,000
+A handful of near duplicates teaches a single narrow pattern,
+
+71
+00:04:31,000 --> 00:04:33,000
+and leaves real variety uncovered.
+
+72
+00:04:34,000 --> 00:04:36,000
+Two, happy path only.
+
+73
+00:04:36,000 --> 00:04:42,000
+Clean inputs are all the model ever sees, so it never learns what a hard case looks like.
+
+74
+00:04:42,000 --> 00:04:45,000
+Three, buried in the instructions.
+
+75
+00:04:45,000 --> 00:04:49,000
+If examples blur into your directions with no clear boundaries,
+
+76
+00:04:49,000 --> 00:04:53,000
+Claude may read them as commands instead of demonstrations.
+
+77
+00:04:53,000 --> 00:04:55,000
+Four, stale or off target.
+
+78
+00:04:56,000 --> 00:05:00,000
+Examples that drift from the current task or from the model you're now using
+
+79
+00:05:00,000 --> 00:05:03,000
+quietly steer toward outdated behavior.
+
+80
+00:05:04,000 --> 00:05:06,000
+Scan your set for these four before you ship it.
+
+81
+00:05:08,000 --> 00:05:12,000
+Let's fix that third failure mode directly, because it's the easiest to get right.
+
+82
+00:05:13,000 --> 00:05:18,000
+Structure is what lets Claude tell your examples, apart from your instructions.
+
+83
+00:05:18,000 --> 00:05:22,000
+The clean way to do it is to wrap each example in its own labeled tags,
+
+84
+00:05:22,000 --> 00:05:25,000
+and then wrap the whole group in an outer tag.
+
+85
+00:05:25,000 --> 00:05:27,000
+Now there's an unmistakable boundary.
+
+86
+00:05:27,000 --> 00:05:30,000
+These are demonstrations, not orders,
+
+87
+00:05:30,000 --> 00:05:34,000
+on how many three to five examples hits the sweet spot for most tasks,
+
+88
+00:05:34,000 --> 00:05:37,000
+enough to establish the pattern without bloating the prompt.
+
+89
+00:05:38,000 --> 00:05:40,000
+And you don't have to build the set alone.
+
+90
+00:05:40,000 --> 00:05:45,000
+You can ask Claude to critique your examples for relevance and diversity,
+
+91
+00:05:45,000 --> 00:05:48,000
+or to draft a few more to fill gaps you missed.
+
+92
+00:05:48,000 --> 00:05:52,000
+Clear boundaries keep demonstrations from reading as new orders.
+
+93
+00:05:53,000 --> 00:05:57,000
+Before we wrap, three techniques that take a decent set further.
+
+94
+00:05:57,000 --> 00:06:01,000
+First, show the reasoning, not just the answer.
+
+95
+00:06:01,000 --> 00:06:07,000
+If you put the thinking steps inside your examples, Claude generalizes the reasoning pattern,
+
+96
+00:06:07,000 --> 00:06:10,000
+which matters a lot for tasks that need a chain of logic.
+
+97
+00:06:10,000 --> 00:06:12,000
+Not just a final output.
+
+98
+00:06:12,000 --> 00:06:14,000
+Second, let Claude help.
+
+99
+00:06:14,000 --> 00:06:20,000
+Hand it your set and ask it to evaluate the examples for relevance and diversity,
+
+100
+00:06:20,000 --> 00:06:21,000
+or to generate more.
+
+101
+00:06:21,000 --> 00:06:24,000
+It's a fast way to pressure test your coverage.
+
+102
+00:06:24,000 --> 00:06:27,000
+Third, stay canonical.
+
+103
+00:06:27,000 --> 00:06:30,000
+Rather than stuffing in every edge case you can imagine,
+
+104
+00:06:30,000 --> 00:06:35,000
+curate a few diverse canonical examples that cleanly portray the behavior you want.
+
+105
+00:06:36,000 --> 00:06:39,000
+A tight representative set beats an exhaustive one.
+
+106
+00:06:41,000 --> 00:06:42,000
+Here's what to take away.
+
+107
+00:06:42,000 --> 00:06:48,000
+A few diverse, well-chosen examples steer Claude better than a large pile of lookalikes.
+
+108
+00:06:48,000 --> 00:06:50,000
+Match the shots to the task.
+
+109
+00:06:50,000 --> 00:06:52,000
+Cover the hard cases.
+
+110
+00:06:52,000 --> 00:06:54,000
+And wrap each example as a demonstration.
+
+111
+00:06:54,000 --> 00:06:58,000
+Just remember, quality and diversity beats example count.
+
+112
+00:06:59,000 --> 00:07:01,000
+That covers designing effective few-shot examples.
+
+113
+00:07:01,000 --> 00:07:03,000
+When you're ready, I'll see you in the next one.
+

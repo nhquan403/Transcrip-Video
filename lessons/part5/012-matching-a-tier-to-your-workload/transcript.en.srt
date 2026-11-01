@@ -1,0 +1,300 @@
+1
+00:00:00,000 --> 00:00:06,000
+Hello and welcome back. Oh, I'm covering the slide. Let me remove myself. There we go
+
+2
+00:00:06,000 --> 00:00:12,000
+On every project you eventually hit the same question. Which model should I actually use for this?
+
+3
+00:00:12,000 --> 00:00:18,000
+This lesson covers how to answer it how to read a workloads real constraints what to look for and
+
+4
+00:00:18,000 --> 00:00:20,000
+where developers usually go wrong
+
+5
+00:00:20,000 --> 00:00:22,000
+Let's break it down
+
+6
+00:00:22,000 --> 00:00:28,000
+Before you pick a model read the workload against three constraints first task difficulty
+
+7
+00:00:28,000 --> 00:00:31,000
+How hard is the reasoning or the coding?
+
+8
+00:00:31,000 --> 00:00:38,000
+The harder the problem the more it pushes you toward opus and the simpler it is the more haiku can handle it
+
+9
+00:00:38,000 --> 00:00:40,000
+second latency budget
+
+10
+00:00:40,000 --> 00:00:47,000
+How fast does the response have to come back a tight real-time budget favors the faster lighter tiers?
+
+11
+00:00:48,000 --> 00:00:54,000
+Third cost ceiling how much can you spend per call when this runs at volume high throughput at low
+
+12
+00:00:54,000 --> 00:00:56,000
+cost points straight at haiku?
+
+13
+00:00:56,000 --> 00:00:59,000
+difficulty latency cost
+
+14
+00:00:59,000 --> 00:01:04,000
+Almost every model selection decision is really about weighing those three against each other for
+
+15
+00:01:04,000 --> 00:01:06,000
+the specific job in front of you
+
+16
+00:01:07,000 --> 00:01:13,000
+With those constraints in hand, there's one guiding principle that sits underneath every choice
+
+17
+00:01:13,000 --> 00:01:17,000
+Pick the lightest tier that clears the quality bar
+
+18
+00:01:17,000 --> 00:01:22,000
+That's it not the most powerful model you can reach for and not the cheapest one
+
+19
+00:01:22,000 --> 00:01:28,000
+You can get away with but the lightest tier that actually meets the requirement two ideas fall out of that
+
+20
+00:01:29,000 --> 00:01:36,000
+don't pay for capability the task doesn't need because opus on a trivial job is wasted cost and latency and
+
+21
+00:01:37,000 --> 00:01:43,000
+Don't starve a hard task with a tier. That's too small because a cheap model that keeps failing isn't a bargain
+
+22
+00:01:44,000 --> 00:01:49,000
+The goal is fit. You're matching the tool to the work not showing off horsepower
+
+23
+00:01:50,000 --> 00:01:55,000
+There are two documented strategies for finding that fit and they start from opposite ends
+
+24
+00:01:55,000 --> 00:01:59,000
+The first is start light and upgrade you begin with haiku
+
+25
+00:01:59,000 --> 00:02:05,000
+Which is great for prototyping tight latency and high volume simple work and you only move up a tier
+
+26
+00:02:05,000 --> 00:02:06,000
+when you hit a real
+
+27
+00:02:06,000 --> 00:02:12,000
+Capability gap the second is start capable and optimize down you begin with opus for complex
+
+28
+00:02:12,000 --> 00:02:14,000
+reasoning where accuracy leads
+
+29
+00:02:14,000 --> 00:02:21,000
+Get it working correctly first and then step down to a lighter tier to claw back cost and latency
+
+30
+00:02:21,000 --> 00:02:24,000
+Once you know what the task really needs both are valid
+
+31
+00:02:25,000 --> 00:02:30,000
+Which one you choose depends on whether your bigger risk is overspending or under delivering
+
+32
+00:02:31,000 --> 00:02:37,000
+Those strategies exist because there are two classic ways developers get this wrong and their mirror images
+
+33
+00:02:37,000 --> 00:02:44,000
+The first is over provisioning you default to opus for everything and now you're paying top tier
+
+34
+00:02:44,000 --> 00:02:45,000
+cost and latency on
+
+35
+00:02:46,000 --> 00:02:49,000
+Simple work that a lighter cheaper model would have handled perfectly
+
+36
+00:02:49,000 --> 00:02:56,000
+Well, the second is underserving you always reach for haiku to save money and you end up starving
+
+37
+00:02:57,000 --> 00:03:02,000
+Demanding tasks getting weak or wrong results on work that genuinely needed a stronger tier
+
+38
+00:03:03,000 --> 00:03:08,000
+Notice they miss the target from opposite directions one overpays the other under delivers
+
+39
+00:03:08,000 --> 00:03:13,000
+The whole skill of tier selection is landing in between on the model that fits
+
+40
+00:03:14,000 --> 00:03:18,000
+Let me make the fit concrete with where each tier tends to win
+
+41
+00:03:18,000 --> 00:03:22,000
+Opus wins on the hardest reasoning large-scale refactors
+
+42
+00:03:22,000 --> 00:03:29,000
+Multi-hour autonomous coding agents and vision heavy or computer use workflows. That's the demanding end
+
+43
+00:03:29,000 --> 00:03:34,000
+Sonnet wins on high-volume production code generation data analysis
+
+44
+00:03:34,000 --> 00:03:42,000
+content creation and everyday agentic tool use the broad middle where most real applications live and
+
+45
+00:03:42,000 --> 00:03:45,000
+haiku wins on real-time apps high-volume
+
+46
+00:03:46,000 --> 00:03:48,000
+classification routing and extraction
+
+47
+00:03:48,000 --> 00:03:52,000
+Plus lightweight sub-agent steps inside a bigger system
+
+48
+00:03:52,000 --> 00:03:55,000
+If you can place your task in one of those three buckets
+
+49
+00:03:55,000 --> 00:04:02,000
+You're most of the way to the right pick the buckets aren't rigid, but they're a strong starting instinct
+
+50
+00:04:03,000 --> 00:04:05,000
+Here's a move that separates people who really get this
+
+51
+00:04:06,000 --> 00:04:13,000
+You don't have to pick one tier for the entire job a single pipeline can use several you might use haiku to root
+
+52
+00:04:13,000 --> 00:04:20,000
+classify or pre-filter incoming requests then hand the genuinely hard sub step to opus or sonnet or
+
+53
+00:04:21,000 --> 00:04:26,000
+You let a lighter tier draft something quickly and a stronger tier review it
+
+54
+00:04:26,000 --> 00:04:33,000
+The principle is to match each sub task to its own needs not to the pipeline single hardest step
+
+55
+00:04:33,000 --> 00:04:38,000
+When you size the whole system to its most demanding moment you overpay for everything else
+
+56
+00:04:39,000 --> 00:04:44,000
+Break the job into steps and let each step run on the lightest tier that handles it
+
+57
+00:04:45,000 --> 00:04:50,000
+Let's walk through a quick example to make this real say the job is a customer support pipeline
+
+58
+00:04:50,000 --> 00:04:57,000
+It tags each incoming ticket then drafts a reply for a human agent to review now read it
+
+59
+00:04:57,000 --> 00:05:01,000
+The tagging step is simple and extremely high volume
+
+60
+00:05:01,000 --> 00:05:09,000
+So it's latency and cost sensitive the drafting step needs stronger quality, but honestly not the very top tier
+
+61
+00:05:09,000 --> 00:05:12,000
+So here's the pick haiku tags the tickets cheaply and fast
+
+62
+00:05:13,000 --> 00:05:19,000
+Sonnet drafts the replies with enough quality to be useful and opus stays in reserve for the rare
+
+63
+00:05:19,000 --> 00:05:26,000
+Escalation that actually needs deep reasoning three tiers one pipeline each matched to the step. It's serving
+
+64
+00:05:27,000 --> 00:05:33,000
+Since starting light is such a common approach. Let's be clear on the signals that say it's time to move up
+
+65
+00:05:33,000 --> 00:05:40,000
+The clearest one is that quality misses the bar on your real evaluation cases not on a hunch
+
+66
+00:05:40,000 --> 00:05:42,000
+But on cases you actually measure
+
+67
+00:05:43,000 --> 00:05:48,000
+Another is that the task plainly needs deeper reasoning than the current tier can give where you
+
+68
+00:05:48,000 --> 00:05:49,000
+watch it lose the thread on
+
+69
+00:05:50,000 --> 00:05:56,000
+Multi-step problems a third is that errors cluster on your hardest inputs while the easy ones stay fine
+
+70
+00:05:56,000 --> 00:06:02,000
+Which tells you the ceiling is the limit not the prompt when a lighter tier keeps failing the bar
+
+71
+00:06:02,000 --> 00:06:03,000
+step up deliberately
+
+72
+00:06:05,000 --> 00:06:10,000
+Here's the bottom line when you choose a tier you're testing a workload against three constraints
+
+73
+00:06:10,000 --> 00:06:17,000
+Difficulty latency and cost what to look for is the lightest tier that still clears the quality bar
+
+74
+00:06:17,000 --> 00:06:24,000
+The trap is defaulting to opus everywhere or grabbing haiku for everything that covers
+
+75
+00:06:24,000 --> 00:06:27,000
+Matching a tier to your workload. I'll see you in the next one
+

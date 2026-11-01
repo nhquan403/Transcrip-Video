@@ -1,0 +1,260 @@
+1
+00:00:00,000 --> 00:00:06,000
+Welcome back. Cost is where prompt caching earns its place. Send a big stable prefix on every call
+
+2
+00:00:06,000 --> 00:00:13,000
+and you pay to reprocess it every single time. Get caching right and those repeats bill at a
+
+3
+00:00:13,000 --> 00:00:18,000
+fraction of the cost. This lesson walks through the read and write economics and when caching
+
+4
+00:00:18,000 --> 00:00:26,000
+truly pays off. Let's dive in. Let's lock in three words up front. First, prompt caching itself.
+
+5
+00:00:26,000 --> 00:00:32,000
+It lets you reuse a prefix the model already processed so a large stable chunk of context
+
+6
+00:00:32,000 --> 00:00:39,000
+isn't rebuilt and rebuild on every call. Second, the cache write. That's the one-time cost of
+
+7
+00:00:39,000 --> 00:00:45,000
+storing a brand new prefix and it bills at a premium over your base input price. You pay it
+
+8
+00:00:45,000 --> 00:00:52,000
+once when the entry gets created. Third, the cache read. That's what you pay when a later call gets
+
+9
+00:00:52,000 --> 00:00:58,000
+served from that stored prefix and it bills at a deep discount. Here's the whole game in one line.
+
+10
+00:00:58,000 --> 00:01:04,000
+You spend a little more once on the write so every read after that costs far less. Writes,
+
+11
+00:01:04,000 --> 00:01:11,000
+reads, and the gap between them. So what belongs in a cache? Only content that rides along unchanged
+
+12
+00:01:11,000 --> 00:01:16,000
+call after call. Think of a large system prompt that frames every request the same way.
+
+13
+00:01:17,000 --> 00:01:23,000
+Think of a fixed tool set that doesn't shift between calls. Think of a long reference document
+
+14
+00:01:23,000 --> 00:01:28,000
+you ask question after question against. Those are the blocks worth caching because they're big
+
+15
+00:01:28,000 --> 00:01:34,000
+and they're stable. Here's the intuition to hold on to. The bigger that shared block is
+
+16
+00:01:34,000 --> 00:01:39,000
+and the more often you hit it without changing it, the more each cheap read saves you against
+
+17
+00:01:39,000 --> 00:01:46,000
+reprocessing it fresh. If a chunk of your prompt is basically constant across requests, that's your
+
+18
+00:01:46,000 --> 00:01:53,000
+cache candidate. If it changes every time, it isn't. Now the actual numbers because caching lives or
+
+19
+00:01:53,000 --> 00:02:01,000
+dies on them. Every figure is a multiple of your base input price. A cache read, a hit, bills at 10%
+
+20
+00:02:01,000 --> 00:02:07,000
+the cost. So a token served from cache costs about a tenth of the normal price and that's where all
+
+21
+00:02:07,000 --> 00:02:14,000
+your savings come from. Writing a default five minute entry costs 25% more, a small premium you
+
+22
+00:02:14,000 --> 00:02:20,000
+pay once. Writing a one hour entry costs double, the price of keeping it around longer. Notice the
+
+23
+00:02:20,000 --> 00:02:27,000
+shape here. Writes cost a bit more than base, reads cost dramatically less. Don't flip that in your head.
+
+24
+00:02:27,000 --> 00:02:33,000
+The strategy only works because a cheap read, repeated enough, more than pays back the single
+
+25
+00:02:33,000 --> 00:02:40,000
+write. Now the two lifetimes an entry can have because the choice is pure cost strategy. By
+
+26
+00:02:40,000 --> 00:02:47,000
+default, an entry uses the five minute ephemeral window. Every read refreshes it. So if your calls
+
+27
+00:02:47,000 --> 00:02:54,000
+come back to back, the prefix just stays warm at the cheaper write, only 25% over base. When your
+
+28
+00:02:54,000 --> 00:03:00,000
+calls are spaced further apart, you can opt into the one hour window by setting type to ephemeral
+
+29
+00:03:00,000 --> 00:03:07,000
+and TTL to one hour. It survives those longer gaps, but writing it costs double. So neither one is
+
+30
+00:03:07,000 --> 00:03:13,000
+simply better. You're trading how long you need the entry to live against what you'll pay to write
+
+31
+00:03:13,000 --> 00:03:19,000
+it. Match the window to your real traffic. Bursty and frequent leans, five minute. Sparse and spread
+
+32
+00:03:19,000 --> 00:03:27,000
+out leans one hour. So when does cashing actually lower your bill? Treated as a bet, cheap reads have
+
+33
+00:03:27,000 --> 00:03:33,000
+to outweigh the write premium you paid up front. With the five minute window, an entry roughly pays
+
+34
+00:03:33,000 --> 00:03:40,000
+for itself after about one reuse. Because a write at 25% more, plus a read at 10%, the cost beats
+
+35
+00:03:40,000 --> 00:03:47,000
+paying full price on two calls. The one hour window sets a higher bar. At a double cost write, you need
+
+36
+00:03:47,000 --> 00:03:54,000
+two or more reads before those cheap reads cover the heavier write. And in both cases, the stable
+
+37
+00:03:54,000 --> 00:03:59,000
+prefix should make up the bulk of your request size. So the savings apply to a lot of tokens.
+
+38
+00:03:59,000 --> 00:04:05,000
+Big, frozen, and hit often. That's the profile where the math clearly wins.
+
+39
+00:04:06,000 --> 00:04:12,000
+It's just as important to know when caching backfires. If you hit a prefix only once, you
+
+40
+00:04:12,000 --> 00:04:17,000
+still paid that write premium, and you never collected a discounted read to earn it back,
+
+41
+00:04:17,000 --> 00:04:24,000
+so you came out behind. If your content changes on every call, you never get a read at all. Every
+
+42
+00:04:24,000 --> 00:04:30,000
+request is a fresh write. And if your prefix falls under the model's minimum token floor,
+
+43
+00:04:30,000 --> 00:04:37,000
+it silently won't cache. We'll cover those floors in the next lesson. The through line is reuse.
+
+44
+00:04:37,000 --> 00:04:44,000
+When a prefix is rarely reused or constantly changing, plain resending it is genuinely cheaper
+
+45
+00:04:44,000 --> 00:04:51,000
+than caching it. So don't cache reflexively. Cache the big stable stuff you hit again and again,
+
+46
+00:04:51,000 --> 00:04:56,000
+and leave the one-off content alone. Let me make the break-even concrete,
+
+47
+00:04:56,000 --> 00:05:04,000
+because the numbers do the arguing. Take the five-minute path. You pay 25% more to write once,
+
+48
+00:05:04,000 --> 00:05:12,000
+then 10% the cost to read on the next call. Add those, and you're at 135% of base for two calls.
+
+49
+00:05:12,000 --> 00:05:18,000
+Already cheaper than the double? You'd pay resending full price twice. So the first read
+
+50
+00:05:18,000 --> 00:05:24,000
+already puts you ahead. The one-hour path starts deeper. A double-cost write means you need two or
+
+51
+00:05:24,000 --> 00:05:31,000
+more reads before its cheap reads dig you out of that hole. And here's a handy detail. Every read
+
+52
+00:05:31,000 --> 00:05:37,000
+resets the entry's clock. So under continuous traffic, a five-minute prefix can stay warm
+
+53
+00:05:37,000 --> 00:05:43,000
+indefinitely, refreshed by the very reads you're already making. The reuse rate is what decides
+
+54
+00:05:43,000 --> 00:05:50,000
+all of it. One more thing before we close. Caching doesn't work alone. Its multipliers
+
+55
+00:05:50,000 --> 00:05:56,000
+stack with the other cost levers you're probably already pulling. If you're running work through
+
+56
+00:05:56,000 --> 00:06:03,000
+the batch API, that 50% discount applies on top of cache pricing. So cached and batched together
+
+57
+00:06:03,000 --> 00:06:10,000
+compound. If you're using a data residency option, its multiplier applies across every token category,
+
+58
+00:06:10,000 --> 00:06:16,000
+cached tokens included. And when the response comes back, cached reads show up split out in the
+
+59
+00:06:16,000 --> 00:06:22,000
+usage fields, separate from your uncached input. So the practical move is to layer the levers that
+
+60
+00:06:22,000 --> 00:06:29,000
+fit your workload, then read the usage numbers to confirm the real spend, not the spend you assumed.
+
+61
+00:06:29,000 --> 00:06:36,000
+Stacked discounts only help if you actually verify they landed. Here's the bottom line
+
+62
+00:06:36,000 --> 00:06:42,000
+in the quick math. Prompt caching trades a one-time write premium for cheap repeat reads.
+
+63
+00:06:42,000 --> 00:06:51,000
+Reads bill at 10% the cost. Five-minute writes cost 25% more. One-hour writes cost 2x. It only
+
+64
+00:06:51,000 --> 00:06:58,000
+pays when reuse is high enough to amortize the write. Just remember, big, stable, frequently
+
+65
+00:06:58,000 --> 00:07:05,000
+hit prefixes are the win here. That covers prompt caching to cut repeat cost. I'll see you in the next one.
+

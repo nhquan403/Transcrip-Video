@@ -1,0 +1,360 @@
+1
+00:00:00,000 --> 00:00:05,000
+A long job run as one giant session accumulates noise until the model loses focus.
+
+2
+00:00:05,000 --> 00:00:10,000
+Splitting it into steps gives you a cleaner option, where each step runs against its own
+
+3
+00:00:10,000 --> 00:00:14,000
+focused context and passes forward only what the next step needs.
+
+4
+00:00:15,000 --> 00:00:19,000
+This lesson covers how to split it and when to chain explicitly.
+
+5
+00:00:20,000 --> 00:00:25,000
+Let's anchor three terms first. A workflow is a developer-authored sequence with fixed control
+
+6
+00:00:26,000 --> 00:00:29,000
+while an agent lets the model choose the next action at runtime.
+
+7
+00:00:30,000 --> 00:00:34,000
+Prompt chaining is how you build a workflow out of model calls.
+
+8
+00:00:34,000 --> 00:00:39,000
+You break a task into sequential steps, where each step's output feeds the next,
+
+9
+00:00:39,000 --> 00:00:42,000
+so you can inspect and control the pipeline.
+
+10
+00:00:42,000 --> 00:00:47,000
+And a staged handoff means passing forward only the distilled output of each stage,
+
+11
+00:00:47,000 --> 00:00:53,000
+not its full working context, so the next step starts focused. Keep these straight.
+
+12
+00:00:53,000 --> 00:00:56,000
+Chaining is the mechanism and the staged handoff
+
+13
+00:00:56,000 --> 00:00:59,000
+is the discipline that keeps each step's context tight.
+
+14
+00:01:00,000 --> 00:01:03,000
+So why split it all? You can run a long job two ways.
+
+15
+00:01:03,000 --> 00:01:09,000
+One is a single growing session that carries every prior turn forward,
+
+16
+00:01:09,000 --> 00:01:13,000
+noise and all, until the important instructions get diluted.
+
+17
+00:01:13,000 --> 00:01:18,000
+The other is a chain of focused steps, where each stage starts against a tight,
+
+18
+00:01:18,000 --> 00:01:21,000
+relevant context instead of the whole history.
+
+19
+00:01:22,000 --> 00:01:25,000
+In the staged version, each step passes on its distilled output,
+
+20
+00:01:25,000 --> 00:01:30,000
+not its scratch work, so the next step isn't paying for tokens it will never use.
+
+21
+00:01:31,000 --> 00:01:34,000
+Splitting the work is what keeps every step sharp.
+
+22
+00:01:34,000 --> 00:01:39,000
+The long session feels simpler at first, but it degrades as the noise piles up.
+
+23
+00:01:40,000 --> 00:01:44,000
+When a step comes up, you're choosing between isolating it and keeping it in line.
+
+24
+00:01:44,000 --> 00:01:48,000
+And that's the same call we made last lesson, now inside a chain.
+
+25
+00:01:49,000 --> 00:01:53,000
+Heavy throwaway noise and no shared state point to a subagent.
+
+26
+00:01:54,000 --> 00:01:59,000
+Think of a research stage that reads 20 files just to answer one question.
+
+27
+00:01:59,000 --> 00:02:03,000
+Nothing downstream needs those raw file contents,
+
+28
+00:02:03,000 --> 00:02:07,000
+so let a subagent burn that context and hand back only the answer.
+
+29
+00:02:08,000 --> 00:02:15,000
+Small steps whose details matter downstream stay in line, with state carried forward.
+
+30
+00:02:15,000 --> 00:02:21,000
+A step that renames a function, for example, produces changes every later step touches,
+
+31
+00:02:21,000 --> 00:02:26,000
+so isolating it would just force you to pass all that state back anyway.
+
+32
+00:02:26,000 --> 00:02:31,000
+Answer those two questions honestly, and the choice is usually clear.
+
+33
+00:02:32,000 --> 00:02:36,000
+The link that makes a chain clean is what each step hands to the next.
+
+34
+00:02:36,000 --> 00:02:40,000
+The rule is to forward the distilled result, not the whole working trace.
+
+35
+00:02:40,000 --> 00:02:47,000
+If a stage read 10 files to produce one decision, the next stage needs the decision,
+
+36
+00:02:47,000 --> 00:02:48,000
+not the 10 files.
+
+37
+00:02:48,000 --> 00:02:52,000
+So drop the scaffolding that later steps will never reference,
+
+38
+00:02:52,000 --> 00:02:55,000
+and give each stage only the inputs its own job requires.
+
+39
+00:02:56,000 --> 00:03:01,000
+Thin, deliberate handoffs are what keep the chain focused from start to finish.
+
+40
+00:03:02,000 --> 00:03:07,000
+When a workflow starts feeling sluggish or unfocused, look at your handoffs first.
+
+41
+00:03:07,000 --> 00:03:11,000
+Usually you're passing forward far more context than the next step actually uses.
+
+42
+00:03:13,000 --> 00:03:17,000
+Most multi-step reasoning today happens inside the model on its own,
+
+43
+00:03:17,000 --> 00:03:20,000
+so when should you chain steps explicitly?
+
+44
+00:03:20,000 --> 00:03:22,000
+Three reasons stand out.
+
+45
+00:03:22,000 --> 00:03:26,000
+First, when you want to inspect intermediate output,
+
+46
+00:03:26,000 --> 00:03:30,000
+seeing and checking a step's result before the next step runs on it.
+
+47
+00:03:30,000 --> 00:03:35,000
+Second, when you need to enforce a specific pipeline structure,
+
+48
+00:03:35,000 --> 00:03:40,000
+a repeatable sequence of stages, rather than letting the model improvise the path.
+
+49
+00:03:40,000 --> 00:03:47,000
+Third, when you want self-correction, running draft, then review, then refine as separate calls.
+
+50
+00:03:47,000 --> 00:03:52,000
+If none of these apply, you can often let the model handle the steps internally
+
+51
+00:03:52,000 --> 00:03:53,000
+and save yourself the plumbing.
+
+52
+00:03:54,000 --> 00:03:57,000
+Let's zoom in on that self-correction loop,
+
+53
+00:03:57,000 --> 00:04:00,000
+since it's the most common chaining pattern in practice.
+
+54
+00:04:00,000 --> 00:04:02,000
+It runs in three moves.
+
+55
+00:04:02,000 --> 00:04:04,000
+You draft a first answer to the task.
+
+56
+00:04:04,000 --> 00:04:07,000
+Then you review that draft against explicit criteria,
+
+57
+00:04:07,000 --> 00:04:09,000
+the same way you'd check a colleague's work.
+
+58
+00:04:10,000 --> 00:04:15,000
+Then you refine, fixing the specific issues the review surfaced.
+
+59
+00:04:15,000 --> 00:04:21,000
+The reason to run these as separate calls, instead of asking for it all at once, is control.
+
+60
+00:04:21,000 --> 00:04:26,000
+You can log each stage, evaluate it, and branch when something looks off.
+
+61
+00:04:26,000 --> 00:04:31,000
+That visibility is exactly what a single combined call hides from you,
+
+62
+00:04:31,000 --> 00:04:33,000
+and it's why chaining earns its keep here.
+
+63
+00:04:34,000 --> 00:04:38,000
+Three habits make your handoffs reliable, whatever the workflow.
+
+64
+00:04:38,000 --> 00:04:41,000
+The first is distill before passing.
+
+65
+00:04:41,000 --> 00:04:46,000
+Summarize each stage down to its load-bearing output before the next step ever sees it.
+
+66
+00:04:46,000 --> 00:04:49,000
+The second is validate between stages.
+
+67
+00:04:49,000 --> 00:04:53,000
+Check a stage's output against your rules before the following step builds on it,
+
+68
+00:04:53,000 --> 00:04:56,000
+so an error gets caught early instead of propagating.
+
+69
+00:04:57,000 --> 00:04:59,000
+The third is keep steps independent.
+
+70
+00:04:59,000 --> 00:05:05,000
+Design each stage so it needs only its own inputs, not the entire history of the run.
+
+71
+00:05:05,000 --> 00:05:09,000
+Independent stages are easier to test, reorder, and debug.
+
+72
+00:05:09,000 --> 00:05:15,000
+Together, these three habits are what turn a fragile chain into one you can actually trust.
+
+73
+00:05:16,000 --> 00:05:19,000
+Let's close with where multi-step work goes wrong.
+
+74
+00:05:19,000 --> 00:05:24,000
+One failure is letting a single session grow instead of staging focused steps,
+
+75
+00:05:24,000 --> 00:05:26,000
+so the context slowly bloats.
+
+76
+00:05:26,000 --> 00:05:32,000
+Another is forwarding a full working trace instead of a distilled result,
+
+77
+00:05:32,000 --> 00:05:35,000
+which drags every step's noise into the next.
+
+78
+00:05:35,000 --> 00:05:37,000
+And a third is overchaining.
+
+79
+00:05:37,000 --> 00:05:41,000
+Breaking apart work the model's own internal reasoning would have handled fine,
+
+80
+00:05:41,000 --> 00:05:45,000
+which just adds plumbing and latency for no gain.
+
+81
+00:05:45,000 --> 00:05:47,000
+The through line is judgment.
+
+82
+00:05:47,000 --> 00:05:51,000
+Split when it buys you focus or control, not as a reflex.
+
+83
+00:05:52,000 --> 00:05:55,000
+The goal is focused context at every step,
+
+84
+00:05:55,000 --> 00:05:58,000
+and both too little structure and too much can cost you that.
+
+85
+00:06:00,000 --> 00:06:05,000
+Splitting a job into focused steps gives you a cleaner run than one growing session.
+
+86
+00:06:05,000 --> 00:06:11,000
+Each stage works against tight context and passes forward only its distilled output.
+
+87
+00:06:12,000 --> 00:06:14,000
+Chain explicitly when you need to inspect a step,
+
+88
+00:06:14,000 --> 00:06:17,000
+enforce a pipeline, or let the work self-correct.
+
+89
+00:06:18,000 --> 00:06:21,000
+That wraps up splitting work across multiple step workflows.
+
+90
+00:06:21,000 --> 00:06:23,000
+I'll see you in the next one.
+

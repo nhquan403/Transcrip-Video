@@ -1,0 +1,420 @@
+1
+00:00:00,000 --> 00:00:04,000
+Let's get into a failure mode that surprises people.
+
+2
+00:00:04,000 --> 00:00:08,000
+You switched to structured outputs, so the shape is guaranteed, and you still get an
+
+3
+00:00:08,000 --> 00:00:12,000
+answer that's plausible, well-formed, and wrong.
+
+4
+00:00:12,000 --> 00:00:15,000
+Guaranteed structure is not guaranteed correctness.
+
+5
+00:00:15,000 --> 00:00:22,000
+This lesson covers validating a response after generation and re-prompting when it fails.
+
+6
+00:00:22,000 --> 00:00:25,000
+Let's define the vocabulary, three ideas that carry this lesson.
+
+7
+00:00:25,000 --> 00:00:28,000
+First, response validation.
+
+8
+00:00:28,000 --> 00:00:33,000
+That's programmatically checking a reply against a schema and your own business rules
+
+9
+00:00:33,000 --> 00:00:35,000
+after the model generates it.
+
+10
+00:00:35,000 --> 00:00:41,000
+The key phrase is after generation, and it covers meaning, not just syntax.
+
+11
+00:00:41,000 --> 00:00:44,000
+Second, the semantic check.
+
+12
+00:00:44,000 --> 00:00:50,000
+This confirms the values actually make sense and are complete, not merely that the JSON
+
+13
+00:00:50,000 --> 00:00:51,000
+parsed without throwing.
+
+14
+00:00:51,000 --> 00:00:55,000
+A response can be perfectly formed and still be nonsense for your use case.
+
+15
+00:00:55,000 --> 00:00:58,000
+Third, the correction path.
+
+16
+00:00:58,000 --> 00:01:04,000
+When validation fails, you re-prompt the model with the specific error so it can fix its own output.
+
+17
+00:01:04,000 --> 00:01:07,000
+Validation, semantics, correction.
+
+18
+00:01:07,000 --> 00:01:10,000
+Hold those three, and the rest follows.
+
+19
+00:01:10,000 --> 00:01:13,000
+Here's the shape of a reliable pipeline.
+
+20
+00:01:13,000 --> 00:01:15,000
+You don't treat generation as the finish line.
+
+21
+00:01:15,000 --> 00:01:18,000
+You treat it as one step in a loop.
+
+22
+00:01:18,000 --> 00:01:21,000
+Step one, generate the response.
+
+23
+00:01:21,000 --> 00:01:26,000
+Step two, validate it against the schema first, then against your business rules.
+
+24
+00:01:26,000 --> 00:01:29,000
+Step three, and this is the part people skip.
+
+25
+00:01:29,000 --> 00:01:35,000
+On failure, you re-prompt with the exact error so the model can correct itself.
+
+26
+00:01:35,000 --> 00:01:36,000
+Then you validate again.
+
+27
+00:01:36,000 --> 00:01:42,000
+What you're avoiding is the one-shot check, where you generate once, glance at it, and move on.
+
+28
+00:01:42,000 --> 00:01:47,000
+That's exactly where reliability leaks out, because the first generation isn't always right.
+
+29
+00:01:47,000 --> 00:01:52,000
+And without a correction path, a wrong answer just sails through.
+
+30
+00:01:52,000 --> 00:01:55,000
+Let's separate two checks that often get collapsed into one.
+
+31
+00:01:55,000 --> 00:02:00,000
+The syntax check asks, did the response parse and match the schema shape?
+
+32
+00:02:00,000 --> 00:02:01,000
+That's necessary.
+
+33
+00:02:01,000 --> 00:02:03,000
+But notice what it doesn't tell you.
+
+34
+00:02:03,000 --> 00:02:07,000
+It says nothing about whether the values are actually correct.
+
+35
+00:02:07,000 --> 00:02:12,000
+A date can be well-typed and still be in the past when your rule says it can't be.
+
+36
+00:02:12,000 --> 00:02:15,000
+The semantic check asks the harder question.
+
+37
+00:02:15,000 --> 00:02:19,000
+Do the values obey your business rules and make sense together?
+
+38
+00:02:19,000 --> 00:02:23,000
+That's the check that catches a plausible but wrong answer, the kind that passes every
+
+39
+00:02:23,000 --> 00:02:26,000
+type check and still breaks your workflow.
+
+40
+00:02:26,000 --> 00:02:28,000
+Syntax proves it's well-formed.
+
+41
+00:02:28,000 --> 00:02:31,000
+Semantics proves it's right. You need both.
+
+42
+00:02:31,000 --> 00:02:35,000
+Let me push on why a single end-of-pipeline check isn't enough.
+
+43
+00:02:35,000 --> 00:02:40,000
+A one-shot check quietly assumes the first generation is either correct or it throws
+
+44
+00:02:40,000 --> 00:02:42,000
+an error you'll catch.
+
+45
+00:02:42,000 --> 00:02:44,000
+Neither is guaranteed.
+
+46
+00:02:44,000 --> 00:02:46,000
+Silent failures are the trap.
+
+47
+00:02:46,000 --> 00:02:49,000
+The call returns success, no exception.
+
+48
+00:02:49,000 --> 00:02:54,000
+But the data is wrong or incomplete, and because nothing fired, that bad data flows
+
+49
+00:02:54,000 --> 00:02:57,000
+straight downstream into the next step.
+
+50
+00:02:57,000 --> 00:03:02,000
+Layer on non-determinism, the same prompt can produce a different answer run-to-run.
+
+51
+00:03:02,000 --> 00:03:05,000
+So a prompt that passed yesterday can fail today.
+
+52
+00:03:05,000 --> 00:03:08,000
+Put those together and the lesson is blunt.
+
+53
+00:03:08,000 --> 00:03:13,000
+Without a reprompt path, bad output sails through, and the pipeline lets wrong data
+
+54
+00:03:13,000 --> 00:03:15,000
+pass undetected.
+
+55
+00:03:15,000 --> 00:03:19,000
+Now the part that catches even careful developers.
+
+56
+00:03:19,000 --> 00:03:26,000
+Accurate outputs constrain generation, but a few edge cases and quirks still deserve a guard. Four
+
+57
+00:03:26,000 --> 00:03:28,000
+to know. First, refusal.
+
+58
+00:03:28,000 --> 00:03:34,000
+If the model declines on safety grounds, stop reason comes back as refusal, and the output
+
+59
+00:03:34,000 --> 00:03:36,000
+may not match your schema at all.
+
+60
+00:03:36,000 --> 00:03:38,000
+Second, max tokens.
+
+61
+00:03:38,000 --> 00:03:46,000
+If generation hits the token limit, stop reason is max tokens, and your object can be truncated mid-structure.
+
+62
+00:03:46,000 --> 00:03:49,000
+Third, enum capitalization.
+
+63
+00:03:49,000 --> 00:03:57,000
+Enum values can differ only in case, so compare them case insensitively rather than with exact equality.
+
+64
+00:03:57,000 --> 00:04:00,000
+Fourth, property ordering.
+
+65
+00:04:00,000 --> 00:04:06,000
+The API doesn't guarantee any property order, so always read fields by name, never by position.
+
+66
+00:04:06,000 --> 00:04:09,000
+Four cases, all worth a guard.
+
+67
+00:04:09,000 --> 00:04:14,000
+So before you trust a structured payload, do one cheap thing first.
+
+68
+00:04:14,000 --> 00:04:15,000
+Check why the model stopped.
+
+69
+00:04:15,000 --> 00:04:18,000
+Read stop reason before you parse.
+
+70
+00:04:18,000 --> 00:04:23,000
+If it's a refusal, there's no schema valid object waiting for you, so handle it as a
+
+71
+00:04:23,000 --> 00:04:26,000
+refusal, not as malformed data.
+
+72
+00:04:26,000 --> 00:04:30,000
+If it's max tokens, the response may be cut off part way through, and parsing a truncated
+
+73
+00:04:30,000 --> 00:04:33,000
+object gives you garbage.
+
+74
+00:04:33,000 --> 00:04:38,000
+Only a normal completion, an end turn stop, earns your usual parsing path.
+
+75
+00:04:38,000 --> 00:04:42,000
+This one check saves you from a whole category of confusing bugs, where your code tries to
+
+76
+00:04:42,000 --> 00:04:46,000
+read fields out of an answer the model never actually finished writing.
+
+77
+00:04:46,000 --> 00:04:50,000
+Stop reason first, then parse.
+
+78
+00:04:50,000 --> 00:04:53,000
+Let's stack the validation into layers you can implement.
+
+79
+00:04:53,000 --> 00:04:55,000
+The first layer is schema validation.
+
+80
+00:04:55,000 --> 00:05:01,000
+Confirm the response parses, and every field carries its declared type.
+
+81
+00:05:01,000 --> 00:05:05,000
+That's your syntax gate, and structured outputs handle most of it for you.
+
+82
+00:05:05,000 --> 00:05:08,000
+The second layer is business rule checks.
+
+83
+00:05:08,000 --> 00:05:12,000
+Confirm the values are allowed, consistent, and complete for your domain.
+
+84
+00:05:12,000 --> 00:05:19,000
+All the things a schema can't express, like a total that has to equal the sum of its line items.
+
+85
+00:05:19,000 --> 00:05:21,000
+The third layer is reprompt on failure.
+
+86
+00:05:21,000 --> 00:05:27,000
+When either gate fails, you feed the exact error back so the model corrects itself, closing the loop.
+
+87
+00:05:27,000 --> 00:05:31,000
+Schema, business rules, reprompt.
+
+88
+00:05:31,000 --> 00:05:35,000
+Each layer catches what the one before it can't.
+
+89
+00:05:35,000 --> 00:05:41,000
+Let's make the reprompt itself actually useful, because a lazy retry wastes a call.
+
+90
+00:05:41,000 --> 00:05:45,000
+Give the model everything it needs to fix the specific problem.
+
+91
+00:05:45,000 --> 00:05:48,000
+Include the exact error, not a vague try again.
+
+92
+00:05:48,000 --> 00:05:53,000
+Show it the offending output so it can see what it produced and where it went wrong.
+
+93
+00:05:53,000 --> 00:06:00,000
+And cap your retries, because if the model fails three times in a row, looping forever won't help.
+
+94
+00:06:00,000 --> 00:06:03,000
+You want it to escalate to a human or a fallback.
+
+95
+00:06:03,000 --> 00:06:05,000
+One more distinction while you're here.
+
+96
+00:06:05,000 --> 00:06:09,000
+Tell a genuine refusal, apart from a bug.
+
+97
+00:06:09,000 --> 00:06:12,000
+A refusal is the model declining on purpose.
+
+98
+00:06:12,000 --> 00:06:14,000
+A bug is an integration failure.
+
+99
+00:06:14,000 --> 00:06:17,000
+Each needs a different fix.
+
+100
+00:06:17,000 --> 00:06:19,000
+Here's what to take away.
+
+101
+00:06:19,000 --> 00:06:25,000
+Response validation turns one hopeful generation into a loop that checks meaning and reprompts on failure.
+
+102
+00:06:25,000 --> 00:06:30,000
+It matters because structured output still breaks on a refusal or a token limit.
+
+103
+00:06:30,000 --> 00:06:33,000
+Just remember, check stop reason before you parse.
+
+104
+00:06:33,000 --> 00:06:37,000
+And that covers validating and reprompting on failure.
+
+105
+00:06:37,000 --> 00:06:38,000
+I'll see you in the next one.
+

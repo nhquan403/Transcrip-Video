@@ -1,0 +1,348 @@
+1
+00:00:00,000 --> 00:00:04,000
+It's tempting to picture the model writing out a whole answer in its head and then reading it to you.
+
+2
+00:00:05,000 --> 00:00:09,000
+That's not what happens, and the difference actually matters for how you prompt a model.
+
+3
+00:00:09,000 --> 00:00:14,000
+This lesson maps how the model really builds a response, one token at a time.
+
+4
+00:00:15,000 --> 00:00:21,000
+Three terms anchor this lesson. Next token generation is the mechanism by which the model produces
+
+5
+00:00:21,000 --> 00:00:23,000
+text, one token at a time,
+
+6
+00:00:24,000 --> 00:00:26,000
+continuing until it hits a stopping point.
+
+7
+00:00:27,000 --> 00:00:33,000
+Autoregressive describes how it does that, generating left to right, where each token it produces
+
+8
+00:00:33,000 --> 00:00:37,000
+feeds right back in as input for choosing the next one.
+
+9
+00:00:37,000 --> 00:00:44,000
+And conditioning is the idea that every token is chosen based on all the tokens before it, including
+
+10
+00:00:44,000 --> 00:00:47,000
+the model's own earlier outputs, not just your prompt.
+
+11
+00:00:48,000 --> 00:00:54,000
+Put simply, the model writes forward, it commits to a token, adds it to the running text, and then
+
+12
+00:00:54,000 --> 00:00:56,000
+asks itself what comes next.
+
+13
+00:00:56,000 --> 00:00:58,000
+Over and over until it's done.
+
+14
+00:01:00,000 --> 00:01:03,000
+Let me kill a common mental image because it leads people astray.
+
+15
+00:01:04,000 --> 00:01:08,000
+The model doesn't plan a complete answer somewhere inside and then reveal it.
+
+16
+00:01:08,000 --> 00:01:11,000
+There's no finished response sitting there waiting.
+
+17
+00:01:11,000 --> 00:01:18,000
+What actually happens is that it emits one token, then reconsiders the entire sequence so far to pick the next one.
+
+18
+00:01:18,000 --> 00:01:22,000
+Each token is conditioned on all the prior tokens.
+
+19
+00:01:22,000 --> 00:01:28,000
+So the response is genuinely built forward, token by token, with nothing pre-written behind the curtain.
+
+20
+00:01:29,000 --> 00:01:31,000
+Why does this matter to you as a builder?
+
+21
+00:01:31,000 --> 00:01:37,000
+Because it means the model can't fix an early commitment by referring to a plan it never made.
+
+22
+00:01:37,000 --> 00:01:41,000
+Whatever it generates first becomes the ground it reasons from.
+
+23
+00:01:42,000 --> 00:01:48,000
+Let's contrast the two mental models head to head, because picking the right one changes how you prompt.
+
+24
+00:01:48,000 --> 00:01:51,000
+The wrong picture is compose, then emit.
+
+25
+00:01:52,000 --> 00:01:57,000
+In that version, the model writes a full answer internally, checks it over, and hands you the finished thing.
+
+26
+00:01:58,000 --> 00:02:01,000
+It's intuitive, and it's just not how these models work.
+
+27
+00:02:02,000 --> 00:02:04,000
+The right picture is generate, left to right.
+
+28
+00:02:05,000 --> 00:02:11,000
+The model produces each token in sequence, with no look-ahead to a completed draft it's working toward.
+
+29
+00:02:11,000 --> 00:02:14,000
+Two pictures, and only the second one is accurate.
+
+30
+00:02:15,000 --> 00:02:21,000
+Once you internalize that the model is always writing forward with no safety net of a pre-planned
+
+31
+00:02:21,000 --> 00:02:24,000
+answer, a lot of prompting advice suddenly makes sense.
+
+32
+00:02:25,000 --> 00:02:29,000
+Here's the practical payoff of left-to-right generation.
+
+33
+00:02:29,000 --> 00:02:35,000
+Because each token conditions the ones after it, the opening of a response has outsized influence.
+
+34
+00:02:36,000 --> 00:02:42,000
+A strong format anchor early, say, the first line of a JSON object, or a clear heading, tends to
+
+35
+00:02:42,000 --> 00:02:45,000
+keep the whole output on that track.
+
+36
+00:02:45,000 --> 00:02:46,000
+The flip side is the risk.
+
+37
+00:02:47,000 --> 00:02:52,000
+If the first few tokens drift off in the wrong direction, that drift compounds as the model keeps
+
+38
+00:02:52,000 --> 00:02:54,000
+conditioning on its own wandering output.
+
+39
+00:02:55,000 --> 00:02:59,000
+This is why structured openings make parsing so much more reliable.
+
+40
+00:02:59,000 --> 00:03:02,000
+You're not just being tidy, you're steering the generation.
+
+41
+00:03:02,000 --> 00:03:06,000
+Set the pattern early, and the model will usually hold it all the way through.
+
+42
+00:03:07,000 --> 00:03:11,000
+This left-to-right nature is also what makes streaming possible.
+
+43
+00:03:11,000 --> 00:03:17,000
+Since the model generates tokens one at a time, you don't have to wait for the whole response to be finished.
+
+44
+00:03:18,000 --> 00:03:25,000
+Servers send events surface each token as it's produced, so your interface can start showing text almost immediately.
+
+45
+00:03:25,000 --> 00:03:32,000
+The big win is perceived speed, a faster first byte, because the user sees progress instead of a spinner.
+
+46
+00:03:33,000 --> 00:03:34,000
+Here's the key point, though.
+
+47
+00:03:34,000 --> 00:03:37,000
+Streaming only changes how the output is delivered to you.
+
+48
+00:03:38,000 --> 00:03:41,000
+It doesn't change how the tokens are produced under the hood.
+
+49
+00:03:41,000 --> 00:03:45,000
+The generation is exactly the same, autoregressive and forward.
+
+50
+00:03:46,000 --> 00:03:50,000
+Streaming just hands you the pieces as they come, rather than all at once.
+
+51
+00:03:51,000 --> 00:03:55,000
+Let's turn this into prompting practice, because you can actively exploit it.
+
+52
+00:03:56,000 --> 00:04:02,000
+Since generation runs left-to-right and early, tokens steer the rest, lead with the format you want
+
+53
+00:04:02,000 --> 00:04:03,000
+the answer to follow.
+
+54
+00:04:03,000 --> 00:04:10,000
+If you need a specific structure, show it up front and give the model a clear first line to continue from.
+
+55
+00:04:11,000 --> 00:04:14,000
+That anchors the pattern before it has a chance to wander.
+
+56
+00:04:15,000 --> 00:04:23,000
+And when an exact shape really matters, prefer structured outputs over hoping the model lands the format on its own.
+
+57
+00:04:23,000 --> 00:04:25,000
+The theme is the same throughout.
+
+58
+00:04:26,000 --> 00:04:31,000
+Steer the start, get the opening tokens pointed the right way, and the rest of the response usually
+
+59
+00:04:31,000 --> 00:04:32,000
+falls in line behind them.
+
+60
+00:04:34,000 --> 00:04:37,000
+Let's tie the three lessons together, because they're really one picture.
+
+61
+00:04:37,000 --> 00:04:38,000
+Tokens are the unit.
+
+62
+00:04:39,000 --> 00:04:45,000
+They're generated one at a time, and they're the same unit that fills your context window and shows up on your bill.
+
+63
+00:04:45,000 --> 00:04:50,000
+Sampling is how each next token gets picked from the distribution, and that process is
+
+64
+00:04:50,000 --> 00:04:54,000
+probabilistic, which is exactly why output is non-deterministic.
+
+65
+00:04:55,000 --> 00:05:01,000
+And generation is the left-to-right loop that turns all those individual picks into a full response.
+
+66
+00:05:01,000 --> 00:05:03,000
+Tokens, sampling, generation.
+
+67
+00:05:04,000 --> 00:05:07,000
+One reads in and out as budget, one chooses, one assembles.
+
+68
+00:05:08,000 --> 00:05:14,000
+When you hold all three at once, the model stops being a black box and starts being a system you can design around.
+
+69
+00:05:15,000 --> 00:05:18,000
+So what does all of this mean for you when you sit down to build?
+
+70
+00:05:19,000 --> 00:05:20,000
+Three habits fall out of it.
+
+71
+00:05:20,000 --> 00:05:23,000
+First, budget your tokens deliberately.
+
+72
+00:05:24,000 --> 00:05:29,000
+Everything shares the context window, so plan what goes in and prune what doesn't need to be there.
+
+73
+00:05:30,000 --> 00:05:32,000
+Second, expect variation.
+
+74
+00:05:33,000 --> 00:05:38,000
+Output is non-deterministic, so validate every response instead of trusting an exact string.
+
+75
+00:05:39,000 --> 00:05:41,000
+Third, anchor your format early.
+
+76
+00:05:42,000 --> 00:05:46,000
+Because generation goes left to right, the opening tokens steer the rest.
+
+77
+00:05:46,000 --> 00:05:48,000
+So lead with the structure you want.
+
+78
+00:05:49,000 --> 00:05:55,000
+Design for how the model actually works, token by token, and your systems get more predictable, not
+
+79
+00:05:55,000 --> 00:05:59,000
+less, even though the model itself never will be perfectly repeatable.
+
+80
+00:06:01,000 --> 00:06:02,000
+Let's frame the big picture.
+
+81
+00:06:02,000 --> 00:06:05,000
+The model builds every response one token at a time.
+
+82
+00:06:06,000 --> 00:06:07,000
+What to look for?
+
+83
+00:06:07,000 --> 00:06:14,000
+Generation is autoregressive and left to right, and each token conditions on all prior tokens.
+
+84
+00:06:14,000 --> 00:06:17,000
+The trap is expecting a pre-planned answer.
+
+85
+00:06:17,000 --> 00:06:21,000
+And remember, streaming just delivers tokens as they're produced.
+
+86
+00:06:21,000 --> 00:06:26,000
+And that covers the next token generation model, one token at a time.
+
+87
+00:06:26,000 --> 00:06:28,000
+When you're ready, I'll see you in the next one.
+

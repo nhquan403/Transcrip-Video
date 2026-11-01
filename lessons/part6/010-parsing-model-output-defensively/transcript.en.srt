@@ -1,0 +1,432 @@
+1
+00:00:00,000 --> 00:00:05,000
+When you consume model output in code, you hit a problem the happy path hides.
+
+2
+00:00:06,000 --> 00:00:10,000
+A generation can come back malformed, truncated, or missing a field,
+
+3
+00:00:10,000 --> 00:00:13,000
+and naive parsing crashes the whole pipeline on it.
+
+4
+00:00:14,000 --> 00:00:21,000
+This lesson covers how to read output defensively so one bad response fails safely. Let's dive in.
+
+5
+00:00:22,000 --> 00:00:27,000
+Let's start with what defensive parsing actually means, and it comes down to three habits.
+
+6
+00:00:27,000 --> 00:00:29,000
+First, tolerant extraction.
+
+7
+00:00:30,000 --> 00:00:34,000
+You pull the fields you need without assuming the entire payload is well formed.
+
+8
+00:00:34,000 --> 00:00:37,000
+You read what's there and cope when something isn't.
+
+9
+00:00:38,000 --> 00:00:40,000
+Second, explicit failure handling.
+
+10
+00:00:40,000 --> 00:00:46,000
+You decide in advance what happens when output is bad, a wrapped parse, a fallback, a reprompt,
+
+11
+00:00:46,000 --> 00:00:50,000
+so there's always a defined path, and never an unhandled crash.
+
+12
+00:00:51,000 --> 00:00:53,000
+Third, no blind trust.
+
+13
+00:00:53,000 --> 00:00:56,000
+You treat every field as possibly missing or the wrong type.
+
+14
+00:00:57,000 --> 00:01:02,000
+Put those together, and a single bad generation degrades gracefully
+
+15
+00:01:02,000 --> 00:01:04,000
+instead of taking your pipeline down with it.
+
+16
+00:01:04,000 --> 00:01:08,000
+Tolerant, explicit, distrustful.
+
+17
+00:01:08,000 --> 00:01:09,000
+That's the mindset for the rest of this lesson.
+
+18
+00:01:11,000 --> 00:01:14,000
+Here's the first concrete habit, and it trips up almost everyone.
+
+19
+00:01:14,000 --> 00:01:20,000
+A response can parse cleanly as JSON and still not have the shape your code expects.
+
+20
+00:01:20,000 --> 00:01:23,000
+Valid JSON isn't the same as valid data,
+
+21
+00:01:23,000 --> 00:01:28,000
+so confirm each required field actually exists before you read it.
+
+22
+00:01:28,000 --> 00:01:32,000
+Check the type before you do math on a number or string work on a string,
+
+23
+00:01:32,000 --> 00:01:34,000
+because the model might hand you the wrong one.
+
+24
+00:01:35,000 --> 00:01:42,000
+And treat an empty value or a null as a real expected case, not an impossible edge.
+
+25
+00:01:42,000 --> 00:01:44,000
+The payoff is where the failure lands.
+
+26
+00:01:44,000 --> 00:01:49,000
+When you guard every access, a surprising payload fails right at the check you wrote
+
+27
+00:01:49,000 --> 00:01:50,000
+with a clear message.
+
+28
+00:01:50,000 --> 00:01:55,000
+Skip the guards, and it blows up three functions deep, where the cause is a mystery.
+
+29
+00:01:56,000 --> 00:01:58,000
+Let me frame the choice directly.
+
+30
+00:01:58,000 --> 00:02:01,000
+Trusting output versus parsing it.
+
+31
+00:02:01,000 --> 00:02:06,000
+When you trust it, you read fields straight off the response and act on them immediately.
+
+32
+00:02:06,000 --> 00:02:12,000
+That works right up until one malformed or missing value throws deep inside your logic,
+
+33
+00:02:12,000 --> 00:02:16,000
+and now a single bad generation has crashed the entire flow.
+
+34
+00:02:17,000 --> 00:02:21,000
+When you parse it, you extract through checks that expect surprises.
+
+35
+00:02:21,000 --> 00:02:25,000
+A bad value gets caught at the boundary, logged and handled,
+
+36
+00:02:25,000 --> 00:02:29,000
+so one odd response degrades quietly instead of taking everything down.
+
+37
+00:02:30,000 --> 00:02:33,000
+Notice this isn't about distrusting the model's intelligence.
+
+38
+00:02:33,000 --> 00:02:40,000
+Even a perfectly capable model is non-deterministic, so the same prompt can vary run to run.
+
+39
+00:02:41,000 --> 00:02:46,000
+Parsing defensively is just how you make a probabilistic output source safe to build on.
+
+40
+00:02:47,000 --> 00:02:52,000
+Last lesson gave you the roster of ways a structured response can go sideways,
+
+41
+00:02:52,000 --> 00:02:59,000
+refusal, truncation, enum case, property order, and the rule to read stop reason before you parse.
+
+42
+00:03:00,000 --> 00:03:03,000
+Now let's put that roster to work on a real debugging scenario.
+
+43
+00:03:03,000 --> 00:03:05,000
+Picture a ticket triage extractor.
+
+44
+00:03:06,000 --> 00:03:12,000
+It pulls a priority and a summary out of every incoming ticket, and it has run clean for days.
+
+45
+00:03:13,000 --> 00:03:17,000
+Then one overnight batch crashes with a key error on priority.
+
+46
+00:03:17,000 --> 00:03:20,000
+Three functions deep in the pipeline.
+
+47
+00:03:20,000 --> 00:03:25,000
+The first instinct is to stare at the crash site, but the crash site isn't the cause.
+
+48
+00:03:25,000 --> 00:03:28,000
+The stack trace just tells you where the damage finally surfaced.
+
+49
+00:03:28,000 --> 00:03:33,000
+The real question is what the model actually returned, so that's where the diagnosis starts.
+
+50
+00:03:34,000 --> 00:03:37,000
+Walk the diagnosis in order.
+
+51
+00:03:37,000 --> 00:03:42,000
+Step one, read stop reason on the failing response, and there's the first clue.
+
+52
+00:03:42,000 --> 00:03:45,000
+It says max tokens, not in turn.
+
+53
+00:03:46,000 --> 00:03:49,000
+Generation hit the ceiling, which means the model never finished writing the object.
+
+54
+00:03:50,000 --> 00:03:54,000
+Step two, inspect the raw payload, and the story fills in.
+
+55
+00:03:55,000 --> 00:03:58,000
+One unusually long ticket ate most of the token budget,
+
+56
+00:03:58,000 --> 00:04:02,000
+and the JSON ends mid-object with the closing braces missing.
+
+57
+00:04:03,000 --> 00:04:05,000
+No parser on earth finishes that cleanly.
+
+58
+00:04:06,000 --> 00:04:08,000
+Step three, name the missing guard.
+
+59
+00:04:08,000 --> 00:04:13,000
+The code went straight to parsing and field access without ever asking why the model stopped.
+
+60
+00:04:14,000 --> 00:04:19,000
+A known documented edge case landed in production as a mystery crash,
+
+61
+00:04:19,000 --> 00:04:22,000
+purely because the check that would have named it wasn't there.
+
+62
+00:04:23,000 --> 00:04:27,000
+Now let's write the hardened version, and notice every fix lands at the boundary
+
+63
+00:04:27,000 --> 00:04:29,000
+before any field is read.
+
+64
+00:04:29,000 --> 00:04:32,000
+First, branch on stop reason.
+
+65
+00:04:32,000 --> 00:04:35,000
+A refusal routes to the refusal path.
+
+66
+00:04:35,000 --> 00:04:38,000
+A max token stop routes to a retry with a bigger budget,
+
+67
+00:04:38,000 --> 00:04:42,000
+or a truncation handler, and only in turn earns the parse.
+
+68
+00:04:43,000 --> 00:04:45,000
+Second, guard the access itself.
+
+69
+00:04:45,000 --> 00:04:50,000
+Read each field by name, confirm it exists, and check the type before using it.
+
+70
+00:04:51,000 --> 00:04:56,000
+Third, when you compare enum values, compare them case insensitively.
+
+71
+00:04:56,000 --> 00:04:59,000
+Exactly as the roster from last lesson says.
+
+72
+00:04:59,000 --> 00:05:02,000
+Rerun the overnight batch with those guards in place,
+
+73
+00:05:02,000 --> 00:05:08,000
+and the same bad generation produces one clear log line about a truncated response
+
+74
+00:05:08,000 --> 00:05:10,000
+instead of a crash three functions deep.
+
+75
+00:05:11,000 --> 00:05:13,000
+That's the whole payoff of defensive parsing.
+
+76
+00:05:13,000 --> 00:05:17,000
+The failure still happens, but it fails at the check with a name.
+
+77
+00:05:18,000 --> 00:05:22,000
+OK, so a parse fails, or validation rejects the output.
+
+78
+00:05:23,000 --> 00:05:24,000
+What do you actually do?
+
+79
+00:05:24,000 --> 00:05:29,000
+You have three safe responses, and picking one deliberately is the whole point.
+
+80
+00:05:29,000 --> 00:05:31,000
+First, fail loud.
+
+81
+00:05:31,000 --> 00:05:36,000
+When output can't be parsed, raise a clear error right at the boundary
+
+82
+00:05:36,000 --> 00:05:40,000
+instead of passing garbage downstream to blow up somewhere confusing later.
+
+83
+00:05:41,000 --> 00:05:42,000
+Second, fall back.
+
+84
+00:05:42,000 --> 00:05:48,000
+Have a default path ready, a safe value, a cached result, a degraded mode,
+
+85
+00:05:48,000 --> 00:05:52,000
+so one bad generation doesn't stall the user entirely.
+
+86
+00:05:52,000 --> 00:05:54,000
+Third, re-prompt.
+
+87
+00:05:55,000 --> 00:05:58,000
+Send the response back to the model with the error described,
+
+88
+00:05:58,000 --> 00:06:01,000
+and give it a chance to correct what it got wrong.
+
+89
+00:06:01,000 --> 00:06:03,000
+Fail loud, fall back, or re-prompt.
+
+90
+00:06:04,000 --> 00:06:08,000
+What you never do is let unreadable output pass through as if it were fine.
+
+91
+00:06:10,000 --> 00:06:13,000
+One failure mode is worth flagging before we close,
+
+92
+00:06:13,000 --> 00:06:15,000
+because none of today's guards will catch it.
+
+93
+00:06:15,000 --> 00:06:20,000
+A silent failure returns success while the content is actually wrong,
+
+94
+00:06:20,000 --> 00:06:25,000
+and since it parses cleanly, every check we built in this lesson waves it through.
+
+95
+00:06:25,000 --> 00:06:27,000
+Picture the triage extractor again,
+
+96
+00:06:27,000 --> 00:06:32,000
+only this time it labels an outage ticket as low priority.
+
+97
+00:06:32,000 --> 00:06:37,000
+Every field is present, the types check out, stop, reason says in turn,
+
+98
+00:06:37,000 --> 00:06:42,000
+and the pipeline runs on happily while an urgent ticket sits at the bottom of the queue.
+
+99
+00:06:42,000 --> 00:06:47,000
+Catching that takes a semantic gate, a check aimed at meaning instead of shape,
+
+100
+00:06:47,000 --> 00:06:52,000
+and that failure is important enough that the next lesson makes it the whole subject.
+
+101
+00:06:53,000 --> 00:06:56,000
+Today's guards prove the output is well formed.
+
+102
+00:06:56,000 --> 00:06:59,000
+They don't prove it's right. Let's recap.
+
+103
+00:06:59,000 --> 00:07:03,000
+Defensive parsing keeps one bad generation from crashing your entire pipeline.
+
+104
+00:07:04,000 --> 00:07:07,000
+Extract tolerantly, check the stop reason before you parse,
+
+105
+00:07:08,000 --> 00:07:14,000
+guard even structured output, and put every check at the boundary where a failure gets a name.
+
+106
+00:07:14,000 --> 00:07:18,000
+Just remember, valid JSON is not necessarily valid data.
+
+107
+00:07:18,000 --> 00:07:21,000
+That covers parsing model output defensively.
+
+108
+00:07:21,000 --> 00:07:22,000
+I'll see you in the next one.
+

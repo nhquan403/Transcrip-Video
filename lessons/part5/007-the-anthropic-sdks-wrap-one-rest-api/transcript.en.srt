@@ -1,0 +1,252 @@
+1
+00:00:00,000 --> 00:00:07,000
+Hello! Every time you call Cloud in any language, you are really making one kind of HTTP request.
+
+2
+00:00:07,000 --> 00:00:14,000
+The Cloud API is a REST interface that speaks JSON in and JSON out. In this lesson, I want you
+
+3
+00:00:14,000 --> 00:00:20,000
+to see that one endpoint clearly and understand why the SDKs are just friendly clients calling it.
+
+4
+00:00:21,000 --> 00:00:27,000
+Let's ground three words you'll see constantly. First, REST. It just means the Cloud API is a
+
+5
+00:00:27,000 --> 00:00:35,000
+web service you reach over HTTP. You send a request to a URL with a verb, headers, and a body,
+
+6
+00:00:35,000 --> 00:00:41,000
+and you get a structured response back. Second, JSON. Your request body is JSON,
+
+7
+00:00:41,000 --> 00:00:46,000
+holding the model, the messages, and a few parameters. The response is JSON too,
+
+8
+00:00:46,000 --> 00:00:54,000
+carrying content blocks and metadata, like the stop reason and token usage. Third, the endpoint.
+
+9
+00:00:54,000 --> 00:01:00,000
+Almost everything you do rides one path, a post to the message's endpoint. Tools, caching, and
+
+10
+00:01:00,000 --> 00:01:06,000
+thinking aren't separate services. They're features of that single call, turned on with fields in the
+
+11
+00:01:06,000 --> 00:01:12,000
+same body. So what actually goes into one of these requests? Think of it as everything Cloud needs
+
+12
+00:01:12,000 --> 00:01:18,000
+to handle a single turn, packed into one JSON body. You name a model so the service knows which
+
+13
+00:01:18,000 --> 00:01:24,000
+Cloud you want. You pass a messages array, which is the role-tagged conversation so far,
+
+14
+00:01:24,000 --> 00:01:30,000
+user turns and assistant turns in order, and you set a handful of generation parameters,
+
+15
+00:01:30,000 --> 00:01:36,000
+things like max tokens to cap the length. That's the whole request. What comes back is just as
+
+16
+00:01:36,000 --> 00:01:42,000
+structured. The response is a list of typed content blocks, the actual text or tool calls,
+
+17
+00:01:42,000 --> 00:01:47,000
+wrapped with metadata, like the stop reason and how many tokens you used.
+
+18
+00:01:48,000 --> 00:01:53,000
+Here's the idea at the heart of this lesson. There are two ways to make that call,
+
+19
+00:01:53,000 --> 00:01:58,000
+and they end up in the same place. The first is the raw REST way. You build the HTTP request
+
+20
+00:01:58,000 --> 00:02:05,000
+yourself. You set the headers, turn your data into a JSON string, post it to the endpoint,
+
+21
+00:02:05,000 --> 00:02:12,000
+and then parse the JSON that comes back by hand. The second is the SDK way. You write something
+
+22
+00:02:12,000 --> 00:02:19,000
+like client.messages.create, passing typed arguments. Behind that one line, the SDK
+
+23
+00:02:19,000 --> 00:02:25,000
+assembles the exact same request, sends it, and hands you back a typed response object.
+
+24
+00:02:25,000 --> 00:02:30,000
+Same endpoint, same body on the wire. The only difference is how much you write yourself.
+
+25
+00:02:32,000 --> 00:02:37,000
+One payoff of the single endpoint design is that you don't relearn a new API for every capability.
+
+26
+00:02:37,000 --> 00:02:43,000
+They all ride the same messages call. Want the model to use tools? Tool definitions and the
+
+27
+00:02:43,000 --> 00:02:49,000
+tool use loop are just fields you add to the request. Want structured output or extended
+
+28
+00:02:49,000 --> 00:02:56,000
+thinking? Those are options on the same call. Want to cache a big chunk of your prompt to save money?
+
+29
+00:02:56,000 --> 00:03:02,000
+Prompt caching is a control you attach to message blocks. So once you truly understand this one
+
+30
+00:03:02,000 --> 00:03:08,000
+endpoint and its request shape, every new feature in Anthropic Ships tends to feel familiar. It's
+
+31
+00:03:08,000 --> 00:03:15,000
+usually another field on a call you already know how to make. Now, the messages endpoint is the
+
+32
+00:03:15,000 --> 00:03:21,000
+workhorse, but it's not completely alone. A few supporting endpoints round out the surface,
+
+33
+00:03:21,000 --> 00:03:26,000
+and they follow the same REST and JSON style. When you have a large volume of requests that
+
+34
+00:03:26,000 --> 00:03:31,000
+aren't time sensitive, the batches endpoint lets you submit them together and process
+
+35
+00:03:31,000 --> 00:03:37,000
+asynchronously at half the standard price. The files endpoint lets you upload documents once and
+
+36
+00:03:37,000 --> 00:03:44,000
+reuse them, and the models endpoint lists what's available to your account. And before you spend
+
+37
+00:03:44,000 --> 00:03:51,000
+anything, the count tokens endpoint tells you how big a request is so you can budget cost and context
+
+38
+00:03:51,000 --> 00:03:59,000
+up front. Same client, same patterns, just different paths. Here's a property that surprises people.
+
+39
+00:03:59,000 --> 00:04:05,000
+The CLAUD API is stateless. The endpoint remembers nothing between your calls. Each request stands
+
+40
+00:04:05,000 --> 00:04:11,000
+completely on its own. That means if you're having a multi-turn conversation, you resend the entire
+
+41
+00:04:11,000 --> 00:04:17,000
+history every single time, all the prior user and assistant turns in the body of the new request.
+
+42
+00:04:18,000 --> 00:04:24,000
+There's no session token, no server-side memory you can lean on to hold the thread for you. When
+
+43
+00:04:24,000 --> 00:04:30,000
+CLAUD replies, it's your job to append that reply back into your messages array before the next call.
+
+44
+00:04:31,000 --> 00:04:36,000
+This is why context management is such a big deal for builders. The conversation only exists because
+
+45
+00:04:36,000 --> 00:04:43,000
+you keep resending it, and everything in it counts against your context window. Let's connect the SDK
+
+46
+00:04:43,000 --> 00:04:50,000
+to the REST layer more precisely. First, the SDKs are generated from a single OpenAPI specification.
+
+47
+00:04:50,000 --> 00:04:55,000
+That's a machine-readable description of every endpoint. So when a new capability lands in the
+
+48
+00:04:55,000 --> 00:05:01,000
+API, it shows up across the Python, TypeScript, and other clients together, not one at a time.
+
+49
+00:05:02,000 --> 00:05:08,000
+Second, the fields map one-to-one. A JSON field in the API becomes a parameter in the SDK with
+
+50
+00:05:08,000 --> 00:05:14,000
+only naming-style differences, like snake case versus camel case. What you read in the API
+
+51
+00:05:14,000 --> 00:05:20,000
+reference is what you pass in code. Third, the wire behavior is identical. When you call
+
+52
+00:05:20,000 --> 00:05:27,000
+client.messages.create, it's sending the same post to the message's endpoint you'd send by hand.
+
+53
+00:05:28,000 --> 00:05:35,000
+Nothing extra happens on the network. Why hammer on this one REST call picture? Because it makes
+
+54
+00:05:35,000 --> 00:05:41,000
+you a faster builder. When something misbehaves, you can debug at the wire level, log the raw request
+
+55
+00:05:41,000 --> 00:05:48,000
+and the raw response, and you can see exactly what Claude received and returned. No SDK mystery
+
+56
+00:05:48,000 --> 00:05:54,000
+in between. It also means the API documentation applies directly to your SDK code,
+
+57
+00:05:54,000 --> 00:06:00,000
+since the shapes match, so you're never hunting for a separate SDK-only reference. And it means
+
+58
+00:06:00,000 --> 00:06:06,000
+you're never trapped. If you hit an edge case the SDK doesn't expose cleanly, you can drop down to
+
+59
+00:06:06,000 --> 00:06:13,000
+a raw HTTP call for that one request and lose nothing. The SDK is a convenience layer, not a
+
+60
+00:06:13,000 --> 00:06:21,000
+different product with different powers. Here's the bottom line. The Claude API is one REST interface.
+
+61
+00:06:21,000 --> 00:06:28,000
+Requests and responses are JSON over HTTP. Almost everything routes through the message's endpoint,
+
+62
+00:06:28,000 --> 00:06:34,000
+and the API is stateless. Just remember, an SDK call becomes that exact same REST call
+
+63
+00:06:34,000 --> 00:06:36,000
+underneath the covers.
+

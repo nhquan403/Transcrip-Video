@@ -1,0 +1,608 @@
+1
+00:00:00,000 --> 00:00:01,000
+Welcome back.
+
+2
+00:00:01,000 --> 00:00:05,000
+Clarity is where reliability lives in a Cloud application.
+
+3
+00:00:05,000 --> 00:00:07,000
+Get the instructions wrong, and you'll
+
+4
+00:00:07,000 --> 00:00:09,000
+chase flaky output with sampling knobs
+
+5
+00:00:09,000 --> 00:00:11,000
+that were never the problem.
+
+6
+00:00:11,000 --> 00:00:13,000
+This lesson covers how to write instructions
+
+7
+00:00:13,000 --> 00:00:16,000
+Cloud follows the same way every single time.
+
+8
+00:00:16,000 --> 00:00:21,000
+And the tell that you're asked, not the model, is at fault. Let's dive in.
+
+9
+00:00:21,000 --> 00:00:25,000
+Let's start with what a clear instruction actually looks like.
+
+10
+00:00:25,000 --> 00:00:27,000
+And it comes down to three marks.
+
+11
+00:00:27,000 --> 00:00:29,000
+First, specific.
+
+12
+00:00:29,000 --> 00:00:32,000
+You state exactly what you want in concrete terms,
+
+13
+00:00:32,000 --> 00:00:35,000
+the output format, the fields you need,
+
+14
+00:00:35,000 --> 00:00:37,000
+the limits to respect, instead of gesturing
+
+15
+00:00:37,000 --> 00:00:39,000
+at some general goal.
+
+16
+00:00:39,000 --> 00:00:41,000
+Second, unambiguous.
+
+17
+00:00:41,000 --> 00:00:43,000
+There's a golden rule here I love.
+
+18
+00:00:43,000 --> 00:00:45,000
+Show your prompt to a colleague who
+
+19
+00:00:45,000 --> 00:00:49,000
+has little context on the task, and ask them to follow it.
+
+20
+00:00:49,000 --> 00:00:54,000
+If they'd be confused, Cloud will be too. Third, ordered.
+
+21
+00:00:54,000 --> 00:00:57,000
+When the sequence matters, or you need every step done,
+
+22
+00:00:57,000 --> 00:01:00,000
+lay the steps out as a numbered list
+
+23
+00:01:00,000 --> 00:01:03,000
+so Cloud works through them in the order you intended.
+
+24
+00:01:03,000 --> 00:01:06,000
+Specific, unambiguous, ordered.
+
+25
+00:01:06,000 --> 00:01:11,000
+Hit those three, and most output problems just disappear.
+
+26
+00:01:11,000 --> 00:01:14,000
+Here's a mental model that makes all of this click.
+
+27
+00:01:14,000 --> 00:01:18,000
+Think of Cloud as a brilliant but brand new employee,
+
+28
+00:01:18,000 --> 00:01:20,000
+one who's genuinely sharp but has
+
+29
+00:01:20,000 --> 00:01:23,000
+zero context on your norms, your workflows,
+
+30
+00:01:23,000 --> 00:01:25,000
+or how your team likes things done.
+
+31
+00:01:25,000 --> 00:01:28,000
+You wouldn't hand a new hire a one-line request
+
+32
+00:01:28,000 --> 00:01:33,000
+and expect perfect judgment on everything you left unsaid. Same here.
+
+33
+00:01:33,000 --> 00:01:37,000
+Spell out the conventions you'd explain on someone's first week.
+
+34
+00:01:37,000 --> 00:01:40,000
+Don't assume shared jargon or a default house style
+
+35
+00:01:40,000 --> 00:01:42,000
+Cloud has never seen.
+
+36
+00:01:42,000 --> 00:01:45,000
+And if you want it to go above and beyond a literal reading
+
+37
+00:01:45,000 --> 00:01:49,000
+of the task, say so directly, because a careful new employee
+
+38
+00:01:49,000 --> 00:01:52,000
+tends to do exactly what's written.
+
+39
+00:01:52,000 --> 00:01:54,000
+Give the context a newcomer would need
+
+40
+00:01:54,000 --> 00:01:57,000
+and the quality climbs.
+
+41
+00:01:57,000 --> 00:02:00,000
+Let me make this concrete with a before and after.
+
+42
+00:02:00,000 --> 00:02:03,000
+The vague ask is, summarize this ticket.
+
+43
+00:02:03,000 --> 00:02:06,000
+Read it the way Cloud has to. How long?
+
+44
+00:02:06,000 --> 00:02:09,000
+One line, one paragraph. What tone?
+
+45
+00:02:09,000 --> 00:02:10,000
+Who's the reader?
+
+46
+00:02:10,000 --> 00:02:12,000
+Which details matter?
+
+47
+00:02:12,000 --> 00:02:14,000
+None of that is stated, so the model
+
+48
+00:02:14,000 --> 00:02:19,000
+fills the gaps differently each time, and two runs rarely match.
+
+49
+00:02:19,000 --> 00:02:23,000
+Now the specific ask, summarize this ticket in two sentences
+
+50
+00:02:23,000 --> 00:02:28,000
+for an on-call engineer and list the affected service.
+
+51
+00:02:28,000 --> 00:02:29,000
+Look at what changed.
+
+52
+00:02:29,000 --> 00:02:32,000
+The length is fixed, the audience is named,
+
+53
+00:02:32,000 --> 00:02:34,000
+and the required field is called out.
+
+54
+00:02:34,000 --> 00:02:37,000
+Every run now lands in roughly the same shape
+
+55
+00:02:37,000 --> 00:02:39,000
+because you removed the guesswork.
+
+56
+00:02:39,000 --> 00:02:42,000
+Specific beats vague, not because it's longer,
+
+57
+00:02:42,000 --> 00:02:45,000
+but because it closes the gaps.
+
+58
+00:02:45,000 --> 00:02:47,000
+One of the most reliable format levers
+
+59
+00:02:47,000 --> 00:02:49,000
+is almost counterintuitive.
+
+60
+00:02:49,000 --> 00:02:52,000
+Tell Cloud what to do, not what not to do.
+
+61
+00:02:52,000 --> 00:02:54,000
+Say you want smoothly flowing prose.
+
+62
+00:02:54,000 --> 00:02:57,000
+The weak version is, don't use markdown,
+
+63
+00:02:57,000 --> 00:03:00,000
+don't use bullet points, don't use headers.
+
+64
+00:03:00,000 --> 00:03:01,000
+You're describing a hole and hoping
+
+65
+00:03:01,000 --> 00:03:03,000
+the model lands outside it.
+
+66
+00:03:03,000 --> 00:03:06,000
+The strong version just names the target.
+
+67
+00:03:06,000 --> 00:03:10,000
+Your response should be composed of flowing prose paragraphs.
+
+68
+00:03:10,000 --> 00:03:13,000
+Now Cloud has something positive to aim at,
+
+69
+00:03:13,000 --> 00:03:15,000
+so walk through your prohibitions
+
+70
+00:03:15,000 --> 00:03:17,000
+and convert each one into the matching do.
+
+71
+00:03:17,000 --> 00:03:20,000
+Keep negatives only for genuine hard limits,
+
+72
+00:03:20,000 --> 00:03:23,000
+the real red lines.
+
+73
+00:03:23,000 --> 00:03:25,000
+As a rule, describing the behavior you want
+
+74
+00:03:25,000 --> 00:03:28,000
+steers the output far more reliably
+
+75
+00:03:28,000 --> 00:03:31,000
+than listing everything you want it to avoid.
+
+76
+00:03:31,000 --> 00:03:35,000
+Beyond clear prose, you have three concrete levers
+
+77
+00:03:35,000 --> 00:03:37,000
+for steering output format.
+
+78
+00:03:37,000 --> 00:03:40,000
+The first is positive framing, which we just covered.
+
+79
+00:03:40,000 --> 00:03:42,000
+Name the behavior you want instead
+
+80
+00:03:42,000 --> 00:03:44,000
+of stacking up prohibitions.
+
+81
+00:03:44,000 --> 00:03:47,000
+The second is XML tags.
+
+82
+00:03:47,000 --> 00:03:50,000
+You can ask Cloud to place its answer inside named tags.
+
+83
+00:03:50,000 --> 00:03:52,000
+Something like, write your summary
+
+84
+00:03:52,000 --> 00:03:55,000
+inside prose paragraph tags.
+
+85
+00:03:55,000 --> 00:03:58,000
+Tags give the model an unmistakable container,
+
+86
+00:03:58,000 --> 00:04:02,000
+and they make the output trivial to pull out on your end.
+
+87
+00:04:02,000 --> 00:04:04,000
+The third is matching your prompt style
+
+88
+00:04:04,000 --> 00:04:05,000
+to the output you want.
+
+89
+00:04:05,000 --> 00:04:10,000
+If you write the prompt itself in clean, markdown-free prose,
+
+90
+00:04:10,000 --> 00:04:12,000
+Cloud tends to answer in kind because it
+
+91
+00:04:12,000 --> 00:04:15,000
+mirrors the register it sees.
+
+92
+00:04:15,000 --> 00:04:18,000
+Positive framing, tags, matching style,
+
+93
+00:04:18,000 --> 00:04:23,000
+three cheap levers you can reach for before anything heavier.
+
+94
+00:04:23,000 --> 00:04:26,000
+Here's a technique that punches way above its weight.
+
+95
+00:04:26,000 --> 00:04:29,000
+Add the reason behind a rule, not just the rule.
+
+96
+00:04:29,000 --> 00:04:30,000
+Compare two versions.
+
+97
+00:04:30,000 --> 00:04:34,000
+The bare command is, never use ellipses.
+
+98
+00:04:34,000 --> 00:04:36,000
+The version with context is, your response
+
+99
+00:04:36,000 --> 00:04:39,000
+will be read aloud by a text-to-speech engine,
+
+100
+00:04:39,000 --> 00:04:41,000
+so never use ellipses.
+
+101
+00:04:41,000 --> 00:04:43,000
+That second one works better, and the reason
+
+102
+00:04:43,000 --> 00:04:45,000
+is generalization.
+
+103
+00:04:45,000 --> 00:04:48,000
+When Cloud understands why a rule exists,
+
+104
+00:04:48,000 --> 00:04:50,000
+it can extend the intent to situations
+
+105
+00:04:50,000 --> 00:04:53,000
+you never explicitly named.
+
+106
+00:04:53,000 --> 00:04:56,000
+A bare rule only covers the one case you spelled out.
+
+107
+00:04:56,000 --> 00:04:58,000
+A rule with its motivation covers the whole family
+
+108
+00:04:58,000 --> 00:05:01,000
+of cases the motivation implies.
+
+109
+00:05:01,000 --> 00:05:02,000
+There's a bonus, too.
+
+110
+00:05:02,000 --> 00:05:05,000
+The why documents your intent for the next developer
+
+111
+00:05:05,000 --> 00:05:07,000
+who reads the prompt.
+
+112
+00:05:07,000 --> 00:05:09,000
+Let's turn all of this into a checklist
+
+113
+00:05:09,000 --> 00:05:11,000
+you can run on any instruction.
+
+114
+00:05:11,000 --> 00:05:13,000
+Three ways to sharpen an ask.
+
+115
+00:05:13,000 --> 00:05:16,000
+First, name the format.
+
+116
+00:05:16,000 --> 00:05:19,000
+Do you want JSON, prose, a table, a list?
+
+117
+00:05:19,000 --> 00:05:23,000
+And if it's structured, name the exact fields you expect back.
+
+118
+00:05:23,000 --> 00:05:25,000
+Don't make Cloud guess the shape.
+
+119
+00:05:25,000 --> 00:05:28,000
+Second, bound the length.
+
+120
+00:05:28,000 --> 00:05:31,000
+Give a concrete limit, two sentences, five bullets,
+
+121
+00:05:31,000 --> 00:05:36,000
+a word cap, so responses stay consistent instead of quietly
+
+122
+00:05:36,000 --> 00:05:38,000
+drifting longer over time.
+
+123
+00:05:38,000 --> 00:05:41,000
+Third, sequence the steps.
+
+124
+00:05:41,000 --> 00:05:44,000
+When the task has several parts, hand over a numbered list
+
+125
+00:05:44,000 --> 00:05:49,000
+so nothing gets skipped and the order you care about actually holds.
+
+126
+00:05:49,000 --> 00:05:53,000
+Name the format, bound the length, sequence the steps.
+
+127
+00:05:53,000 --> 00:05:55,000
+Run those three checks, and a loose request
+
+128
+00:05:55,000 --> 00:05:58,000
+becomes a precise one.
+
+129
+00:05:58,000 --> 00:06:02,000
+Let's close this lesson with the habit that ties it together.
+
+130
+00:06:02,000 --> 00:06:04,000
+When your output comes back inconsistent,
+
+131
+00:06:04,000 --> 00:06:06,000
+resist the urge to blame the model
+
+132
+00:06:06,000 --> 00:06:08,000
+or start twisting sampling settings.
+
+133
+00:06:08,000 --> 00:06:11,000
+Almost always, the ask itself is vague or contradictory,
+
+134
+00:06:11,000 --> 00:06:13,000
+and that's where you look first.
+
+135
+00:06:13,000 --> 00:06:15,000
+So reread your instruction as if you
+
+136
+00:06:15,000 --> 00:06:19,000
+knew nothing about the goal the way that new colleague would.
+
+137
+00:06:19,000 --> 00:06:21,000
+Where could it be read more than one way?
+
+138
+00:06:21,000 --> 00:06:23,000
+Then tighten the wording and the constraints
+
+139
+00:06:23,000 --> 00:06:26,000
+before you reach for sampling knobs at all,
+
+140
+00:06:26,000 --> 00:06:29,000
+which current models no longer accept.
+
+141
+00:06:29,000 --> 00:06:32,000
+And only after the instruction is genuinely clear
+
+142
+00:06:32,000 --> 00:06:34,000
+should you reach for examples, because examples
+
+143
+00:06:34,000 --> 00:06:38,000
+layered on a muddy ask just teach the model your confusion.
+
+144
+00:06:38,000 --> 00:06:39,000
+Fix the instruction first.
+
+145
+00:06:39,000 --> 00:06:42,000
+It's the cheapest move you have.
+
+146
+00:06:42,000 --> 00:06:46,000
+Clear instructions do the heavy lifting for output reliability
+
+147
+00:06:46,000 --> 00:06:49,000
+because they close the gaps a model would otherwise
+
+148
+00:06:49,000 --> 00:06:50,000
+fill on its own.
+
+149
+00:06:50,000 --> 00:06:52,000
+Just remember, when output drifts,
+
+150
+00:06:52,000 --> 00:06:55,000
+tighten the ask before you reach for sampling.
+
+151
+00:06:55,000 --> 00:06:59,000
+That covers writing clear, unambiguous instructions.
+
+152
+00:06:59,000 --> 00:07:01,000
+I'll see you in the next one.
+

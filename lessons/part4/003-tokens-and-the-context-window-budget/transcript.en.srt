@@ -1,0 +1,568 @@
+1
+00:00:00,000 --> 00:00:03,000
+Almost everything you do with a model is measured in tokens,
+
+2
+00:00:03,000 --> 00:00:05,000
+from what fits in a single request,
+
+3
+00:00:05,000 --> 00:00:07,000
+to what shows up on your bill.
+
+4
+00:00:07,000 --> 00:00:09,000
+We'll talk through what a token actually is,
+
+5
+00:00:09,000 --> 00:00:13,000
+how the context window budgets those tokens,
+
+6
+00:00:13,000 --> 00:00:16,000
+and how big that window is on today's models.
+
+7
+00:00:16,000 --> 00:00:19,000
+Let's jump in. Let's lock
+
+8
+00:00:19,000 --> 00:00:20,000
+down three definitions we'll lean
+
+9
+00:00:20,000 --> 00:00:22,000
+on for the rest of this material.
+
+10
+00:00:22,000 --> 00:00:26,000
+A token is the atomic unit of text the model reads and generates.
+
+11
+00:00:26,000 --> 00:00:27,000
+It's a sub-word chunk,
+
+12
+00:00:27,000 --> 00:00:29,000
+usually just a few characters long,
+
+13
+00:00:29,000 --> 00:00:31,000
+not a whole word.
+
+14
+00:00:31,000 --> 00:00:33,000
+The context window is the maximum number of
+
+15
+00:00:33,000 --> 00:00:36,000
+tokens the model can attend to in one request.
+
+16
+00:00:36,000 --> 00:00:39,000
+Think of it as the total working space for a single call,
+
+17
+00:00:39,000 --> 00:00:42,000
+and the token budget is the idea that everything you
+
+18
+00:00:42,000 --> 00:00:44,000
+send plus everything the model
+
+19
+00:00:44,000 --> 00:00:47,000
+generates draws from that one shared pool.
+
+20
+00:00:47,000 --> 00:00:48,000
+Keep those three straight and the rest
+
+21
+00:00:48,000 --> 00:00:50,000
+of this lesson clicks into place.
+
+22
+00:00:50,000 --> 00:00:52,000
+Because tokens, the window,
+
+23
+00:00:52,000 --> 00:00:54,000
+and the budget are really one system.
+
+24
+00:00:54,000 --> 00:00:57,000
+Here's the first thing that trips people up.
+
+25
+00:00:57,000 --> 00:00:59,000
+A token isn't a word.
+
+26
+00:00:59,000 --> 00:01:02,000
+On average, one token runs about four characters,
+
+27
+00:01:02,000 --> 00:01:06,000
+which works out to a bit over half a word per token.
+
+28
+00:01:06,000 --> 00:01:10,000
+A thousand words is very loosely around 1,800 tokens.
+
+29
+00:01:10,000 --> 00:01:12,000
+But that ratio is only a rule of thumb.
+
+30
+00:01:12,000 --> 00:01:15,000
+It shifts with the language you're working in,
+
+31
+00:01:15,000 --> 00:01:17,000
+and it shifts a lot with code,
+
+32
+00:01:17,000 --> 00:01:19,000
+punctuation, and unusual formatting.
+
+33
+00:01:19,000 --> 00:01:21,000
+A block of dense JSON
+
+34
+00:01:21,000 --> 00:01:24,000
+tokenizes very differently from plain prose.
+
+35
+00:01:24,000 --> 00:01:28,000
+The takeaway is that a word count is a loose proxy at best.
+
+36
+00:01:28,000 --> 00:01:29,000
+When you actually need to know
+
+37
+00:01:29,000 --> 00:01:31,000
+how many tokens a prompt will cost,
+
+38
+00:01:31,000 --> 00:01:34,000
+you don't want to be guessing from word counts.
+
+39
+00:01:34,000 --> 00:01:37,000
+So how do you count tokens the right way?
+
+40
+00:01:37,000 --> 00:01:38,000
+You've got a spectrum here.
+
+41
+00:01:38,000 --> 00:01:40,000
+At the loose end is the rough estimate,
+
+42
+00:01:40,000 --> 00:01:45,000
+about four characters or a bit over half a word per token.
+
+43
+00:01:45,000 --> 00:01:48,000
+That's fine when you just want a ballpark.
+
+44
+00:01:48,000 --> 00:01:51,000
+At the precise end is the count token's endpoint,
+
+45
+00:01:51,000 --> 00:01:53,000
+which returns the exact number
+
+46
+00:01:53,000 --> 00:01:55,000
+for the specific model you pass it.
+
+47
+00:01:55,000 --> 00:01:56,000
+That's the authoritative source,
+
+48
+00:01:57,000 --> 00:01:58,000
+and it's what I'd reach for
+
+49
+00:01:58,000 --> 00:02:01,000
+before sizing a real prompt or estimating cost.
+
+50
+00:02:01,000 --> 00:02:04,000
+What you want to avoid is guessing
+
+51
+00:02:04,000 --> 00:02:06,000
+with a fixed characters per token rule
+
+52
+00:02:06,000 --> 00:02:09,000
+or a tokenizer built for some other model.
+
+53
+00:02:09,000 --> 00:02:13,000
+Those drift from Claude's real counts, sometimes badly,
+
+54
+00:02:13,000 --> 00:02:15,000
+and the drift tends to be worst on code.
+
+55
+00:02:16,000 --> 00:02:18,000
+There's a wrinkle that catches people off guard
+
+56
+00:02:18,000 --> 00:02:20,000
+when they upgrade.
+
+57
+00:02:20,000 --> 00:02:22,000
+The tokenizer isn't fixed across models.
+
+58
+00:02:22,000 --> 00:02:27,000
+Opus 4.7 and later, plus Fable 5 and Sonnet 5,
+
+59
+00:02:27,000 --> 00:02:30,000
+split text more finely than earlier models did.
+
+60
+00:02:30,000 --> 00:02:32,000
+For the exact same input,
+
+61
+00:02:32,000 --> 00:02:36,000
+the newer tokenizer can produce roughly 30% more tokens.
+
+62
+00:02:36,000 --> 00:02:37,000
+That's a big deal,
+
+63
+00:02:37,000 --> 00:02:40,000
+because it means your token counts are model-specific.
+
+64
+00:02:40,000 --> 00:02:42,000
+A prompt you measured on an older model
+
+65
+00:02:42,000 --> 00:02:44,000
+can suddenly cost noticeably more
+
+66
+00:02:44,000 --> 00:02:46,000
+once you move to a current one,
+
+67
+00:02:46,000 --> 00:02:49,000
+even though not a single character changed.
+
+68
+00:02:49,000 --> 00:02:51,000
+So whenever you switch models, rebaseline.
+
+69
+00:02:51,000 --> 00:02:55,000
+Run the count tokens endpoint again for the new model
+
+70
+00:02:55,000 --> 00:02:58,000
+and adjust your context budgets and cost estimates to match.
+
+71
+00:02:58,000 --> 00:03:01,000
+Don't assume last month's numbers still hold.
+
+72
+00:03:02,000 --> 00:03:04,000
+Now, how big is this window?
+
+73
+00:03:04,000 --> 00:03:06,000
+It depends entirely on the model.
+
+74
+00:03:06,000 --> 00:03:09,000
+Fable 5, Opus 4.8, and Sonnet 5
+
+75
+00:03:09,000 --> 00:03:12,000
+each attend to up to 1 million tokens.
+
+76
+00:03:12,000 --> 00:03:15,000
+And that window is one shared pool.
+
+77
+00:03:15,000 --> 00:03:17,000
+So the model's own output and thinking
+
+78
+00:03:17,000 --> 00:03:21,000
+draw from the same 1 million budget as your input.
+
+79
+00:03:21,000 --> 00:03:24,000
+That's enormous, a bit over half a million English words,
+
+80
+00:03:24,000 --> 00:03:29,000
+around 555,000 in a single request.
+
+81
+00:03:29,000 --> 00:03:33,000
+Haiku 4.5 is smaller at 200,000 tokens
+
+82
+00:03:33,000 --> 00:03:36,000
+or roughly 150,000 words.
+
+83
+00:03:36,000 --> 00:03:39,000
+That's still a lot, but it's a fifth of the big models.
+
+84
+00:03:39,000 --> 00:03:43,000
+So the same oversized prompt might sail through on Opus
+
+85
+00:03:43,000 --> 00:03:45,000
+and Overflow on Haiku.
+
+86
+00:03:45,000 --> 00:03:48,000
+So name the model before you reason about capacity,
+
+87
+00:03:48,000 --> 00:03:51,000
+because choosing the smaller, cheaper model
+
+88
+00:03:51,000 --> 00:03:54,000
+means a tighter budget you have to plan around.
+
+89
+00:03:55,000 --> 00:03:57,000
+It helps to picture what actually fills that window,
+
+90
+00:03:57,000 --> 00:04:00,000
+because it's a lot more than your latest question.
+
+91
+00:04:00,000 --> 00:04:02,000
+The system prompt sits in there.
+
+92
+00:04:02,000 --> 00:04:06,000
+Every tool definition you've registered takes up space.
+
+93
+00:04:06,000 --> 00:04:08,000
+The entire conversation history counts,
+
+94
+00:04:08,000 --> 00:04:12,000
+and so does every tool result the model has seen.
+
+95
+00:04:12,000 --> 00:04:15,000
+And then the tokens the model is generating right now
+
+96
+00:04:15,000 --> 00:04:17,000
+come out of the same budget too.
+
+97
+00:04:17,000 --> 00:04:19,000
+All of it shares one pool.
+
+98
+00:04:19,000 --> 00:04:22,000
+That's why a long agent run can slowly creep
+
+99
+00:04:22,000 --> 00:04:26,000
+toward the limit, even if each individual message is short.
+
+100
+00:04:26,000 --> 00:04:28,000
+The history keeps growing.
+
+101
+00:04:28,000 --> 00:04:29,000
+So when you think about context,
+
+102
+00:04:29,000 --> 00:04:32,000
+don't just count the user's prompt.
+
+103
+00:04:32,000 --> 00:04:34,000
+Count everything the model is carrying
+
+104
+00:04:34,000 --> 00:04:36,000
+on this particular call.
+
+105
+00:04:37,000 --> 00:04:39,000
+Tokens get counted in a few buckets,
+
+106
+00:04:39,000 --> 00:04:42,000
+and knowing them helps you read your usage and your bill.
+
+107
+00:04:42,000 --> 00:04:45,000
+Input tokens are everything you send in,
+
+108
+00:04:45,000 --> 00:04:48,000
+the system prompt, the history, your tool definitions,
+
+109
+00:04:48,000 --> 00:04:50,000
+and the current user turn.
+
+110
+00:04:50,000 --> 00:04:54,000
+Output tokens are everything the model generates,
+
+111
+00:04:54,000 --> 00:04:56,000
+and that's more than the visible reply.
+
+112
+00:04:56,000 --> 00:04:59,000
+They bill at a higher rate than input.
+
+113
+00:04:59,000 --> 00:05:02,000
+Thinking tokens on models that support reasoning
+
+114
+00:05:02,000 --> 00:05:07,000
+are billed as output tokens and included in the output total.
+
+115
+00:05:07,000 --> 00:05:10,000
+The usage object reports them as a read-only breakdown
+
+116
+00:05:10,000 --> 00:05:13,000
+inside that total, so you can see how much of your output
+
+117
+00:05:13,000 --> 00:05:16,000
+went to reasoning rather than the final answer.
+
+118
+00:05:16,000 --> 00:05:18,000
+Everything still draws down the same window,
+
+119
+00:05:18,000 --> 00:05:21,000
+and it all shows up when you model your spend.
+
+120
+00:05:22,000 --> 00:05:24,000
+What happens when you run out of room?
+
+121
+00:05:24,000 --> 00:05:26,000
+This is the part people get wrong.
+
+122
+00:05:26,000 --> 00:05:28,000
+Overflowing the window isn't something
+
+123
+00:05:28,000 --> 00:05:30,000
+the model quietly fixes for you.
+
+124
+00:05:30,000 --> 00:05:33,000
+There's no automatic summarization at the boundary.
+
+125
+00:05:33,000 --> 00:05:35,000
+If you exceed the limit, you get an error,
+
+126
+00:05:35,000 --> 00:05:38,000
+and it's on you to stay under budget.
+
+127
+00:05:38,000 --> 00:05:40,000
+You do that by pruning old turns
+
+128
+00:05:40,000 --> 00:05:43,000
+or compacting history into a shorter form.
+
+129
+00:05:43,000 --> 00:05:46,000
+One reassuring note on cost, though.
+
+130
+00:05:46,000 --> 00:05:48,000
+A full one million token request bills
+
+131
+00:05:48,000 --> 00:05:52,000
+at the standard per token rate on the current large models.
+
+132
+00:05:52,000 --> 00:05:54,000
+There's no long context surcharge
+
+133
+00:05:54,000 --> 00:05:56,000
+for using the whole window,
+
+134
+00:05:56,000 --> 00:05:59,000
+but standard rate on a million tokens still adds up,
+
+135
+00:05:59,000 --> 00:06:03,000
+so a big window is a budget to manage, not free space.
+
+136
+00:06:04,000 --> 00:06:08,000
+Tokens are the unit for what fits and what you pay.
+
+137
+00:06:08,000 --> 00:06:11,000
+A token is a sub-word chunk, not a word.
+
+138
+00:06:11,000 --> 00:06:15,000
+The window spans prompt, history, tools, and generation.
+
+139
+00:06:15,000 --> 00:06:18,000
+Keep in mind, Fable, Opus, and Sonnet hold a million tokens,
+
+140
+00:06:18,000 --> 00:06:23,000
+while Haiku holds 200,000, so count per model.
+
+141
+00:06:23,000 --> 00:06:26,000
+That covers tokens and the context window budget.
+
+142
+00:06:26,000 --> 00:06:27,000
+I'll see you in the next lesson.
+

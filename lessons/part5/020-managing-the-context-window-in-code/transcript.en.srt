@@ -1,0 +1,256 @@
+1
+00:00:00,000 --> 00:00:05,000
+Welcome back. Every request to Claude shares one context window, and it's a finite token
+
+2
+00:00:05,000 --> 00:00:10,000
+budget you manage yourself, not something the model tidies up for you. This lesson covers
+
+3
+00:00:10,000 --> 00:00:15,000
+what fills that window, why nothing is dropped automatically, and how drift and bloat creep
+
+4
+00:00:15,000 --> 00:00:21,000
+into a long session. Let's lock down three concepts the rest of the lesson builds on.
+
+5
+00:00:21,000 --> 00:00:27,000
+First, the context window. That's the maximum number of tokens the model can attend to
+
+6
+00:00:27,000 --> 00:00:33,000
+in one request, spanning the system prompt, tool definitions, history, tool results,
+
+7
+00:00:33,000 --> 00:00:37,000
+and the current generation. Everything the model reasons over has to fit inside it.
+
+8
+00:00:38,000 --> 00:00:43,000
+Second, context window management. That's the discipline of deliberately controlling
+
+9
+00:00:43,000 --> 00:00:48,000
+what occupies that budget so the highest signal content stays in view. It's an active
+
+10
+00:00:48,000 --> 00:00:55,000
+engineering task, not a model-managed behavior. Third, the attention budget. Think of it like
+
+11
+00:00:55,000 --> 00:01:01,000
+working memory. Every new token you add depletes it, so more context isn't automatically more
+
+12
+00:01:01,000 --> 00:01:07,000
+capable. So what actually eats that budget? It helps to picture everything that lands in the
+
+13
+00:01:07,000 --> 00:01:12,000
+window on a single request. Your system prompt sits there on every call, so do all your tool
+
+14
+00:01:12,000 --> 00:01:19,000
+definitions. And if you're wired up to MCP servers, their schemas too. Then there's the
+
+15
+00:01:19,000 --> 00:01:25,000
+whole conversation history. Every prior user turn and assistant reply. On top of that, every tool
+
+16
+00:01:25,000 --> 00:01:31,000
+result you fed back, and those raw dumps are usually the biggest single source. And finally, the
+
+17
+00:01:31,000 --> 00:01:37,000
+response being generated right now. Add it up and you'll see why a session that felt small at the
+
+18
+00:01:37,000 --> 00:01:43,000
+start can quietly balloon. Knowing the pieces is the first step to trimming them. Here's the
+
+19
+00:01:43,000 --> 00:01:49,000
+assumption that burns people. Many developers expect the model to quietly forget stale turns
+
+20
+00:01:49,000 --> 00:01:55,000
+and keep only what matters. The way a person lets old details fade. That's not what happens.
+
+21
+00:01:55,000 --> 00:02:01,000
+Context accumulation is additive. Nothing is dropped unless your application prunes or compacts
+
+22
+00:02:01,000 --> 00:02:06,000
+it. The model doesn't choose to trim and the API doesn't summarize on your behalf when the window
+
+23
+00:02:06,000 --> 00:02:12,000
+fills. So the reality is the opposite of the assumption. An unmanaged long session doesn't
+
+24
+00:02:12,000 --> 00:02:17,000
+degrade because the model got tired or forgot. It degrades because you kept appending and the
+
+25
+00:02:17,000 --> 00:02:22,000
+useful signal got buried under everything you never cleared out. Ownership sits with you,
+
+26
+00:02:22,000 --> 00:02:29,000
+not the model. Let's put names to why a stuffed window hurts. The first is context rot. As the
+
+27
+00:02:29,000 --> 00:02:36,000
+number of tokens climbs, the model's ability to accurately recall any one fact from that context
+
+28
+00:02:36,000 --> 00:02:42,000
+goes down. A buried instruction competes with thousands of low value tokens around it. The
+
+29
+00:02:42,000 --> 00:02:48,000
+second is the attention budget. Under the hood, the model relates every token to every other token.
+
+30
+00:02:48,000 --> 00:02:55,000
+So cost and dilution rise faster than the token count alone suggests. Put those together and the
+
+31
+00:02:55,000 --> 00:03:01,000
+lesson is uncomfortable but useful. A bigger context isn't a free upgrade. Past a point,
+
+32
+00:03:01,000 --> 00:03:07,000
+piling on more tokens actively works against recall and focus, which is exactly why tight
+
+33
+00:03:07,000 --> 00:03:13,000
+beats large. Let me name the three ways a long session goes wrong because you'll diagnose all
+
+34
+00:03:13,000 --> 00:03:20,000
+three by feel eventually. The first is drift. The model gradually loses the thread as tangents and
+
+35
+00:03:20,000 --> 00:03:26,000
+stale results dilute your instructions and it starts reverting to earlier assumptions.
+
+36
+00:03:26,000 --> 00:03:31,000
+The second is bloat. The window fills with low value tokens, verbose tool dumps,
+
+37
+00:03:31,000 --> 00:03:36,000
+and redundant history, which raises cost and latency and crowds out room to reason.
+
+38
+00:03:37,000 --> 00:03:42,000
+The third is overflow. You simply run past the token limit and that's a hard error you have
+
+39
+00:03:42,000 --> 00:03:49,000
+to prevent because the API won't auto summarize to save you. Drift, bloat, overflow. Different
+
+40
+00:03:49,000 --> 00:03:55,000
+symptoms, same root cause, an unmanaged window. Let's slow down on drift because the fix is
+
+41
+00:03:55,000 --> 00:04:01,000
+counterintuitive. When the model starts ignoring a recent constraint or sliding back to an old
+
+42
+00:04:01,000 --> 00:04:08,000
+assumption, the instinct is to scold it, to add a firmer, louder instruction on top. That usually
+
+43
+00:04:08,000 --> 00:04:13,000
+makes things worse because you just added more tokens to an already diluted window.
+
+44
+00:04:13,000 --> 00:04:20,000
+Drift is a composition problem, not a model defect. The real fix is to reground and prune,
+
+45
+00:04:21,000 --> 00:04:26,000
+restate the current goal cleanly, and cut the stale turns and dead tool output that are drowning
+
+46
+00:04:26,000 --> 00:04:31,000
+it out. You're not writing a stronger prompt, you're rebuilding a cleaner context so the
+
+47
+00:04:31,000 --> 00:04:37,000
+instruction that matters carries weight again. Three more terms round out the vocabulary. First,
+
+48
+00:04:37,000 --> 00:04:43,000
+high signal context. The goal is never to fit everything you could, it's to keep the smallest
+
+49
+00:04:43,000 --> 00:04:49,000
+set of tokens that still drives the outcome. Anthropic frames it as keeping context informative
+
+50
+00:04:49,000 --> 00:04:55,000
+yet tight. Second, regrounding. That's the move we just described, restating the goal and the
+
+51
+00:04:55,000 --> 00:05:02,000
+constraints that matter. So a diluted instruction gets its weight back. Third, windowing. Instead
+
+52
+00:05:02,000 --> 00:05:08,000
+of carrying the entire history forever, you keep a recent slice and let older turns fall away. It's
+
+53
+00:05:08,000 --> 00:05:14,000
+a bounded, simple alternative to summarizing, and for many agents it's enough on its own to hold
+
+54
+00:05:14,000 --> 00:05:21,000
+the line. So how do you actually work this into your build? Treat the context window as something
+
+55
+00:05:21,000 --> 00:05:28,000
+you curate on purpose, every turn, not something you fill and forget. Before you append a giant
+
+56
+00:05:28,000 --> 00:05:35,000
+tool result, ask what the model genuinely needs from it downstream, and keep only that. When you
+
+57
+00:05:35,000 --> 00:05:41,000
+notice the thread slipping, reground instead of nagging, and decide up front how history is bounded,
+
+58
+00:05:41,000 --> 00:05:47,000
+whether that's windowing, pruning, or a summary pass we'll cover next. The through line is a single
+
+59
+00:05:47,000 --> 00:05:54,000
+principle. Find the smallest set of high signal tokens that gets the job done. Informative yet
+
+60
+00:05:54,000 --> 00:06:00,000
+tight. That mindset separates an agent that scales from one that slowly chokes on its own history.
+
+61
+00:06:02,000 --> 00:06:07,000
+Let's recap. The context window is a finite budget you own, and nothing in it is dropped
+
+62
+00:06:07,000 --> 00:06:14,000
+automatically. That's why drift and bloat come from an unmanaged window, not a tired model.
+
+63
+00:06:14,000 --> 00:06:19,000
+One thing to watch, the fix for drift is regrounding and pruning, not a louder prompt.
+
+64
+00:06:19,000 --> 00:06:24,000
+That covers managing the context window in code. I'll see you in the next one.
+

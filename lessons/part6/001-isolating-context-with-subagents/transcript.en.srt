@@ -1,0 +1,368 @@
+1
+00:00:00,000 --> 00:00:06,000
+When an agent run drags on, the parent context quietly fills with file reads, search dumps,
+
+2
+00:00:06,000 --> 00:00:11,000
+and dead-end exploration that crowd out the work that matters.
+
+3
+00:00:11,000 --> 00:00:17,000
+Subagents fix that by doing the messy part somewhere else and handing back only a clean result.
+
+4
+00:00:17,000 --> 00:00:21,000
+This lesson has a little bit of review from previous lessons in the course, but it's critical
+
+5
+00:00:21,000 --> 00:00:26,000
+information, so I thought it was worth mentioning again. Let's jump in.
+
+6
+00:00:26,000 --> 00:00:28,000
+Let's anchor three terms.
+
+7
+00:00:28,000 --> 00:00:34,000
+Context isolation means delegating a scoped subtask to a subagent that returns only its
+
+8
+00:00:34,000 --> 00:00:39,000
+result, so the subtask's intermediate tokens stay out of the parent's window.
+
+9
+00:00:39,000 --> 00:00:45,000
+The distilled summary is what actually comes back, usually 1,000 to 2,000 tokens, not the
+
+10
+00:00:45,000 --> 00:00:51,000
+full working trace the subagent generated, and blast radius is how far a bad intermediate
+
+11
+00:00:51,000 --> 00:00:53,000
+step can spread.
+
+12
+00:00:53,000 --> 00:00:58,000
+Isolation bounds that radius by trapping any damage inside the one subagent.
+
+13
+00:00:58,000 --> 00:01:01,000
+Hold these together and the pattern makes sense.
+
+14
+00:01:01,000 --> 00:01:05,000
+A subagent isn't just a helper you run in parallel.
+
+15
+00:01:05,000 --> 00:01:11,000
+It's a way to keep expensive, noisy work from ever touching the context you care about.
+
+16
+00:01:11,000 --> 00:01:14,000
+Here's why isolation saves your token budget.
+
+17
+00:01:14,000 --> 00:01:20,000
+In most agent runs, the costliest tokens aren't the final answer, they're discovery.
+
+18
+00:01:20,000 --> 00:01:26,000
+Reading files, querying data, and running searches dump huge amounts of raw output into
+
+19
+00:01:26,000 --> 00:01:30,000
+context, and most of it is scaffolding you never need again.
+
+20
+00:01:30,000 --> 00:01:37,000
+When you delegate that exploration to a subagent, all of it lands in the subagent's window instead of yours.
+
+21
+00:01:37,000 --> 00:01:42,000
+The subagent works through the mess and hands back only the condensed result.
+
+22
+00:01:42,000 --> 00:01:46,000
+So the parent's context grows by a short summary, not a full transcript.
+
+23
+00:01:46,000 --> 00:01:48,000
+That's the whole move.
+
+24
+00:01:48,000 --> 00:01:53,000
+You're trading a giant intermediate trace for a small, high signal answer.
+
+25
+00:01:53,000 --> 00:01:57,000
+Picture what happens on each side of the handoff.
+
+26
+00:01:57,000 --> 00:02:02,000
+Inside the subagent, it might read dozens of files and fire off many searches, building
+
+27
+00:02:02,000 --> 00:02:07,000
+a long working trace, full of intermediate reasoning and tool output.
+
+28
+00:02:07,000 --> 00:02:09,000
+That trace can be enormous.
+
+29
+00:02:09,000 --> 00:02:13,000
+What returns to the parent is only the distilled summary.
+
+30
+00:02:13,000 --> 00:02:15,000
+That's the key mental shift.
+
+31
+00:02:15,000 --> 00:02:21,000
+The returned summary is the contract you build on, not the full trace the subagent worked through.
+
+32
+00:02:21,000 --> 00:02:24,000
+You don't get and you don't want every step it took.
+
+33
+00:02:24,000 --> 00:02:27,000
+You want the answer it reached.
+
+34
+00:02:27,000 --> 00:02:31,000
+Designing around that contract is what keeps the parent lean, while the subagent does the
+
+35
+00:02:31,000 --> 00:02:34,000
+heavy lifting out of view.
+
+36
+00:02:34,000 --> 00:02:37,000
+Here's the part builders most often get wrong.
+
+37
+00:02:37,000 --> 00:02:40,000
+A subagent doesn't inherit the parent's conversation.
+
+38
+00:02:40,000 --> 00:02:44,000
+It starts fresh and sees only the task you hand it.
+
+39
+00:02:44,000 --> 00:02:49,000
+So anything it needs, the file paths, the constraints, the goal, goes into the delegated
+
+40
+00:02:49,000 --> 00:02:51,000
+prompt explicitly.
+
+41
+00:02:51,000 --> 00:02:56,000
+Assuming shared context is the single most common handoff bug.
+
+42
+00:02:56,000 --> 00:03:01,000
+The subagent can't read your mind or your history, scope the task tightly, spell out
+
+43
+00:03:01,000 --> 00:03:06,000
+what done looks like, and give it exactly the inputs required.
+
+44
+00:03:06,000 --> 00:03:11,000
+Isolation is the default behavior here, not something you have to design around.
+
+45
+00:03:11,000 --> 00:03:17,000
+Once you internalize that a subagent is a blank slate, your handoffs get a lot more reliable.
+
+46
+00:03:17,000 --> 00:03:20,000
+So when does isolation actually pay off?
+
+47
+00:03:20,000 --> 00:03:22,000
+Three signs point to delegating.
+
+48
+00:03:22,000 --> 00:03:24,000
+First, verbose discovery.
+
+49
+00:03:24,000 --> 00:03:30,000
+The subtask reads or searches heavily, and produces output the parent never needs to keep.
+
+50
+00:03:30,000 --> 00:03:33,000
+Second, an independent workstream.
+
+51
+00:03:33,000 --> 00:03:38,000
+The step can run on its own, without passing state back and forth with the main agent.
+
+52
+00:03:38,000 --> 00:03:41,000
+Third, a bounded blast radius.
+
+53
+00:03:41,000 --> 00:03:46,000
+You want a shaky intermediate step contained, so if it goes wrong, the mistake never reaches
+
+54
+00:03:46,000 --> 00:03:48,000
+the parent context.
+
+55
+00:03:48,000 --> 00:03:50,000
+When you see these signs, spin up a subagent.
+
+56
+00:03:50,000 --> 00:03:55,000
+When you don't, a direct inline step is usually simpler and faster.
+
+57
+00:03:55,000 --> 00:03:59,000
+That checklist keeps you from delegating out of habit.
+
+58
+00:03:59,000 --> 00:04:05,000
+Once a subagent returns, treat what it gives you as the contract, not a window into how it got there.
+
+59
+00:04:05,000 --> 00:04:07,000
+In practice, that means a few habits.
+
+60
+00:04:07,000 --> 00:04:11,000
+Validate the summary at the parent before you act on it, because a confident looking
+
+61
+00:04:11,000 --> 00:04:14,000
+result can still be wrong.
+
+62
+00:04:14,000 --> 00:04:18,000
+Don't reach back into the subagent's working trace to second guess it.
+
+63
+00:04:18,000 --> 00:04:20,000
+That trace is gone by design.
+
+64
+00:04:20,000 --> 00:04:26,000
+And when you run several subagents, collect their results and synthesize them into your next step.
+
+65
+00:04:26,000 --> 00:04:29,000
+The returned result is the interface between the two agents.
+
+66
+00:04:29,000 --> 00:04:32,000
+Keep that boundary clean, and the orchestration stays simple.
+
+67
+00:04:32,000 --> 00:04:37,000
+Blur it, and you've thrown away the isolation you delegated for.
+
+68
+00:04:37,000 --> 00:04:41,000
+Three anti-patterns show up again and again, so let's name them.
+
+69
+00:04:41,000 --> 00:04:43,000
+The first is overly broad scope.
+
+70
+00:04:43,000 --> 00:04:50,000
+Hand a subagent a fuzzy, sprawling task, and it wanders, then returns a summary you can't really trust.
+
+71
+00:04:50,000 --> 00:04:53,000
+The second is starved context.
+
+72
+00:04:53,000 --> 00:05:00,000
+Underpower the subtask by withholding facts it needs, and it works blind and hands back a weak result.
+
+73
+00:05:00,000 --> 00:05:02,000
+The third is parallel-only thinking.
+
+74
+00:05:02,000 --> 00:05:08,000
+That's treating subagents as mere concurrent workers, while ignoring that isolation, not
+
+75
+00:05:08,000 --> 00:05:10,000
+speed, is their real value.
+
+76
+00:05:10,000 --> 00:05:13,000
+Notice the first two are opposite failures.
+
+77
+00:05:13,000 --> 00:05:16,000
+Too much scope and too little context.
+
+78
+00:05:16,000 --> 00:05:20,000
+The fix for both is a tight, well-supplied task.
+
+79
+00:05:20,000 --> 00:05:25,000
+Not every subtask earns its own subagent, so let's talk about choosing.
+
+80
+00:05:25,000 --> 00:05:31,000
+The deciding factors are how much noise the subtask makes, and whether its details matter later.
+
+81
+00:05:31,000 --> 00:05:37,000
+When a step generates high intermediate noise, and you'll throw that trace away, isolation is a clear win.
+
+82
+00:05:37,000 --> 00:05:43,000
+When you'll reference those details again downstream, keeping the work in line is often
+
+83
+00:05:43,000 --> 00:05:46,000
+better, since a summary would drop what you need.
+
+84
+00:05:46,000 --> 00:05:51,000
+And for a quick single lookup, a direct call beats the overhead of spinning something up.
+
+85
+00:05:51,000 --> 00:05:55,000
+Delegation has real overhead, so it has to earn its keep.
+
+86
+00:05:55,000 --> 00:05:59,000
+Catch the move to the subtask, not to a habit.
+
+87
+00:05:59,000 --> 00:06:01,000
+Here's the bottom line.
+
+88
+00:06:01,000 --> 00:06:07,000
+A subagent isolates verbose work in its own window, and returns only a distilled summary.
+
+89
+00:06:07,000 --> 00:06:10,000
+It matters because your parent context stays clean.
+
+90
+00:06:10,000 --> 00:06:17,000
+Keep in mind, the subagent starts fresh, so hand it what it needs and treat its summary as a contract.
+
+91
+00:06:17,000 --> 00:06:20,000
+That covers isolating context with subagents.
+
+92
+00:06:20,000 --> 00:06:21,000
+I'll catch you in the next one.
+

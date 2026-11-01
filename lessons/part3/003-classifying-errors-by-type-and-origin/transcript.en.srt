@@ -1,0 +1,248 @@
+1
+00:00:00,000 --> 00:00:05,000
+Welcome back. When something breaks in a clawed integration the reflex is to jump straight to a
+
+2
+00:00:05,000 --> 00:00:10,000
+retry. That's often the wrong move because you can't choose a recovery for an error that you
+
+3
+00:00:10,000 --> 00:00:16,000
+haven't classified or fully understood. This lesson covers how to name the failure first
+
+4
+00:00:16,000 --> 00:00:23,000
+by type and by origin. Let's jump in. Let's anchor three terms the whole lesson leans on.
+
+5
+00:00:23,000 --> 00:00:29,000
+First, error type identification. That's the diagnostic step of classifying what kind of
+
+6
+00:00:29,000 --> 00:00:35,000
+failure you're looking at before you touch a fix. It comes first and it decides the recovery.
+
+7
+00:00:36,000 --> 00:00:43,000
+Second, a transient error. That's a timeout, a rate limit, or a server-side 500 series error,
+
+8
+00:00:43,000 --> 00:00:49,000
+the kind of failure that's expected to clear on its own. So retrying is reasonable. Third,
+
+9
+00:00:49,000 --> 00:00:54,000
+a permanent error. That's a bad request or bad credentials, something that won't clear
+
+10
+00:00:54,000 --> 00:01:00,000
+no matter how many times you retry. It needs a fix, a fallback, or escalation. Identify first,
+
+11
+00:01:00,000 --> 00:01:07,000
+then act. Here's the split that matters most. A transient error is timeouts, rate limits,
+
+12
+00:01:07,000 --> 00:01:13,000
+network blips, and 500 series server errors. In each case the request was well formed,
+
+13
+00:01:13,000 --> 00:01:18,000
+the system was just briefly unavailable, so the very same call can succeed a moment later.
+
+14
+00:01:19,000 --> 00:01:27,000
+A permanent error is different. A 400, a 401, a 403, a 404, or a 413 all point at the request
+
+15
+00:01:27,000 --> 00:01:33,000
+itself. Something about what you sent is wrong, so repeating it unchanged only reproduces the
+
+16
+00:01:33,000 --> 00:01:39,000
+same failure. The tell is simple. Ask whether waiting and trying again could plausibly help.
+
+17
+00:01:39,000 --> 00:01:43,000
+If yes, it's transient. If no, you have to change something first.
+
+18
+00:01:44,000 --> 00:01:51,000
+Transient errors tend to announce themselves through a few familiar signals. A 429 rate limit
+
+19
+00:01:51,000 --> 00:01:58,000
+error means you've sent more requests than your limit allows for the moment. A 500 API error or
+
+20
+00:01:58,000 --> 00:02:05,000
+a 504 timeout error is the server telling you something went wrong or took too long on its side.
+
+21
+00:02:05,000 --> 00:02:11,000
+And a 529 overloaded error shows up when the platform is briefly saturated across all users.
+
+22
+00:02:12,000 --> 00:02:18,000
+What these share is that none of them blame your payload. The request was fine, the timing was bad,
+
+23
+00:02:18,000 --> 00:02:23,000
+so the right instinct is patience, a short wait, and another attempt,
+
+24
+00:02:23,000 --> 00:02:27,000
+rather than tearing your request apart looking for a mistake that isn't there.
+
+25
+00:02:28,000 --> 00:02:34,000
+Permanent errors are the mirror image. They live in the request, so retrying changes nothing.
+
+26
+00:02:34,000 --> 00:02:40,000
+A 400 error means the payload is malformed, maybe a missing field or a bad value. A 401
+
+27
+00:02:40,000 --> 00:02:48,000
+authentication error means the key is wrong, revoked, or expired. A 413 request too large
+
+28
+00:02:48,000 --> 00:02:53,000
+means you've sent more than the endpoint accepts, and the messages API caps a single request
+
+29
+00:02:53,000 --> 00:02:59,000
+at 32 megabytes. In every case, the fix is to change something and try the corrected call,
+
+30
+00:02:59,000 --> 00:03:05,000
+not to fire the same broken one again. Retrying a permanent error just delays the moment you
+
+31
+00:03:05,000 --> 00:03:12,000
+admit the request needs work. When the API returns an error, the body has a predictable shape,
+
+32
+00:03:12,000 --> 00:03:19,000
+and three fields carry the weight. First is type, a stable machine-readable label like authentication
+
+33
+00:03:19,000 --> 00:03:26,000
+error or overloaded error. That's the field your code should branch on. Second is message, a human
+
+34
+00:03:26,000 --> 00:03:31,000
+readable sentence describing the problem. It's great for your logs, but don't write logic that
+
+35
+00:03:31,000 --> 00:03:38,000
+parses its wording, because that text can change. Third is request ID, an identifier that's also
+
+36
+00:03:38,000 --> 00:03:44,000
+echoed in the response header. Capture it every time, because when you open a support ticket,
+
+37
+00:03:44,000 --> 00:03:50,000
+that one string lets the team find your exact request. Branch on type, log the message,
+
+38
+00:03:50,000 --> 00:03:57,000
+keep the request ID. Now the second lens, origin. A model output error lives in what
+
+39
+00:03:57,000 --> 00:04:04,000
+Claude actually generated, a wrong plan, a bad tool argument, or a truncated answer. The important
+
+40
+00:04:04,000 --> 00:04:11,000
+part is that this rides inside a successful 200 response. The call worked, the generation is the
+
+41
+00:04:11,000 --> 00:04:17,000
+problem. An integration error is the opposite. It lives in your surrounding code, the request you
+
+42
+00:04:17,000 --> 00:04:24,000
+built, the way you force the reply, your auth, or the endpoint, and it usually surfaces as an HTTP
+
+43
+00:04:24,000 --> 00:04:32,000
+status. One wrinkle worth knowing. When you stream a response, an error can arrive after a 200 as an
+
+44
+00:04:32,000 --> 00:04:37,000
+event in the stream, so a transport failure can hide behind a success code if you only check the
+
+45
+00:04:37,000 --> 00:04:45,000
+status. The hardest failures make no noise at all. You get a 200, no exception fires, and the content
+
+46
+00:04:45,000 --> 00:04:51,000
+is quietly wrong. Maybe the answer is incomplete or malformed. Maybe the stop reason came back as
+
+47
+00:04:51,000 --> 00:04:58,000
+max tokens, which means the output was cut off part way. Maybe the response parses cleanly against
+
+48
+00:04:58,000 --> 00:05:04,000
+your schema but carries the wrong values. Every one of these sails straight past a try accept block
+
+49
+00:05:04,000 --> 00:05:10,000
+and a status code check because nothing technically errored. The only thing that catches a silent
+
+50
+00:05:10,000 --> 00:05:17,000
+failure is validating the output itself, checking it for completeness, plausibility, and correct
+
+51
+00:05:17,000 --> 00:05:23,000
+structure before anything downstream trusts it. Assume success isn't the same as correct.
+
+52
+00:05:24,000 --> 00:05:30,000
+One last distinction because these look identical from the outside. A refusal and a bug. A refusal
+
+53
+00:05:30,000 --> 00:05:35,000
+is claud intentionally declining on policy or safety grounds. That's valid behavior, not a
+
+54
+00:05:35,000 --> 00:05:41,000
+malfunction, so the right move is to read stop details for the reason, and if the request is
+
+55
+00:05:41,000 --> 00:05:46,000
+legitimate, adjust how you're asking. A bug is an unintended failure, either in your integration
+
+56
+00:05:46,000 --> 00:05:52,000
+code or in the model output, and it needs a real fix. Both leave you without a useful result, which
+
+57
+00:05:52,000 --> 00:05:58,000
+is why they get confused. Escalating a refusal as a system fault or waving off a real bug
+
+58
+00:05:58,000 --> 00:06:05,000
+as an expected decline both send you down the wrong path. Let's recap. Classifying the failure
+
+59
+00:06:05,000 --> 00:06:13,000
+is its own step, and it turns on whether it clears on retry and where it came from. Transient clears,
+
+60
+00:06:13,000 --> 00:06:21,000
+permanent needs a change, model output rides a 200, and integration shows a status. Just remember,
+
+61
+00:06:21,000 --> 00:06:28,000
+a silent failure and a refusal can both masquerade as no answer. That covers classifying
+
+62
+00:06:28,000 --> 00:06:32,000
+errors by type and origin. I'll see you in the next one.
+

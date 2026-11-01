@@ -1,0 +1,260 @@
+1
+00:00:00,000 --> 00:00:06,000
+In a previous lesson, we established that the SDK and a raw REST call end up in the same place.
+
+2
+00:00:06,000 --> 00:00:13,000
+So a fair question is, what does the SDK actually do for you? Well, it handles the unglamorous
+
+3
+00:00:13,000 --> 00:00:18,000
+plumbing and it draws a hard line at capabilities. This lesson walks through both. Let's break it
+
+4
+00:00:18,000 --> 00:00:26,000
+down. What does that plumbing include? Four jobs stand out. First, authentication. The SDK reads
+
+5
+00:00:26,000 --> 00:00:32,000
+your API key and attaches the right headers to every request. So you set credentials once and
+
+6
+00:00:32,000 --> 00:00:39,000
+forget them. Second, retries. When a call hits a transient failure like a rate limit or a temporary
+
+7
+00:00:39,000 --> 00:00:47,000
+server error, the SDK retries it automatically with exponential back off. Third, typing. You
+
+8
+00:00:47,000 --> 00:00:52,000
+get typed arguments and typed response objects. So your editor auto-completes fields and flags
+
+9
+00:00:52,000 --> 00:00:59,000
+mistakes before you run. Fourth, streaming. When you stream a response, the SDK parses the raw
+
+10
+00:00:59,000 --> 00:01:05,000
+event stream into clean message objects. So you're not handwriting a parser. Let's slow down on
+
+11
+00:01:05,000 --> 00:01:10,000
+authentication because it's the first thing every integration needs. Every request to Cloud has to
+
+12
+00:01:10,000 --> 00:01:17,000
+carry a few headers. Your API key goes in an XAPI key header. There's an anthropic version header
+
+13
+00:01:17,000 --> 00:01:23,000
+that pins the API version so your code keeps behaving predictably as the platform evolves.
+
+14
+00:01:23,000 --> 00:01:28,000
+There's a content type header and if you're using a beta feature, an anthropic beta header.
+
+15
+00:01:28,000 --> 00:01:35,000
+The SDK sets all of these for you from the client you configure once at startup. You pass your key
+
+16
+00:01:35,000 --> 00:01:40,000
+in a single place and from then on every call is authenticated correctly without you thinking
+
+17
+00:01:40,000 --> 00:01:45,000
+about headers again. It's a small thing that removes a whole category of setup bugs.
+
+18
+00:01:46,000 --> 00:01:54,000
+Next up is the second job, retries, and its close cousin, timeouts. On retries, network calls fail
+
+19
+00:01:54,000 --> 00:02:00,000
+sometimes and not all failures are equal. The SDK knows that certain errors are transient.
+
+20
+00:02:00,000 --> 00:02:07,000
+Things like a 429 rate limit or a 500 level server error. For those, it waits and retries
+
+21
+00:02:07,000 --> 00:02:13,000
+automatically using exponential backoff so it doesn't hammer the service. By default, it retries
+
+22
+00:02:13,000 --> 00:02:19,000
+twice before surfacing the error to you. On timeouts, the SDK applies a default request
+
+23
+00:02:19,000 --> 00:02:24,000
+timeout of around 10 minutes and here's a practical detail. For a very long generation,
+
+24
+00:02:24,000 --> 00:02:30,000
+it expects you to stream the response rather than block on one enormous reply because a huge
+
+25
+00:02:30,000 --> 00:02:36,000
+non-streaming request can run past that limit. Both behaviors are sensible defaults you can tune.
+
+26
+00:02:37,000 --> 00:02:43,000
+Typing is easy to underrate until it saves you an hour. The SDKs ship full type definitions.
+
+27
+00:02:43,000 --> 00:02:50,000
+When you build a request, the parameters are typed so a misspelled field name or a wrong value type
+
+28
+00:02:50,000 --> 00:02:55,000
+fails right in your editor before you ever run the code. When the response comes back, it's a
+
+29
+00:02:55,000 --> 00:03:04,000
+typed object, not a raw dictionary you index into with string keys and hope. You read result.content
+
+30
+00:03:05,000 --> 00:03:10,000
+and your tools tell you exactly what's there. Autocomplete becomes a live reference for what
+
+31
+00:03:10,000 --> 00:03:16,000
+each call accepts and returns. In practice, this means you spend less time flipping to the docs
+
+32
+00:03:16,000 --> 00:03:22,000
+and more time writing code and a whole class of silly runtime errors just disappears.
+
+33
+00:03:23,000 --> 00:03:27,000
+Now here's the boundary I really want to land because it prevents a common mistake.
+
+34
+00:03:27,000 --> 00:03:33,000
+Everything we've covered is convenience. The SDK doesn't add powers. It exposes only what the
+
+35
+00:03:33,000 --> 00:03:40,000
+underlying REST API supports. If an endpoint can't do something, there is no SDK method that
+
+36
+00:03:40,000 --> 00:03:45,000
+can magically make it possible. That matters when capabilities differ by hosting Surface.
+
+37
+00:03:45,000 --> 00:03:51,000
+If a particular server-side tool isn't available on the Surface you're running against, it won't be
+
+38
+00:03:51,000 --> 00:03:56,000
+there in that Surface's SDK client either because the client is just calling the same restricted
+
+39
+00:03:56,000 --> 00:04:01,000
+endpoint. So whenever you're unsure whether something is possible, don't ask whether the
+
+40
+00:04:01,000 --> 00:04:09,000
+SDK has a method. Ask whether the REST API itself supports it. Let's come back to streaming because
+
+41
+00:04:09,000 --> 00:04:15,000
+it's the clearest example of the SDK saving you real work. When you ask for a streaming response,
+
+42
+00:04:15,000 --> 00:04:21,000
+Claude sends the output as a series of small events over a single connection as the text
+
+43
+00:04:21,000 --> 00:04:26,000
+generates. If you were working at the raw level, you'd have to read those events yourself, accumulate
+
+44
+00:04:26,000 --> 00:04:33,000
+the text deltas in order, track where each content block starts and stops, and assemble the final
+
+45
+00:04:33,000 --> 00:04:39,000
+message. The SDK does all of that for you. You iterate over a clean stream of message objects or
+
+46
+00:04:39,000 --> 00:04:45,000
+await the finished result, and the parsing just happens. The important thing to hold on to is that
+
+47
+00:04:45,000 --> 00:04:51,000
+the events on the wire are identical either way. The SDK isn't changing the protocol. It's reading
+
+48
+00:04:51,000 --> 00:04:58,000
+it for you. So when would you skip the SDK and call REST directly? The thin wrapper design is
+
+49
+00:04:58,000 --> 00:05:05,000
+exactly what makes this a low-stakes choice. Reach for the SDK by default. In Python or TypeScript,
+
+50
+00:05:05,000 --> 00:05:12,000
+it saves you auth, retries, typing, and streaming parsing with almost no cost. Reach for raw REST
+
+51
+00:05:12,000 --> 00:05:17,000
+when your language doesn't have an official SDK, when you need the absolute minimum dependency
+
+52
+00:05:17,000 --> 00:05:23,000
+footprint, or when you're debugging and want to see the exact bytes on the wire. And you can mix
+
+53
+00:05:23,000 --> 00:05:29,000
+them freely in one system because both are hitting the same endpoint. Since they're interchangeable,
+
+54
+00:05:29,000 --> 00:05:34,000
+you're never locked in. You can start with one and move to the other later at almost no cost.
+
+55
+00:05:35,000 --> 00:05:41,000
+Let me give you a simple rule to carry out of this lesson. Default to the SDK. If you're building in
+
+56
+00:05:41,000 --> 00:05:49,000
+Python or TypeScript, the SDK is almost always the right call. It handles authentication, retries,
+
+57
+00:05:49,000 --> 00:05:55,000
+typing, and streaming parsing. And for the vast majority of applications, there's no real downside
+
+58
+00:05:55,000 --> 00:06:02,000
+to using it. Reach for raw REST in the specific cases we just covered. Your language has no
+
+59
+00:06:02,000 --> 00:06:07,000
+official SDK. You need a minimal dependency footprint, maybe in a constrained environment,
+
+60
+00:06:07,000 --> 00:06:13,000
+or you're debugging behavior, and you want to inspect the exact request and response at the
+
+61
+00:06:13,000 --> 00:06:19,000
+wire. Outside those cases, let the SDK carry the plumbing so you can spend your attention on the
+
+62
+00:06:19,000 --> 00:06:27,000
+actual application logic. The SDK gives you a four-part convenience layer over the same API.
+
+63
+00:06:27,000 --> 00:06:34,000
+It handles off, retries, typing, and streaming parsing. Keep in mind, it adds no capability the
+
+64
+00:06:34,000 --> 00:06:39,000
+REST endpoint lacks. So unsupported in the API means unsupported in the SDK.
+
+65
+00:06:40,000 --> 00:06:44,000
+That covers what the SDK handles for you. I'll see you in the next one.
+

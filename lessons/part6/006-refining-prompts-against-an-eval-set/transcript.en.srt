@@ -1,0 +1,248 @@
+1
+00:00:00,000 --> 00:00:05,000
+Here's a hard truth about prompt engineering. A prompt that produces one great answer hasn't
+
+2
+00:00:05,000 --> 00:00:10,000
+been proven. It's just gotten lucky one time. Real reliability comes from testing against a
+
+3
+00:00:10,000 --> 00:00:16,000
+fixed set of inputs and refining until the behavior holds. This lesson covers that loop
+
+4
+00:00:16,000 --> 00:00:22,000
+and how to treat prompts like versioned code. Let's start with the loop itself, three moves
+
+5
+00:00:22,000 --> 00:00:28,000
+you cycle through. First, test. You run the prompt across a fixed set of inputs that reflect
+
+6
+00:00:28,000 --> 00:00:34,000
+what production actually sends, not one input you handpicked because you knew it would pass.
+
+7
+00:00:34,000 --> 00:00:40,000
+Second, observe. You look at where the outputs fail and you judge them against clear written
+
+8
+00:00:40,000 --> 00:00:45,000
+criteria, so you're measuring real behavior instead of admiring a single good answer.
+
+9
+00:00:46,000 --> 00:00:52,000
+Third, adjust. You change the prompt to fix the failures you saw, then run that same set again
+
+10
+00:00:52,000 --> 00:00:59,000
+to confirm the fix landed and didn't break anything else. Test, observe, adjust, and keep cycling
+
+11
+00:00:59,000 --> 00:01:04,000
+until the behavior holds across the whole set. Let me hammer on the mistake to watch because
+
+12
+00:01:04,000 --> 00:01:11,000
+almost everyone does it early on. You tweak a prompt, run it once, see a nice answer, and move on.
+
+13
+00:01:12,000 --> 00:01:18,000
+The problem is that one passing example tells you almost nothing about reliability. You got a good
+
+14
+00:01:18,000 --> 00:01:25,000
+result on one input. What about the other 50 shapes your app will actually see? Real evaluation
+
+15
+00:01:25,000 --> 00:01:31,000
+means judging the prompt across representative inputs, the everyday cases, and just as important,
+
+16
+00:01:31,000 --> 00:01:38,000
+the adversarial ones built specifically to break it. Proof isn't one win, it's consistent results
+
+17
+00:01:38,000 --> 00:01:44,000
+across the whole range, so resist the urge to ship on a single happy result. One lucky output
+
+18
+00:01:44,000 --> 00:01:51,000
+isn't validation. So what goes into that fixed set? Three kinds of input, and you want all three.
+
+19
+00:01:52,000 --> 00:01:58,000
+First, representative inputs. These are the everyday cases your application really sees,
+
+20
+00:01:58,000 --> 00:02:06,000
+and they confirm the prompt handles the common path well. Second, boundary inputs. The edges,
+
+21
+00:02:06,000 --> 00:02:13,000
+an empty field, an enormous input, an ambiguous request. These expose where the behavior starts
+
+22
+00:02:13,000 --> 00:02:21,000
+to bend before it breaks. Third, adversarial inputs. These are crafted to trip the prompt up
+
+23
+00:02:21,000 --> 00:02:25,000
+or to smuggle in instructions, and they test whether it holds under real pressure.
+
+24
+00:02:26,000 --> 00:02:33,000
+Representative, boundary, adversarial. A set that covers all three tells you far more than a hundred
+
+25
+00:02:33,000 --> 00:02:40,000
+runs on the easy case. Let's contrast two ways of working because the difference is the whole lesson.
+
+26
+00:02:40,000 --> 00:02:46,000
+The first is eyeballing. You change something, glance at one output, and call it good. The trouble
+
+27
+00:02:46,000 --> 00:02:51,000
+is that each change gets judged on a different input, whatever you happen to type that time,
+
+28
+00:02:51,000 --> 00:02:58,000
+so you genuinely can't tell what improved and what regressed. The second is a fixed eval set. You run
+
+29
+00:02:58,000 --> 00:03:04,000
+every version of the prompt against the same frozen inputs. Now a change is measurable. You can see it
+
+30
+00:03:04,000 --> 00:03:10,000
+fixed three failures and introduced none, or that it helped here and hurt there. That
+
+31
+00:03:10,000 --> 00:03:16,000
+comparability is what makes a change safe to keep or to roll back. Freeze the inputs and refinement
+
+32
+00:03:16,000 --> 00:03:22,000
+becomes real engineering. You met this pattern when we chained workflows, and here it becomes
+
+33
+00:03:22,000 --> 00:03:29,000
+your refinement engine. Draft, review, refine. Claude drafts an answer, a second call reviews it against
+
+34
+00:03:29,000 --> 00:03:36,000
+explicit criteria, and a third refines it based on that review. Picture it on a real task. The
+
+35
+00:03:36,000 --> 00:03:41,000
+draft call writes a summary, the review call checks it against your written criteria, every claim
+
+36
+00:03:41,000 --> 00:03:49,000
+sourced under 200 words, no invented numbers, and the refine call fixes exactly what the review flagged.
+
+37
+00:03:49,000 --> 00:03:55,000
+Splitting the calls still buys you the same control. You can log each step, evaluate the intermediate
+
+38
+00:03:55,000 --> 00:04:00,000
+output, and branch when you need to. What's new here is a much lighter version of the same idea,
+
+39
+00:04:00,000 --> 00:04:07,000
+and that's where we go next. If a full chain feels heavy, there's a lighter version that costs almost
+
+40
+00:04:07,000 --> 00:04:13,000
+nothing. Add one line to the end of your prompt asking Claude to verify its answer against the
+
+41
+00:04:13,000 --> 00:04:21,000
+criteria before it finishes. That's it. This simple self-check catches errors surprisingly reliably,
+
+42
+00:04:21,000 --> 00:04:27,000
+and it's especially strong on the things models tend to slip on, like coding and math. You're
+
+43
+00:04:27,000 --> 00:04:33,000
+essentially giving the model a built-in second look before it commits to an answer. It's one
+
+44
+00:04:33,000 --> 00:04:40,000
+sentence of prompt, and it quietly turns a single forward pass into a quick draft and review of its
+
+45
+00:04:40,000 --> 00:04:46,000
+own work. When you need more reliability but don't want a multi-call pipeline, reach for the self-check
+
+46
+00:04:46,000 --> 00:04:54,000
+first. Now let's zoom out and treat the prompt the way it deserves, as a real artifact, not a string
+
+47
+00:04:54,000 --> 00:05:01,000
+you edit in place. Three habits here. First, version it. Keep your prompts in source control like any
+
+48
+00:05:01,000 --> 00:05:10,000
+other code so every change is reviewable, reproducible, and safe to roll back. Second, pin the model.
+
+49
+00:05:10,000 --> 00:05:16,000
+Tie the prompt to a specific model ID because a new release can shift the behavior your prompt
+
+50
+00:05:16,000 --> 00:05:24,000
+was tuned against, and a floating alias will change under you silently. Third, regression test it. On
+
+51
+00:05:24,000 --> 00:05:31,000
+every change, rerun the prompt against your frozen eval set so a fix in one place doesn't quietly
+
+52
+00:05:31,000 --> 00:05:39,000
+break another. Version, pin, regression test. That's prompt engineering as engineering. Let me tie this
+
+53
+00:05:39,000 --> 00:05:46,000
+back to one word people throw around loosely, validated. A change that passed on a single happy
+
+54
+00:05:46,000 --> 00:05:52,000
+path example isn't validated. It's untested everywhere that matters. The mindset that keeps
+
+55
+00:05:52,000 --> 00:05:59,000
+you out of trouble is simple. Treat every prompt edit like a code change because it can regress
+
+56
+00:05:59,000 --> 00:06:05,000
+behavior exactly like code can. Gate it behind the same eval, set you test everything else on,
+
+57
+00:06:05,000 --> 00:06:12,000
+and only ship it when the whole set passes. Hard cases included. Not just the easy demo that
+
+58
+00:06:12,000 --> 00:06:18,000
+happened to look good. Validation is a bar the prompt has to clear. Not a single lucky run you
+
+59
+00:06:18,000 --> 00:06:26,000
+got excited about. Let's recap. Iterating against a fixed eval set is what turns a prompt from lucky
+
+60
+00:06:26,000 --> 00:06:33,000
+to reliable. One good output proves nothing on its own. Keep in mind a prompt edit is a code change
+
+61
+00:06:33,000 --> 00:06:37,000
+so version it, pin the model, and regression test before you ship.
+
+62
+00:06:38,000 --> 00:06:43,000
+That wraps up refining prompts against an eval set. I'll see you in the next one.
+

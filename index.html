@@ -29,7 +29,9 @@
     section.innerHTML = `<details open><summary><span class="part-title"></span>
       <span class="muted part-meta"></span></summary><ul class="lesson-list"></ul></details>`;
     section.querySelector('.part-title').textContent = `${part.title} · ${part.name}`;
-    section.querySelector('.part-meta').textContent = `${lessons.length} bài · đã làm xong trắc nghiệm ${done} bài`;
+    section.querySelector('.part-meta').textContent = part.quiz === false
+      ? `${lessons.length} bài · video + giải thích`
+      : `${lessons.length} bài · đã làm xong trắc nghiệm ${done} bài`;
     if (part.id === 2) {
       const link = document.createElement('p');
       link.innerHTML = '<a href="mindmap.html">🧠 Mindmap Phần 2: toàn bộ keyword theo nhóm kỹ năng của đề thi</a>';

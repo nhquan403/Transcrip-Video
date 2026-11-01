@@ -1,0 +1,404 @@
+1
+00:00:00,000 --> 00:00:04,000
+Welcome back. When one example isn't enough, the reflex is to keep adding more.
+
+2
+00:00:04,000 --> 00:00:07,000
+And that reflex is usually wrong.
+
+3
+00:00:07,000 --> 00:00:11,000
+This lesson is about multi-shot prompting, using two or more examples.
+
+4
+00:00:11,000 --> 00:00:15,000
+And the thing that actually drives results isn't how many you show.
+
+5
+00:00:15,000 --> 00:00:18,000
+It's how well you choose them. Let's break it down.
+
+6
+00:00:19,000 --> 00:00:22,000
+So, what does multi-shot actually do?
+
+7
+00:00:22,000 --> 00:00:24,000
+That one example can't.
+
+8
+00:00:24,000 --> 00:00:28,000
+With several worked examples, you're no longer showing the model a single instance.
+
+9
+00:00:28,000 --> 00:00:31,000
+You're showing it a pattern it can generalize from.
+
+10
+00:00:31,000 --> 00:00:36,000
+Several examples reinforce an output format across different cases,
+
+11
+00:00:36,000 --> 00:00:39,000
+so the model sees it isn't a one-off.
+
+12
+00:00:39,000 --> 00:00:43,000
+They demonstrate a tone, a structure, or even a reasoning style you want imitated.
+
+13
+00:00:43,000 --> 00:00:48,000
+And repetition across examples makes that style stick.
+
+14
+00:00:48,000 --> 00:00:53,000
+Most usefully, multiple examples show the model how to handle variation,
+
+15
+00:00:53,000 --> 00:00:58,000
+the differences between one input and the next that a single example would hide.
+
+16
+00:00:58,000 --> 00:00:59,000
+That's the real payoff.
+
+17
+00:00:59,000 --> 00:01:01,000
+One example teaches a case.
+
+18
+00:01:01,000 --> 00:01:05,000
+Several examples teach the underlying rule.
+
+19
+00:01:05,000 --> 00:01:11,000
+If example choice is what matters, what makes an example good? Three marks.
+
+20
+00:01:11,000 --> 00:01:12,000
+First, relevant.
+
+21
+00:01:12,000 --> 00:01:16,000
+The example should mirror your actual use case closely,
+
+22
+00:01:16,000 --> 00:01:21,000
+because the pattern it teaches only helps if it transfers to the real inputs you'll send.
+
+23
+00:01:21,000 --> 00:01:23,000
+Second, diverse.
+
+24
+00:01:23,000 --> 00:01:27,000
+Your examples should vary enough to cover the edge cases.
+
+25
+00:01:27,000 --> 00:01:33,000
+Otherwise, the model overfits to one narrow shape and stumbles the moment reality looks different.
+
+26
+00:01:33,000 --> 00:01:35,000
+Third, structured.
+
+27
+00:01:35,000 --> 00:01:41,000
+Each example needs to be clearly separated from your instructions, usually with delimiters.
+
+28
+00:01:41,000 --> 00:01:46,000
+So the model reads it as a sample to imitate, rather than a command to follow.
+
+29
+00:01:46,000 --> 00:01:49,000
+Relevant, diverse, and clearly marked.
+
+30
+00:01:49,000 --> 00:01:53,000
+Hit those three and a small set of examples does a lot of work.
+
+31
+00:01:54,000 --> 00:01:57,000
+Here's the single most important idea in this lesson.
+
+32
+00:01:57,000 --> 00:02:01,000
+Quality beats quantity. Every time.
+
+33
+00:02:01,000 --> 00:02:08,000
+The instinct when few-shot isn't working is to add more examples, but piling on usually backfires.
+
+34
+00:02:08,000 --> 00:02:14,000
+A handful of diverse, well-chosen examples will outperform a long list of near-duplicates,
+
+35
+00:02:14,000 --> 00:02:20,000
+because duplicates teach the model the same thing over and over, while covering nothing new.
+
+36
+00:02:20,000 --> 00:02:26,000
+The rule I use is that every example should earn its place by teaching something the others don't.
+
+37
+00:02:26,000 --> 00:02:34,000
+If a new example just restates a case you've already shown, it's adding token cost with zero added coverage.
+
+38
+00:02:34,000 --> 00:02:37,000
+Anthropic's own guidance points the same way.
+
+39
+00:02:37,000 --> 00:02:44,000
+A small, carefully chosen set of examples, not an exhaustive dump of every case you can think of.
+
+40
+00:02:45,000 --> 00:02:48,000
+Let's talk about where your examples actually go.
+
+41
+00:02:48,000 --> 00:02:50,000
+Because placement trips people up.
+
+42
+00:02:50,000 --> 00:02:53,000
+Few-shot examples live in the message history.
+
+43
+00:02:53,000 --> 00:02:59,000
+You put them in as prior turns, a sample input, and the output you'd want, sitting ahead of your
+
+44
+00:02:59,000 --> 00:03:02,000
+real request, so the model reads them first.
+
+45
+00:03:02,000 --> 00:03:09,000
+Now, one older technique you might have heard of was prefilling the assistant's turn to force a particular format,
+
+46
+00:03:09,000 --> 00:03:12,000
+essentially starting the model's answer for it.
+
+47
+00:03:12,000 --> 00:03:18,000
+On current Claude models, that assistant prefill is rejected outright, so it's no longer a valid trick.
+
+48
+00:03:18,000 --> 00:03:22,000
+The modern replacement is to lean on your few-shot examples for shaping.
+
+49
+00:03:22,000 --> 00:03:28,000
+And when you need a strict format, reach for structured output instead of trying to force the opening tokens.
+
+50
+00:03:29,000 --> 00:03:32,000
+Let me frame the tradeoff at the heart of example choice.
+
+51
+00:03:32,000 --> 00:03:34,000
+Coverage versus clutter.
+
+52
+00:03:34,000 --> 00:03:40,000
+Good coverage means your examples span the real input range, including the tricky edge cases the
+
+53
+00:03:40,000 --> 00:03:41,000
+model would otherwise fumble.
+
+54
+00:03:41,000 --> 00:03:47,000
+When your set covers that range, the model generalizes well, because it has seen the shape of the
+
+55
+00:03:47,000 --> 00:03:49,000
+hard cases, not just the easy ones.
+
+56
+00:03:49,000 --> 00:03:51,000
+Clutter is the opposite failure.
+
+57
+00:03:51,000 --> 00:03:55,000
+It's when you stack up many similar examples of the simple case.
+
+58
+00:03:55,000 --> 00:04:03,000
+That bloats the prompt, wastes tokens on every call, and can actually overfit the model to the happy path.
+
+59
+00:04:03,000 --> 00:04:08,000
+So it does great on the obvious inputs, and falls apart on anything unusual.
+
+60
+00:04:08,000 --> 00:04:13,000
+Aim for coverage of the range, not repetition of the easy win.
+
+61
+00:04:14,000 --> 00:04:19,000
+There's a point where adding examples stops paying off, and recognizing it saves you tokens.
+
+62
+00:04:19,000 --> 00:04:22,000
+Examples showed diminishing returns.
+
+63
+00:04:22,000 --> 00:04:28,000
+The first few carry most of the value, teaching format and covering the main variations.
+
+64
+00:04:28,000 --> 00:04:30,000
+After that, each new example does less.
+
+65
+00:04:31,000 --> 00:04:37,000
+Once your set already covers the input range, another example mostly repeats what the model has seen.
+
+66
+00:04:37,000 --> 00:04:40,000
+So it adds cost without adding coverage.
+
+67
+00:04:40,000 --> 00:04:42,000
+And that cost is real.
+
+68
+00:04:42,000 --> 00:04:48,000
+Every example rides along in the prompt on every single call, inflating your input tokens.
+
+69
+00:04:48,000 --> 00:04:53,000
+The practical signal is to watch output quality as you add examples.
+
+70
+00:04:53,000 --> 00:04:59,000
+When quality flattens out and a new example no longer changes the result, you've hit the ceiling.
+
+71
+00:04:59,000 --> 00:05:03,000
+Stop there, and trim anything that isn't earning its place.
+
+72
+00:05:03,000 --> 00:05:07,000
+Let's pull the placement rules together, because getting them right is half the battle.
+
+73
+00:05:07,000 --> 00:05:15,000
+Put your few-shot examples in the message history, as prior input and output turns that come before the real request.
+
+74
+00:05:15,000 --> 00:05:21,000
+Delimit each one clearly, so the model can tell where an example ends and your instructions begin,
+
+75
+00:05:21,000 --> 00:05:25,000
+and reads it as a sample to imitate, rather than a directive.
+
+76
+00:05:25,000 --> 00:05:29,000
+And skip the Assistant Prefill approach entirely, since current models reject it.
+
+77
+00:05:29,000 --> 00:05:35,000
+If what you really need is a rigid output format, the cleaner path is Structured Output,
+
+78
+00:05:35,000 --> 00:05:37,000
+which constrains the response shape directly.
+
+79
+00:05:37,000 --> 00:05:41,000
+Pair a few well-chosen examples with Structured Output,
+
+80
+00:05:41,000 --> 00:05:46,000
+and you get reliable formatting without stuffing the prompt full of redundant demonstrations.
+
+81
+00:05:46,000 --> 00:05:51,000
+Let me leave you with three habits that keep few-shot prompting clean.
+
+82
+00:05:51,000 --> 00:05:53,000
+First, curate, don't dump.
+
+83
+00:05:53,000 --> 00:05:58,000
+Choose a small set of canonical examples that clearly portray the behavior you want,
+
+84
+00:05:58,000 --> 00:06:01,000
+instead of stuffing in every case you can imagine.
+
+85
+00:06:01,000 --> 00:06:03,000
+Second, test the set.
+
+86
+00:06:03,000 --> 00:06:08,000
+Look at your examples honestly and ask whether each one is relevant and diverse,
+
+87
+00:06:08,000 --> 00:06:10,000
+then drop any that don't add new coverage.
+
+88
+00:06:10,000 --> 00:06:13,000
+You can even ask the model itself to check them for you.
+
+89
+00:06:13,000 --> 00:06:15,000
+Third, match the placement.
+
+90
+00:06:16,000 --> 00:06:19,000
+Keep examples as prior turns and delimit them,
+
+91
+00:06:19,000 --> 00:06:23,000
+so the model treats them as demonstrations, rather than stray instructions.
+
+92
+00:06:23,000 --> 00:06:26,000
+Curate, test, and place well,
+
+93
+00:06:26,000 --> 00:06:33,000
+and a handful of examples will outperform a bloated prompt every time. Let's recap.
+
+94
+00:06:33,000 --> 00:06:36,000
+Multi-shot gives you a pattern to generalize from,
+
+95
+00:06:36,000 --> 00:06:40,000
+but the win is choosing examples well, not counting them.
+
+96
+00:06:40,000 --> 00:06:44,000
+Relevant, diverse examples beats a pile of duplicates.
+
+97
+00:06:44,000 --> 00:06:46,000
+Curate a small canonical set,
+
+98
+00:06:46,000 --> 00:06:49,000
+test whether each example adds new coverage,
+
+99
+00:06:49,000 --> 00:06:52,000
+and keep them delimited as prior turns.
+
+100
+00:06:52,000 --> 00:06:56,000
+That wraps up multi-shot prompting and example choice.
+
+101
+00:06:56,000 --> 00:06:58,000
+Let's keep going in the next video.
+

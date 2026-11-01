@@ -1,0 +1,276 @@
+1
+00:00:00,000 --> 00:00:04,000
+Cloud Code hands you a set of session tools and a slash command menu,
+
+2
+00:00:04,000 --> 00:00:08,000
+and using them well is what keeps a long day of work from turning into a mess.
+
+3
+00:00:08,000 --> 00:00:13,000
+We'll walk through reopening past sessions, keeping context clean,
+
+4
+00:00:13,000 --> 00:00:17,000
+and the difference between built-in commands and the ones your team writes themselves. Let's dig in.
+
+5
+00:00:19,000 --> 00:00:21,000
+Let's lock down three terms this whole lesson leans on.
+
+6
+00:00:22,000 --> 00:00:29,000
+First, a session. That's a single conversation tied to the project directory you launched it in,
+
+7
+00:00:29,000 --> 00:00:34,000
+and Cloud Code saves it to disk as you go, so you can come back to it later.
+
+8
+00:00:35,000 --> 00:00:42,000
+Second, a slash command. That's a shortcut you type with a leading slash to run an action.
+
+9
+00:00:42,000 --> 00:00:46,000
+Anything from clearing your context to kicking off a workflow your team wrote.
+
+10
+00:00:47,000 --> 00:00:53,000
+Third, compaction. When your context window fills up, compaction replaces the older history
+
+11
+00:00:53,000 --> 00:00:58,000
+with a shorter summary, freeing space while keeping your recent thread alive.
+
+12
+00:00:59,000 --> 00:01:05,000
+Session slash command compaction. Those three carry the rest of the lesson, so keep them handy.
+
+13
+00:01:06,000 --> 00:01:11,000
+Here's something worth internalizing early. A session isn't just the text scrolling on
+
+14
+00:01:11,000 --> 00:01:17,000
+your screen. It's a real record written to disk, and that's what lets you reopen it.
+
+15
+00:01:17,000 --> 00:01:21,000
+A few facts follow from that. Each session is tied to the project directory
+
+16
+00:01:21,000 --> 00:01:25,000
+you started it in, so it comes back in context, not floating loose.
+
+17
+00:01:25,000 --> 00:01:30,000
+The transcript is written continuously as you work, which means closing your terminal,
+
+18
+00:01:30,000 --> 00:01:36,000
+or even a crash, doesn't lose your conversation. And old sessions get cleaned up after a retention
+
+19
+00:01:36,000 --> 00:01:43,000
+window you control through settings, 30 days by default. One caution, treat that raw transcript
+
+20
+00:01:43,000 --> 00:01:49,000
+as internal. Don't parse it by hand. Reopen your work through the commands instead.
+
+21
+00:01:50,000 --> 00:01:55,000
+So how do you actually get a past session back? Three moves cover almost everything.
+
+22
+00:01:55,000 --> 00:02:01,000
+The first is the continue flag. Launch with it, and Claude code reopens the most recent session
+
+23
+00:02:01,000 --> 00:02:07,000
+in your current directory, dropping you right back where you left off. No picking required.
+
+24
+00:02:07,000 --> 00:02:12,000
+The second is the resume flag. That opens a picker listing your past sessions,
+
+25
+00:02:12,000 --> 00:02:17,000
+or if you already know which one you want, you name it and jump straight there. The third is
+
+26
+00:02:17,000 --> 00:02:23,000
+resuming from inside a live session, which lets you switch over to a different past conversation
+
+27
+00:02:23,000 --> 00:02:29,000
+without quitting first. One thing to know, this lookup is scoped to your current project directory
+
+28
+00:02:29,000 --> 00:02:35,000
+and its work trees, so run it from the right place. Now let's separate two commands. People
+
+29
+00:02:35,000 --> 00:02:42,000
+constantly mix up, compact and clear. Compacting is the gentle one. When your window fills,
+
+30
+00:02:42,000 --> 00:02:47,000
+it replaces the older turns with a summary, but it keeps your recent decisions and your current task
+
+31
+00:02:47,000 --> 00:02:54,000
+alive in condensed form, so you just keep working through it. Clearing is the hard reset. It empties
+
+32
+00:02:54,000 --> 00:03:00,000
+the window and starts a new conversation with a blank slate, so nothing from before carries into
+
+33
+00:03:00,000 --> 00:03:06,000
+what comes next. Here's the part that trips people up. Clearing doesn't delete your conversation.
+
+34
+00:03:06,000 --> 00:03:12,000
+The previous history is still saved on disk and still resumable later. You're emptying the live
+
+35
+00:03:12,000 --> 00:03:19,000
+context, not throwing the record away. Let's clear up a common wrong assumption. Clod code doesn't
+
+36
+00:03:19,000 --> 00:03:26,000
+remember your last session on its own. Every fresh session starts blank, seeing none of yesterday's
+
+37
+00:03:26,000 --> 00:03:31,000
+conversation by default. That sounds limiting, but it's the whole design, and you have three
+
+38
+00:03:31,000 --> 00:03:38,000
+deliberate ways to carry continuity forward. Your clod.md reloads your standing rules and
+
+39
+00:03:38,000 --> 00:03:44,000
+conventions at every single launch, so the durable stuff is always there. Resume pulls a specific
+
+40
+00:03:44,000 --> 00:03:51,000
+past session back into view when you actually need that history, and auto memory restores the
+
+41
+00:03:51,000 --> 00:03:58,000
+learnings clod saved for itself across sessions. So continuity is something you set up on purpose
+
+42
+00:03:58,000 --> 00:04:03,000
+through config and deliberate resuming, not something the tool hands you for free.
+
+43
+00:04:04,000 --> 00:04:10,000
+Built-in commands are the ones that ship with the CLI, and it helps to think about them in four groups
+
+44
+00:04:10,000 --> 00:04:17,000
+rather than memorizing a long list. The first group is session and context, the commands that reopen,
+
+45
+00:04:17,000 --> 00:04:25,000
+reset, or summarize a conversation, like resume, clear, and compact. The second is model and config,
+
+46
+00:04:25,000 --> 00:04:31,000
+which let you switch the model, the effort level, or a setting without leaving your session. The
+
+47
+00:04:31,000 --> 00:04:37,000
+third is setup and memory, things that scaffold a repo or manage your instructions, like init and
+
+48
+00:04:37,000 --> 00:04:44,000
+memory. And the fourth is quality and workflow, bundled skills that run a whole procedure for you,
+
+49
+00:04:44,000 --> 00:04:50,000
+from code review to planning. The exact names shift over time, so learn the groups, not the roster.
+
+50
+00:04:52,000 --> 00:04:57,000
+Custom commands are the ones your team writes, and these are three facts you already know from
+
+51
+00:04:57,000 --> 00:05:03,000
+the components lesson, so let's just tap them quickly. The file name sets the name you type
+
+52
+00:05:03,000 --> 00:05:09,000
+after the slash. Location sets the scope, project folder for the team through version control,
+
+53
+00:05:09,000 --> 00:05:16,000
+home folder for you alone. Picture a review checklist your team runs before every merge.
+
+54
+00:05:16,000 --> 00:05:23,000
+Save it as review.md under .clod, commands in the repo, and the moment a teammate pulls,
+
+55
+00:05:23,000 --> 00:05:29,000
+they can type slash review and get the exact same procedure. And custom commands and skills are one
+
+56
+00:05:29,000 --> 00:05:36,000
+system now, so a single file gives you a reusable, shareable action with no registration step to wire
+
+57
+00:05:36,000 --> 00:05:42,000
+it up. Let's tie the whole lesson into one habit, a session hygiene loop you run deliberately
+
+58
+00:05:42,000 --> 00:05:48,000
+instead of cleaning up once and forgetting it. Start by pruning stale tool output, the giant
+
+59
+00:05:48,000 --> 00:05:54,000
+file or search result that's already done its job and is just costing you tokens. Compact when the
+
+60
+00:05:54,000 --> 00:05:59,000
+window fills, but the thread still matters, so you shrink the history without losing your place.
+
+61
+00:06:00,000 --> 00:06:07,000
+Clear or start fresh when the context has turned into pure baggage and a blank slate is faster,
+
+62
+00:06:07,000 --> 00:06:11,000
+and resume a saved session when you genuinely need that earlier history back.
+
+63
+00:06:12,000 --> 00:06:16,000
+Run that loop on purpose and a long session stays as sharp at the end as it was at the start.
+
+64
+00:06:17,000 --> 00:06:24,000
+Every session saves to disk and reopens with the continue flag or resume. The compact command
+
+65
+00:06:24,000 --> 00:06:31,000
+summarizes, clear empties the context entirely, and neither one deletes your history. Continuity
+
+66
+00:06:31,000 --> 00:06:38,000
+between sessions comes from clod.md, auto memory, and deliberate resuming, never for free. And built
+
+67
+00:06:38,000 --> 00:06:43,000
+in commands ship with the CLI, while custom ones are files your team writes and shares with each
+
+68
+00:06:44,000 --> 00:06:49,000
+other. That wraps up managing sessions and slash commands. Nice work getting through that,
+
+69
+00:06:49,000 --> 00:06:51,000
+I'll see you in the next one.
+

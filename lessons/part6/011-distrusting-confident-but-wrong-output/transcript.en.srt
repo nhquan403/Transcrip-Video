@@ -1,0 +1,284 @@
+1
+00:00:00,000 --> 00:00:04,000
+Welcome back. This is where a subtle, expensive class of bugs lives.
+
+2
+00:00:04,000 --> 00:00:08,000
+A model states a wrong answer with the same confidence as a right one,
+
+3
+00:00:08,000 --> 00:00:12,000
+and if you read that confidence as correctness, the mistake flows straight into whatever you
+
+4
+00:00:12,000 --> 00:00:18,000
+build next. This lesson covers why to distrust confident output and how to verify it.
+
+5
+00:00:19,000 --> 00:00:24,000
+Let's start with three truths about model confidence, because getting these wrong is
+
+6
+00:00:24,000 --> 00:00:30,000
+the root of a lot of production incidents. First, confidence isn't correctness. A fluent,
+
+7
+00:00:30,000 --> 00:00:36,000
+self-assured answer isn't evidence that it's right. The tone tells you nothing about the accuracy.
+
+8
+00:00:36,000 --> 00:00:43,000
+Second, wrong sounds exactly like right. A model states a false claim with the same certainty it
+
+9
+00:00:43,000 --> 00:00:48,000
+states a true one. There's no built-in hedge, no little tremor in the voice when it's mistaken.
+
+10
+00:00:49,000 --> 00:00:55,000
+Third, verify from outside. If correctness matters, it has to come from grounding,
+
+11
+00:00:55,000 --> 00:01:00,000
+from a citation, or from validation, never from how sure the response happens to sound.
+
+12
+00:01:00,000 --> 00:01:06,000
+Hold on to those three and you stop using the one signal that feels convincing but means nothing.
+
+13
+00:01:07,000 --> 00:01:12,000
+So why does confidence feel so convincing when it's such a bad signal? It comes down to how
+
+14
+00:01:12,000 --> 00:01:19,000
+generation actually works. The model produces the most plausible next token, given everything
+
+15
+00:01:19,000 --> 00:01:26,000
+so far. Plausible, not verified. It's optimizing for text that reads well and fits the pattern.
+
+16
+00:01:26,000 --> 00:01:32,000
+And a confident register is just one more pattern it learned to produce. That register gets generated
+
+17
+00:01:32,000 --> 00:01:38,000
+the same way, whether the underlying claim is true or false. Here's the counterintuitive part.
+
+18
+00:01:38,000 --> 00:01:44,000
+Detail and specificity, exact numbers, named steps, precise sounding citations,
+
+19
+00:01:44,000 --> 00:01:51,000
+actually make a wrong answer look more credible, not less. So the more polished and specific a
+
+20
+00:01:51,000 --> 00:01:57,000
+response is, the more carefully you have to check it. Fluency and truth are simply not the same
+
+21
+00:01:57,000 --> 00:02:03,000
+thing. Let me draw the line sharply between an answer that sounds right and one that is right.
+
+22
+00:02:04,000 --> 00:02:10,000
+Sounds right means fluent, detailed, self-assured. And the key insight is that this style is
+
+23
+00:02:10,000 --> 00:02:16,000
+generated the exact same way, whether the content is true or false. So on its own, it proves nothing.
+
+24
+00:02:16,000 --> 00:02:22,000
+Is right means something different. The claim is backed by a source you can open and check,
+
+25
+00:02:22,000 --> 00:02:27,000
+or a value you computed, or a validation gate it passed. Correctness there is established
+
+26
+00:02:27,000 --> 00:02:34,000
+outside the model, not inferred from its tone. The practical move is to stop asking,
+
+27
+00:02:34,000 --> 00:02:39,000
+does this sound authoritative? And start asking, what backs this up that I could actually verify?
+
+28
+00:02:39,000 --> 00:02:46,000
+That single shift in question is most of the discipline. So how do you actually ground an
+
+29
+00:02:46,000 --> 00:02:52,000
+answer? For anything that matters, you make the model show its work against something real,
+
+30
+00:02:52,000 --> 00:02:58,000
+rather than taking its word. Three concrete moves. Have it cite the source or the document
+
+31
+00:02:58,000 --> 00:03:04,000
+it pulled a claim from, so you can go verify the claim at its origin. Prefer a computed or
+
+32
+00:03:04,000 --> 00:03:10,000
+looked up value over one the model recalled from memory. Because a calculation or a database read
+
+33
+00:03:10,000 --> 00:03:15,000
+is checkable, in a way a recollection isn't. And ask it to self-check its answer against your
+
+34
+00:03:15,000 --> 00:03:22,000
+criteria before it finishes, a step that reliably catches its own errors, especially on math and
+
+35
+00:03:22,000 --> 00:03:28,000
+code. Each of these swaps the confidence signal, which means nothing, for evidence you can actually
+
+36
+00:03:28,000 --> 00:03:35,000
+inspect. When the stakes are real, when output drives money, data changes, or anything hard to
+
+37
+00:03:35,000 --> 00:03:42,000
+undo, layer four guardrails. First, ground the claim. Require a citation or a source the model
+
+38
+00:03:42,000 --> 00:03:50,000
+can point to, so the answer rests on something you can open and check. Second, cross-check. Verify a
+
+39
+00:03:50,000 --> 00:03:57,000
+critical value a second way, recompute it, look it up, or run a second pass before you act on it.
+
+40
+00:03:57,000 --> 00:04:04,000
+Third, validate semantics. Run a gate that judges whether the output is complete and plausible,
+
+41
+00:04:04,000 --> 00:04:11,000
+not merely whether it's well formed. Fourth, gate the action. Put a human or an automated check
+
+42
+00:04:11,000 --> 00:04:20,000
+between the confident output and any irreversible step. Ground, cross-check, validate, gate. Four layers
+
+43
+00:04:20,000 --> 00:04:27,000
+so no single confident mistake reaches production. Let's zero in on the failure mode that skepticism
+
+44
+00:04:27,000 --> 00:04:35,000
+is really built to catch, the silent one. A silent failure returns success while the content is wrong
+
+45
+00:04:35,000 --> 00:04:40,000
+or incomplete, and it's dangerous precisely because none of your normal safety nets see it.
+
+46
+00:04:40,000 --> 00:04:47,000
+No exception fires, so a try slash accept block wraps around it and catches nothing. The status
+
+47
+00:04:47,000 --> 00:04:53,000
+code comes back fine, so your error handling waves it right through. Everything at the plumbing level
+
+48
+00:04:53,000 --> 00:04:59,000
+looks healthy, and the bad answer proceeds. The only thing that catches this is a semantic check
+
+49
+00:04:59,000 --> 00:05:05,000
+aimed at the content itself, asking whether the answer is actually complete and correct.
+
+50
+00:05:05,000 --> 00:05:12,000
+So treat a clean status as necessary but never sufficient. A response that did an error isn't the
+
+51
+00:05:12,000 --> 00:05:18,000
+same as a response that's right. So if confidence can't tell you an answer is right, what can?
+
+52
+00:05:18,000 --> 00:05:25,000
+Three verification sources, and it's worth naming them cleanly. First, grounding. You tie the answer
+
+53
+00:05:25,000 --> 00:05:31,000
+to real context. You handed the model, so a claim traces back to provided data instead of the model's
+
+54
+00:05:31,000 --> 00:05:39,000
+memory. Second, citation. You require the response to name where each fact came from, which turns an
+
+55
+00:05:39,000 --> 00:05:45,000
+assertion into something a reader can actually check. Third, validation. You programmatically
+
+56
+00:05:45,000 --> 00:05:50,000
+test the output against a schema or a business rule, which is what mechanically catches a wrong
+
+57
+00:05:50,000 --> 00:05:58,000
+but fluent answer that slipped past everything else. Grounding, citation, validation. Notice not
+
+58
+00:05:58,000 --> 00:06:03,000
+one of them asks how confident the model sounded. Everyone replaces tone with evidence you can inspect.
+
+59
+00:06:04,000 --> 00:06:10,000
+Let's make skepticism operational, because a stance you only hold in your head does nothing. It has to
+
+60
+00:06:10,000 --> 00:06:17,000
+be wired into the flow. Start by deciding which outputs are actually high stakes, the ones driving
+
+61
+00:06:17,000 --> 00:06:22,000
+an action you can't easily undo, and demand grounding specifically there. You don't need
+
+62
+00:06:22,000 --> 00:06:28,000
+this ceremony on every trivial response. Then insert the validation gate before the output
+
+63
+00:06:28,000 --> 00:06:34,000
+drives any action, not after the damage is done. And when a check fails, route that response to a
+
+64
+00:06:34,000 --> 00:06:41,000
+fallback or a human, never to silent acceptance. The shape to internalize is generate, then verify,
+
+65
+00:06:41,000 --> 00:06:48,000
+then act. The broken shape, the one that burns people, is generate, then act on faith, trusting
+
+66
+00:06:48,000 --> 00:06:54,000
+the output because it sounded sure. Let's frame the big picture here. A model's confidence is
+
+67
+00:06:54,000 --> 00:07:00,000
+a style, not a signal. So it can't tell you an answer is right. Confidence tells you almost
+
+68
+00:07:00,000 --> 00:07:06,000
+nothing about accuracy in generation with LLMs. That's why correctness has to come from grounding,
+
+69
+00:07:06,000 --> 00:07:12,000
+citation, or validation, and why high stakes flows need a semantic gate to catch silent,
+
+70
+00:07:12,000 --> 00:07:19,000
+wrong but successful output. Verify before confident output ever drives a downstream action,
+
+71
+00:07:19,000 --> 00:07:25,000
+and trust evidence over tone every time. That wraps up this lesson. I'll see you in the next one.
+

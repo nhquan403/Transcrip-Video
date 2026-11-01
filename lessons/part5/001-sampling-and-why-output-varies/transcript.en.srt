@@ -1,0 +1,268 @@
+1
+00:00:00,000 --> 00:00:05,000
+Welcome back. Here's a problem that surprises a lot of developers. You send the exact same prompt
+
+2
+00:00:05,000 --> 00:00:11,000
+twice and get two different answers, and you can't just dial that away with a setting anymore. This
+
+3
+00:00:11,000 --> 00:00:18,000
+lesson covers sampling, why output varies, and what actually changed on current models. Let's
+
+4
+00:00:18,000 --> 00:00:24,000
+break it down. Let's start with three terms. Sampling is the process of selecting each next
+
+5
+00:00:24,000 --> 00:00:30,000
+token from the model's output probability distribution. That distribution is the model's
+
+6
+00:00:30,000 --> 00:00:36,000
+ranked set of guesses for what comes next, each with a likelihood attached, and the sampler draws
+
+7
+00:00:36,000 --> 00:00:44,000
+from it. And non-determinism is the property that the same prompt can yield different outputs across
+
+8
+00:00:44,000 --> 00:00:49,000
+different calls. Those three ideas are tied together. Because generation samples from a
+
+9
+00:00:49,000 --> 00:00:54,000
+distribution, rather than always taking the single top guess, the output isn't guaranteed
+
+10
+00:00:54,000 --> 00:01:00,000
+to be byte identical from one run to the next. Get comfortable with that, because it shapes how
+
+11
+00:01:00,000 --> 00:01:07,000
+you design everything downstream of the model. On older models, you had three knobs to shape how
+
+12
+00:01:07,000 --> 00:01:12,000
+that next token got picked. Temperature was the main one. Turn it up, and the odds flattened,
+
+13
+00:01:12,000 --> 00:01:18,000
+so lower ranked tokens had a better chance, which felt more creative. Turn it down towards zero,
+
+14
+00:01:18,000 --> 00:01:24,000
+and the odds sharpened toward the single most likely token. Then top p kept only the most
+
+15
+00:01:24,000 --> 00:01:31,000
+probable tokens up to a cumulative probability threshold, and sampled from that set. And top k
+
+16
+00:01:31,000 --> 00:01:37,000
+simply capped the candidate pool to a fixed number of top tokens. Together, these three let you trade
+
+17
+00:01:37,000 --> 00:01:43,000
+predictability against variety. That was the classic mental model for controlling randomness,
+
+18
+00:01:43,000 --> 00:01:50,000
+and for years, it's how everyone tuned this. Here's the shift you need to know. On current
+
+19
+00:01:50,000 --> 00:01:56,000
+models, those sampling parameters are gone. Passing temperature, top p, or top k returns an
+
+20
+00:01:56,000 --> 00:02:03,000
+HTTP 400 error. This isn't a case where the model quietly ignores them. It rejects the request
+
+21
+00:02:03,000 --> 00:02:12,000
+outright. And this applies to the current tier, Fable 5, Opus 5, Opus 4.8, and Sonnet 5. One
+
+22
+00:02:12,000 --> 00:02:19,000
+nuance on Sonnet 5, the default value is still accepted. Only non-default values trigger the 400.
+
+23
+00:02:19,000 --> 00:02:25,000
+So if you've got old code that sets temperature to 0.7 out of habit, it'll break against these
+
+24
+00:02:25,000 --> 00:02:30,000
+models. The replacement isn't another knob. You steer behavior through clearer prompting,
+
+25
+00:02:30,000 --> 00:02:35,000
+and through the effort setting. Tighten the instruction, show the format you want, and let
+
+26
+00:02:35,000 --> 00:02:42,000
+the model's own reasoning do the shaping. Let's put old and new side by side, because the
+
+27
+00:02:42,000 --> 00:02:47,000
+difference matters when you migrate. The legacy approach adjusted randomness directly with
+
+28
+00:02:47,000 --> 00:02:54,000
+temperature, top p, and top k. Those knobs are still valid on older tiers, like Sonnet 4.5,
+
+29
+00:02:54,000 --> 00:03:00,000
+Haiku 4.5, and earlier. On the Clod 4 models, you could even pass one of temperature or top p,
+
+30
+00:03:01,000 --> 00:03:07,000
+but never both at once. The current approach replaces all of that. Prompting and effort
+
+31
+00:03:07,000 --> 00:03:13,000
+are your levers now. And the old parameters aren't just ignored, they're rejected. The practical rule
+
+32
+00:03:13,000 --> 00:03:18,000
+is simple. Name your target model first, and then you know whether sampling knobs are even an option.
+
+33
+00:03:19,000 --> 00:03:25,000
+On the frontier models, they aren't. Now to the part that unsettles people. Even with identical
+
+34
+00:03:25,000 --> 00:03:32,000
+inputs, a model can return different responses. Why? At its core, next token selection is
+
+35
+00:03:32,000 --> 00:03:38,000
+probabilistic, so the model can land on a slightly different path from one call to the next.
+
+36
+00:03:38,000 --> 00:03:43,000
+On top of that, serving conditions can shift behavior. The request might route differently,
+
+37
+00:03:43,000 --> 00:03:49,000
+or safety classifiers and sampling logic on the serving side can change, all without any change
+
+38
+00:03:49,000 --> 00:03:54,000
+to the model's weights. The weights are fixed for a given model, and yet the output you observe can
+
+39
+00:03:54,000 --> 00:04:01,000
+still vary. So the honest engineering stance is this. Never assume two calls return the exact
+
+40
+00:04:01,000 --> 00:04:08,000
+same string, even when everything you control is the same. This brings us to the single most common
+
+41
+00:04:08,000 --> 00:04:14,000
+misconception here, the temperature zero trap. The myth goes like this. Set temperature to zero,
+
+42
+00:04:14,000 --> 00:04:20,000
+and you'll get fully deterministic, perfectly repeatable output every time. It sounds reasonable,
+
+43
+00:04:20,000 --> 00:04:25,000
+and it isn't true. Even on the older models that accepted it, temperature zero never actually
+
+44
+00:04:25,000 --> 00:04:31,000
+guaranteed identical outputs. It made things more deterministic, not perfectly so. And on
+
+45
+00:04:31,000 --> 00:04:36,000
+current models, the parameter is rejected outright anyway, so you can't even set it.
+
+46
+00:04:36,000 --> 00:04:40,000
+If your pipeline is leaning on temperature zero as a guarantee of repeatability,
+
+47
+00:04:40,000 --> 00:04:46,000
+that guarantee was never really there. Design as if the output can vary, because it can.
+
+48
+00:04:47,000 --> 00:04:52,000
+Let's name where the variation actually comes from, because it's more than one source. First,
+
+49
+00:04:52,000 --> 00:04:58,000
+probabilistic sampling. Each token is drawn from a distribution, so a lower ranked token can surface
+
+50
+00:04:58,000 --> 00:05:06,000
+now and then. Second, serving infrastructure. Routers, safety classifiers, and sampling logic
+
+51
+00:05:06,000 --> 00:05:11,000
+all live between you and the weights, and any of them can nudge behavior. Third, and this is the
+
+52
+00:05:12,000 --> 00:05:18,000
+subtle one, fixed weights don't mean fixed output. You can pin a model ID so the weights never change,
+
+53
+00:05:18,000 --> 00:05:24,000
+and still see the observable output drift over time. Put those together, and you stop expecting
+
+54
+00:05:24,000 --> 00:05:30,000
+a frozen, repeatable string, and start expecting a stable meaning with a variable surface.
+
+55
+00:05:31,000 --> 00:05:37,000
+So how do you build for this? You design pipelines that expect variation instead of fighting it.
+
+56
+00:05:37,000 --> 00:05:43,000
+The core habit is to validate and parse every response defensively. Don't write code that
+
+57
+00:05:43,000 --> 00:05:48,000
+compares the model's output against one exact, byte-identical string you're hoping for,
+
+58
+00:05:48,000 --> 00:05:54,000
+because that test will eventually fail on a run that's perfectly correct, but worded differently.
+
+59
+00:05:55,000 --> 00:06:01,000
+Where an exact format genuinely matters, reach for structured outputs, add a validation step,
+
+60
+00:06:01,000 --> 00:06:07,000
+and build in a retry if the parse fails. Treat the model like a component whose output shape can
+
+61
+00:06:07,000 --> 00:06:13,000
+shift slightly between calls, and guard the boundary where its text enters your system.
+
+62
+00:06:13,000 --> 00:06:16,000
+That defensiveness is what makes a pipeline reliable.
+
+63
+00:06:20,000 --> 00:06:27,000
+Here's the bottom line. Sampling picks each token from a probability distribution, so output isn't
+
+64
+00:06:27,000 --> 00:06:33,000
+guaranteed identical. The legacy knobs were temperature, top p, and top k. On current models,
+
+65
+00:06:33,000 --> 00:06:40,000
+passing them returns an error. On one thing to watch, temperature zero was never fully
+
+66
+00:06:40,000 --> 00:06:46,000
+deterministic, so validate and parse defensively, rather than expecting one exact string.
+
+67
+00:06:47,000 --> 00:06:53,000
+That covers sampling, and why output varies in these models. Join me in the next one.
+

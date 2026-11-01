@@ -1,0 +1,324 @@
+1
+00:00:00,000 --> 00:00:05,000
+Welcome back. Effort is the dial for how hard Claude works on a single response,
+
+2
+00:00:05,000 --> 00:00:09,000
+and it comes in levels. We'll walk through each level, where the setting
+
+3
+00:00:09,000 --> 00:00:13,000
+actually lives, why the highest tiers aren't on every model, and the gap that
+
+4
+00:00:13,000 --> 00:00:19,000
+people miss. Let's break it down. Let's define effort cleanly because three
+
+5
+00:00:19,000 --> 00:00:24,000
+ideas carry most of it. First, what effort is. It's the control for how much work
+
+6
+00:00:24,000 --> 00:00:29,000
+the model spends on a response. Turn it up and you get more reasoning, more
+
+7
+00:00:29,000 --> 00:00:34,000
+latency, and more cost. Turn it down and it's the reverse. Second, where it lives.
+
+8
+00:00:34,000 --> 00:00:40,000
+Effort is a nested setting, not a top-level field. It sits inside the
+
+9
+00:00:40,000 --> 00:00:44,000
+output config, which is a detail I'll come back to because it's the number one
+
+10
+00:00:44,000 --> 00:00:50,000
+place people get it wrong. Third, the default. If you leave effort out entirely,
+
+11
+00:00:50,000 --> 00:00:55,000
+you don't land in the middle. You get high, which sits up in the upper band. So
+
+12
+00:00:55,000 --> 00:00:59,000
+the model already leans toward more work, unless you tell it otherwise. Hold
+
+13
+00:00:59,000 --> 00:01:05,000
+those three, and the rest is detail. Effort runs across five named levels, and
+
+14
+00:01:05,000 --> 00:01:10,000
+it helps to see the whole ladder. At the bottom is low, that's the least work, the
+
+15
+00:01:10,000 --> 00:01:16,000
+fastest, and the cheapest. Then medium, a middle setting. Then high, and remember,
+
+16
+00:01:16,000 --> 00:01:23,000
+high is the default, and it already sits in the upper band, not the center. Above
+
+17
+00:01:23,000 --> 00:01:28,000
+high, there's X high, which is extra work, and importantly, restricted to certain
+
+18
+00:01:28,000 --> 00:01:34,000
+models. And at the top is max, the most work the model will spend on a response.
+
+19
+00:01:34,000 --> 00:01:39,000
+So that's five, from low up to max. The thing to internalize is that these
+
+20
+00:01:39,000 --> 00:01:44,000
+aren't good, better, best quality tiers. They're work and cost tiers on the same
+
+21
+00:01:44,000 --> 00:01:48,000
+model. More effort buys you more thoroughness, and you pay for it in time
+
+22
+00:01:48,000 --> 00:01:53,000
+and money every step up the ladder. What actually changes when you move the
+
+23
+00:01:53,000 --> 00:01:58,000
+effort dial? At higher effort, the model reasons more. In an agent, it'll make more
+
+24
+00:01:58,000 --> 00:02:02,000
+thorough tool calls, explore more, and generally write more before it's
+
+25
+00:02:02,000 --> 00:02:07,000
+satisfied. You're buying answer quality, and the bill for that is added latency
+
+26
+00:02:07,000 --> 00:02:12,000
+and cost. At lower effort, the model deliberately does less. It consolidates
+
+27
+00:02:12,000 --> 00:02:17,000
+tool calls instead of making a dozen, trims the preamble, and answers faster
+
+28
+00:02:17,000 --> 00:02:22,000
+and more cheaply. The trade-off is some depth. Neither end is right in the
+
+29
+00:02:22,000 --> 00:02:27,000
+abstract. A quick classification doesn't need max effort, and paying for it is
+
+30
+00:02:27,000 --> 00:02:33,000
+waste. A gnarly debugging task is exactly where higher effort earns its cost. Match
+
+31
+00:02:33,000 --> 00:02:38,000
+the dial to the difficulty of the work. Now the part that trips people up, the
+
+32
+00:02:38,000 --> 00:02:43,000
+top of the ladder, isn't universal. X high is restricted. You get it on Fable 5,
+
+33
+00:02:43,000 --> 00:02:50,000
+Opus 5, Opus 4.8, and Sonnet 5. Try to use X high on an older tier, and the
+
+34
+00:02:50,000 --> 00:02:56,000
+request just errors. Max has its own support list. It's available on Sonnet 5,
+
+35
+00:02:56,000 --> 00:03:04,000
+Sonnet 4.6, Fable 5, and Opus 4.6 and up. Notice the asymmetry. Max reaches further
+
+36
+00:03:04,000 --> 00:03:10,000
+back than X high, and the two tiers keep independent support lists. Reach for
+
+37
+00:03:10,000 --> 00:03:14,000
+either on a model that doesn't offer it, and you get an error, not a silent
+
+38
+00:03:14,000 --> 00:03:18,000
+downgrade. So the pattern matches the thinking lesson. Name your model before
+
+39
+00:03:18,000 --> 00:03:24,000
+you assume a level exists. Low, medium, and high are safe just about everywhere.
+
+40
+00:03:24,000 --> 00:03:30,000
+It's the high end, X high, and max where support varies and you have to check.
+
+41
+00:03:30,000 --> 00:03:34,000
+Here's the single most common effort mistake, and it's worth calling out
+
+42
+00:03:34,000 --> 00:03:40,000
+directly. Effort isn't a top-level field on the request. People set effort right
+
+43
+00:03:40,000 --> 00:03:44,000
+there at the root, next to the model and the messages, and that's the wrong place.
+
+44
+00:03:44,000 --> 00:03:50,000
+It lives nested under the output config. Put it at the top level, and it doesn't
+
+45
+00:03:50,000 --> 00:03:56,000
+do what you expect. Two quick reminders that pair with this. If you leave effort
+
+46
+00:03:56,000 --> 00:04:01,000
+out completely, you default to high, so silence isn't neutral. And not every
+
+47
+00:04:01,000 --> 00:04:06,000
+model gives you X high or max, which we just covered. So the habit is a short
+
+48
+00:04:06,000 --> 00:04:11,000
+checklist. Name the model, decide the level you want, and nest the setting in
+
+49
+00:04:11,000 --> 00:04:16,000
+the right spot, instead of guessing at the top. Let's zoom out and put all three
+
+50
+00:04:16,000 --> 00:04:20,000
+levers from these two lessons together, because they solve different problems.
+
+51
+00:04:20,000 --> 00:04:26,000
+Fast mode optimizes latency. It pushes output faster on a supported model, at
+
+52
+00:04:26,000 --> 00:04:32,000
+premium pricing, and it doesn't change capability. Thinking optimizes answer
+
+53
+00:04:32,000 --> 00:04:37,000
+quality. It lets the model reason before it answers, through adaptive thinking on
+
+54
+00:04:37,000 --> 00:04:42,000
+current models. And effort optimizes within a single model. It dials how much
+
+55
+00:04:42,000 --> 00:04:47,000
+work the model spends trading intelligence against latency and cost.
+
+56
+00:04:47,000 --> 00:04:52,000
+Notice they're not interchangeable. Fast mode is about speed, thinking is about
+
+57
+00:04:52,000 --> 00:04:57,000
+reasoning, and effort is about how hard the model works. You can even combine
+
+58
+00:04:57,000 --> 00:05:01,000
+them. The skill is knowing which knob addresses the problem in front of you,
+
+59
+00:05:01,000 --> 00:05:06,000
+instead of reaching for the same one every time. One more comparison worth
+
+60
+00:05:06,000 --> 00:05:10,000
+making. Effort versus switching models. Say a task isn't quite good enough.
+
+61
+00:05:10,000 --> 00:05:16,000
+You've got two moves. Raise the effort on the model you're already using, or jump
+
+62
+00:05:16,000 --> 00:05:21,000
+to a more capable model. Tuning effort is the lighter move. You stay on the same
+
+63
+00:05:22,000 --> 00:05:27,000
+model, and just ask it to work harder. And it's often cheaper and simpler. The
+
+64
+00:05:27,000 --> 00:05:31,000
+guidance you'll see is that tuning effort is frequently a better first
+
+65
+00:05:31,000 --> 00:05:36,000
+lever than switching models. So try it before reaching for a bigger, pricier
+
+66
+00:05:36,000 --> 00:05:42,000
+model. Switching models is the heavier move. You change capability and price in
+
+67
+00:05:42,000 --> 00:05:48,000
+one step, and it's the right call when effort alone can't close the gap. So the
+
+68
+00:05:48,000 --> 00:05:54,000
+order is usually effort first, model switch second, not the reverse. Let's make
+
+69
+00:05:54,000 --> 00:05:58,000
+this practical. How do you actually choose? Start from what the workload
+
+70
+00:05:58,000 --> 00:06:02,000
+needs. If it's real-time or cost-sensitive and high volume, lean
+
+71
+00:06:02,000 --> 00:06:08,000
+toward low effort, or a lighter, faster model, or both. If you need a big model's
+
+72
+00:06:08,000 --> 00:06:12,000
+quality, but the latency is hurting, that's exactly where fast mode on Opus
+
+73
+00:06:12,000 --> 00:06:18,000
+5 fits. If the job is hard reasoning, a tricky analysis, or a real debugging
+
+74
+00:06:18,000 --> 00:06:23,000
+problem, turn on adaptive thinking and raise the effort, and accept the extra
+
+75
+00:06:23,000 --> 00:06:28,000
+cost, because quality is the point. And underneath all of it, always confirm the
+
+76
+00:06:28,000 --> 00:06:33,000
+model you picked supports the option you want, because availability changes model
+
+77
+00:06:33,000 --> 00:06:38,000
+to model. Choose the lever that fits the job. Don't reach for the same one out of
+
+78
+00:06:38,000 --> 00:06:44,000
+habit. Here's the bottom line. Effort dials how hard the model works, from low
+
+79
+00:06:44,000 --> 00:06:50,000
+up to max, with high as the default. It's nested under the output configuration,
+
+80
+00:06:50,000 --> 00:06:56,000
+not a top-level field. Just remember, X high and max aren't on every model. So
+
+81
+00:06:56,000 --> 00:07:04,000
+name the model first. That wraps up effort levels for reasoning depth. On to the next video.
+

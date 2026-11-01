@@ -1,0 +1,288 @@
+1
+00:00:00,000 --> 00:00:06,000
+Model selection is where your quality, your response times, and your bill all get decided at once.
+
+2
+00:00:06,000 --> 00:00:11,000
+Get the balance wrong and you either overpay or ship something that isn't good enough.
+
+3
+00:00:11,000 --> 00:00:17,000
+This lesson digs into the three-way trade-off and how to work it. Let's dig in.
+
+4
+00:00:17,000 --> 00:00:22,000
+Every model decision balances three factors, so let's name them precisely.
+
+5
+00:00:22,000 --> 00:00:29,000
+Quality is the capability of the model, its accuracy and depth on whatever reasoning, coding, or
+
+6
+00:00:29,000 --> 00:00:30,000
+analysis the task demands.
+
+7
+00:00:31,000 --> 00:00:37,000
+Latency is how long the model takes to respond, and it matters most for real-time and interactive
+
+8
+00:00:37,000 --> 00:00:39,000
+workloads where a person is waiting.
+
+9
+00:00:40,000 --> 00:00:45,000
+Cost is the per-token price you pay, and the thing to remember is that it gets multiplied across
+
+10
+00:00:45,000 --> 00:00:49,000
+every single call once your system is running at production volume.
+
+11
+00:00:50,000 --> 00:00:56,000
+Quality, latency, cost. The reason model selection is hard is that these three usually pull against
+
+12
+00:00:56,000 --> 00:01:00,000
+each other, so improving one often means giving ground on another.
+
+13
+00:01:01,000 --> 00:01:07,000
+Picture these three as a triangle. You can't fully max out. You rarely get top quality, top speed,
+
+14
+00:01:07,000 --> 00:01:10,000
+and the lowest cost all in the same model.
+
+15
+00:01:11,000 --> 00:01:17,000
+The pattern is consistent. Higher capability usually comes with higher cost and more latency, too,
+
+16
+00:01:17,000 --> 00:01:20,000
+because a more capable model is doing more work under the hood.
+
+17
+00:01:21,000 --> 00:01:27,000
+The lighter, cheaper tiers are the ones that respond fastest, so instead of chasing all three, you
+
+18
+00:01:27,000 --> 00:01:30,000
+figure out which corner of the triangle matters for this job.
+
+19
+00:01:31,000 --> 00:01:37,000
+Is it a hard problem where quality dominates? A real-time feature where latency rules? A high-volume
+
+20
+00:01:37,000 --> 00:01:39,000
+batch where cost is everything?
+
+21
+00:01:40,000 --> 00:01:46,000
+Optimize for the constraint that matters most, and when latency is the binding constraint, the speed
+
+22
+00:01:46,000 --> 00:01:51,000
+ranking you saw in the tiers lesson tells you which tiers are even in the running and which aren't.
+
+23
+00:01:52,000 --> 00:01:58,000
+Let's put quality and speed head-to-head because they trade off directly. The higher tiers, Opus and
+
+24
+00:01:58,000 --> 00:02:02,000
+Fable, deliver the top quality for genuinely hard problems,
+
+25
+00:02:03,000 --> 00:02:09,000
+but they run at moderate to slower latency because they spend more effort reasoning before they
+
+26
+00:02:09,000 --> 00:02:11,000
+answer, and that thinking takes real time.
+
+27
+00:02:12,000 --> 00:02:19,000
+The lighter tiers flip it. Haiku and Sonnet respond fastest, with Haiku in the lead, and they trade
+
+28
+00:02:19,000 --> 00:02:22,000
+away some capability ceiling to get there.
+
+29
+00:02:23,000 --> 00:02:29,000
+That's not a flaw. It's the design. For a real-time feature, a fast answer that's good enough beats
+
+30
+00:02:29,000 --> 00:02:31,000
+a slower answer that's slightly better.
+
+31
+00:02:32,000 --> 00:02:37,000
+For a hard analysis, you'd happily wait for the stronger result.
+
+32
+00:02:37,000 --> 00:02:43,000
+Now cost. You saw this ladder in the tiers lesson, so I'll keep it short. Treat Haiku as your
+
+33
+00:02:43,000 --> 00:02:48,000
+baseline. It has the lowest per-token price, and compare everything else against it.
+
+34
+00:02:49,000 --> 00:02:57,000
+Sonnet runs a few times Haiku's input rate, and Opus several times, the price of top-tier reasoning and coding.
+
+35
+00:02:57,000 --> 00:03:02,000
+Those multiples feel abstract until you multiply them by production volume.
+
+36
+00:03:02,000 --> 00:03:07,000
+At a million calls a day, a few times the price stops being a rounding error and becomes a real line
+
+37
+00:03:07,000 --> 00:03:08,000
+item in your budget.
+
+38
+00:03:09,000 --> 00:03:15,000
+The point I want to add is the output side. Output tokens bill higher than input on every tier, so a
+
+39
+00:03:15,000 --> 00:03:19,000
+model that rambles costs more than one that answers tersely.
+
+40
+00:03:20,000 --> 00:03:27,000
+Set a sensible max tokens cap, prompt for concise answers, and you save real money at scale.
+
+41
+00:03:27,000 --> 00:03:33,000
+Here's a lever people forget, and it can save you from switching models at all.
+
+42
+00:03:33,000 --> 00:03:38,000
+Effort controls how much work the model spends on a given response, and you can turn it up or down
+
+43
+00:03:38,000 --> 00:03:40,000
+without changing which model you're on.
+
+44
+00:03:41,000 --> 00:03:48,000
+This matters because tuning effort is often a better first move than jumping to a heavier, pricier tier.
+
+45
+00:03:48,000 --> 00:03:55,000
+If Sonnet is close, but a little shallow on a task, raising its effort might get you there without paying for Opus.
+
+46
+00:03:55,000 --> 00:04:01,000
+It cuts the other way, too. Lower effort means less latency and lower cost.
+
+47
+00:04:01,000 --> 00:04:06,000
+Higher effort means more reasoning depth, all on the same model.
+
+48
+00:04:06,000 --> 00:04:13,000
+So before reaching for a bigger tier, ask whether adjusting effort on the one you have does the job.
+
+49
+00:04:14,000 --> 00:04:18,000
+Let's tie the whole thing together with the rule that should drive your final pick.
+
+50
+00:04:18,000 --> 00:04:23,000
+The best model isn't the strongest one available, and it isn't the cheapest one either.
+
+51
+00:04:23,000 --> 00:04:27,000
+It's the tier that satisfies every stated constraint at the same time.
+
+52
+00:04:27,000 --> 00:04:33,000
+So you weigh quality, latency, and cost as a set, not one at a time.
+
+53
+00:04:33,000 --> 00:04:38,000
+A tier that nails quality but blows your latency budget is out.
+
+54
+00:04:38,000 --> 00:04:42,000
+A tier that's cheap but can't hit the quality bar is out.
+
+55
+00:04:42,000 --> 00:04:47,000
+Your discipline is to read all the constraints in the scenario first, and only then choose the model
+
+56
+00:04:47,000 --> 00:04:49,000
+that clears every one of them together.
+
+57
+00:04:50,000 --> 00:04:54,000
+That's what separates a considered choice from a favorite model habit.
+
+58
+00:04:54,000 --> 00:05:00,000
+Let me close by naming the traps that catch people, because knowing them is half the defense.
+
+59
+00:05:00,000 --> 00:05:05,000
+The first is picking by prestige, always choosing Opus because it's the most capable, while ignoring
+
+60
+00:05:05,000 --> 00:05:08,000
+that most tasks simply don't need that much model.
+
+61
+00:05:09,000 --> 00:05:14,000
+The second is picking by price, always defaulting to Haiku to save money, even when the task clearly
+
+62
+00:05:14,000 --> 00:05:16,000
+needs more capability than Haiku can give.
+
+63
+00:05:17,000 --> 00:05:20,000
+The third is quieter, ignoring latency.
+
+64
+00:05:20,000 --> 00:05:27,000
+You optimize hard for quality or cost, and then you miss a real-time budget the workload actually had.
+
+65
+00:05:27,000 --> 00:05:32,000
+Each trap comes from fixating on one factor. The fix is always the same.
+
+66
+00:05:32,000 --> 00:05:36,000
+Weigh all three together against the constraints really in the scenario.
+
+67
+00:05:36,000 --> 00:05:38,000
+Let's frame the big picture.
+
+68
+00:05:38,000 --> 00:05:42,000
+Model selection balances quality, latency, and cost.
+
+69
+00:05:42,000 --> 00:05:46,000
+Three forces that pull against each other across the tiers.
+
+70
+00:05:46,000 --> 00:05:52,000
+It matters because the right pick is the lightest tier that satisfies every constraint at once.
+
+71
+00:05:52,000 --> 00:05:56,000
+Just remember, tune effort before you switch to a heavier model.
+
+72
+00:05:56,000 --> 00:06:01,000
+That wraps up quality, latency, and cost tradeoff. Join me in the next one.
+

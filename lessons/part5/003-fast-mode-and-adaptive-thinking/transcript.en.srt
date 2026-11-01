@@ -1,0 +1,464 @@
+1
+00:00:00,000 --> 00:00:05,000
+When you need CLAWD to be faster or to reason more deeply, your first move isn't always
+
+2
+00:00:05,000 --> 00:00:06,000
+a different model.
+
+3
+00:00:06,000 --> 00:00:09,000
+You can tune the call itself.
+
+4
+00:00:09,000 --> 00:00:14,000
+This lesson covers two of those levers, fast mode, which prioritizes speed, and adaptive
+
+5
+00:00:14,000 --> 00:00:19,000
+thinking, which lets the model reason before it answers.
+
+6
+00:00:19,000 --> 00:00:22,000
+Before we go deep, here's the map.
+
+7
+00:00:22,000 --> 00:00:25,000
+There are three ways to tune a single call, and we'll meet all of them.
+
+8
+00:00:25,000 --> 00:00:27,000
+The first is fast mode.
+
+9
+00:00:27,000 --> 00:00:28,000
+It's a latency lever.
+
+10
+00:00:28,000 --> 00:00:34,000
+It pushes the same model to stream its answer faster, and you pay a premium for that speed.
+
+11
+00:00:34,000 --> 00:00:37,000
+It changes throughput, not which model you called.
+
+12
+00:00:37,000 --> 00:00:39,000
+The second is thinking.
+
+13
+00:00:39,000 --> 00:00:43,000
+That's letting the model reason privately before it commits to an answer, and the current
+
+14
+00:00:43,000 --> 00:00:46,000
+way to do that is adaptive thinking.
+
+15
+00:00:46,000 --> 00:00:51,000
+The third is effort, which controls how much work the model puts into a response.
+
+16
+00:00:51,000 --> 00:00:54,000
+Fast mode and thinking are our focus here.
+
+17
+00:00:54,000 --> 00:00:58,000
+Effort is big enough that it gets its own lesson next.
+
+18
+00:00:58,000 --> 00:01:02,000
+Keep the three straight, because people blur them constantly.
+
+19
+00:01:02,000 --> 00:01:04,000
+Let's start with fast mode.
+
+20
+00:01:04,000 --> 00:01:06,000
+Fast mode is a throughput lever.
+
+21
+00:01:06,000 --> 00:01:11,000
+On a supported model, it pushes output out faster, up to about two and a half times the
+
+22
+00:01:11,000 --> 00:01:14,000
+tokens per second you'd normally get.
+
+23
+00:01:14,000 --> 00:01:15,000
+That speed isn't free.
+
+24
+00:01:15,000 --> 00:01:20,000
+It runs at premium pricing, so you're literally paying for latency you shave off.
+
+25
+00:01:20,000 --> 00:01:25,000
+Right now, it ships as a research preview, which means you opt in through a beta flag
+
+26
+00:01:25,000 --> 00:01:28,000
+and a top-level speed option on the request.
+
+27
+00:01:28,000 --> 00:01:31,000
+Here's the mental model I want you to hold.
+
+28
+00:01:31,000 --> 00:01:34,000
+Fast mode makes one specific model faster.
+
+29
+00:01:34,000 --> 00:01:39,000
+It doesn't make the model smarter or dumber, and it doesn't swap in a different model.
+
+30
+00:01:39,000 --> 00:01:41,000
+Same brain, quicker mouth.
+
+31
+00:01:41,000 --> 00:01:44,000
+You reach for it when the clock is the thing you're fighting.
+
+32
+00:01:44,000 --> 00:01:48,000
+Now, where can you actually use fast mode?
+
+33
+00:01:48,000 --> 00:01:51,000
+This is where naming the model matters.
+
+34
+00:01:51,000 --> 00:01:55,000
+Today, fast mode runs on Opus 5 and Opus 4.8.
+
+35
+00:01:55,000 --> 00:02:02,000
+Opus 5 is the current home for it, so if you're building something new on fast mode, build it there.
+
+36
+00:02:02,000 --> 00:02:09,000
+Opus 4.7 no longer supports fast mode, and a fast request sent there now returns an error,
+
+37
+00:02:09,000 --> 00:02:11,000
+so don't anchor new work to it.
+
+38
+00:02:11,000 --> 00:02:15,000
+And there are places fast mode simply isn't offered.
+
+39
+00:02:15,000 --> 00:02:20,000
+You can't use it through the batch API, which makes sense, because batches are already optimized
+
+40
+00:02:20,000 --> 00:02:22,000
+for cost over speed.
+
+41
+00:02:22,000 --> 00:02:26,000
+It's also off the table on third-party model platforms.
+
+42
+00:02:26,000 --> 00:02:29,000
+So fast mode is powerful, but it's narrow.
+
+43
+00:02:29,000 --> 00:02:35,000
+Check that your model and your platform actually support it before you design around it.
+
+44
+00:02:35,000 --> 00:02:41,000
+It's worth separating fast mode from a move that looks similar, switching to a smaller model.
+
+45
+00:02:41,000 --> 00:02:44,000
+Both can get you a quicker response, but they're different levers.
+
+46
+00:02:44,000 --> 00:02:48,000
+Fast mode keeps the exact same model and its quality.
+
+47
+00:02:48,000 --> 00:02:52,000
+You pay a premium, and in return, the tokens come out faster.
+
+48
+00:02:52,000 --> 00:02:56,000
+You're buying speed on that model, and its capability doesn't change.
+
+49
+00:02:56,000 --> 00:03:02,000
+Switching to a smaller model, say from Opus down to Haiku 4.5, is a different bargain.
+
+50
+00:03:02,000 --> 00:03:07,000
+You change the model itself, so you change both capability and price, and you usually
+
+51
+00:03:07,000 --> 00:03:09,000
+gain some speed too.
+
+52
+00:03:09,000 --> 00:03:12,000
+The question to ask is what you're optimizing.
+
+53
+00:03:12,000 --> 00:03:16,000
+If you need this model's quality but faster, that's fast mode.
+
+54
+00:03:16,000 --> 00:03:22,000
+If a lighter model can do the job, that's a model switch, and it's often cheaper.
+
+55
+00:03:22,000 --> 00:03:23,000
+Let's turn to thinking.
+
+56
+00:03:23,000 --> 00:03:25,000
+The core idea is simple.
+
+57
+00:03:25,000 --> 00:03:30,000
+Instead of answering immediately, the model reasons first, spending some thinking tokens
+
+58
+00:03:30,000 --> 00:03:34,000
+working the problem before it writes the visible answer.
+
+59
+00:03:34,000 --> 00:03:37,000
+That's extended thinking as a concept.
+
+60
+00:03:37,000 --> 00:03:42,000
+Now, how you turn it on depends on the model, and there are two styles.
+
+61
+00:03:42,000 --> 00:03:44,000
+The current one is adaptive thinking.
+
+62
+00:03:44,000 --> 00:03:49,000
+You switch it on, and the model itself decides when to think and how much, with no budget
+
+63
+00:03:49,000 --> 00:03:51,000
+for you to tune.
+
+64
+00:03:51,000 --> 00:03:57,000
+The older style is a legacy budget mode, where you set an explicit thinking budget yourself.
+
+65
+00:03:57,000 --> 00:04:01,000
+That budget approach still exists, but only on older models.
+
+66
+00:04:01,000 --> 00:04:07,000
+So when someone asks how thinking works, the honest first question is always, which model?
+
+67
+00:04:07,000 --> 00:04:10,000
+Because the answer genuinely changes.
+
+68
+00:04:10,000 --> 00:04:14,000
+Let's go model by model, because this is where people get tripped up.
+
+69
+00:04:14,000 --> 00:04:16,000
+On Fable 5, thinking is always on.
+
+70
+00:04:16,000 --> 00:04:18,000
+You can't turn it off.
+
+71
+00:04:18,000 --> 00:04:25,000
+On Opus 5 and Opus 4.8, adaptive thinking is supported, but it's off unless you explicitly ask for it.
+
+72
+00:04:25,000 --> 00:04:27,000
+Sonnet 5 flips that default.
+
+73
+00:04:27,000 --> 00:04:31,000
+Leave the thinking setting out, and it runs adaptive thinking on its own.
+
+74
+00:04:31,000 --> 00:04:36,000
+If you don't want thinking there, pass thinking type disabled to switch it off.
+
+75
+00:04:36,000 --> 00:04:40,000
+And note that manually setting it to enabled is rejected with a 400.
+
+76
+00:04:40,000 --> 00:04:43,000
+Then there's Haiku 4.5, the exception.
+
+77
+00:04:43,000 --> 00:04:45,000
+It doesn't do adaptive thinking at all.
+
+78
+00:04:45,000 --> 00:04:49,000
+It still reasons, but through the older budget-based mode instead.
+
+79
+00:04:49,000 --> 00:04:52,000
+So four models, four different answers.
+
+80
+00:04:52,000 --> 00:04:57,000
+That's why you name the model first, because assuming adaptive thinking is on, or even
+
+81
+00:04:57,000 --> 00:05:01,000
+available, is a reliable way to get a surprise.
+
+82
+00:05:01,000 --> 00:05:04,000
+I want to hammer one point, because it's billing relevant.
+
+83
+00:05:04,000 --> 00:05:08,000
+On the Opus models, thinking is off until you ask for it.
+
+84
+00:05:08,000 --> 00:05:14,000
+If you're on Opus 5 or Opus 4.8 and you leave the thinking setting out, you get no thinking.
+
+85
+00:05:14,000 --> 00:05:15,000
+The model answers straight.
+
+86
+00:05:15,000 --> 00:05:17,000
+No reasoning step.
+
+87
+00:05:17,000 --> 00:05:22,000
+If you want that reasoning, you turn on adaptive thinking explicitly.
+
+88
+00:05:22,000 --> 00:05:24,000
+Sonnet 5 works the other way around.
+
+89
+00:05:24,000 --> 00:05:27,000
+It thinks unless you explicitly disable it.
+
+90
+00:05:27,000 --> 00:05:31,000
+So leaving the setting out means you're paying for thinking tokens.
+
+91
+00:05:31,000 --> 00:05:34,000
+And Fable 5 is always thinking. No off switch.
+
+92
+00:05:34,000 --> 00:05:37,000
+There's also a visibility angle.
+
+93
+00:05:37,000 --> 00:05:41,000
+Even when thinking is on, the reasoning stays hidden by default.
+
+94
+00:05:41,000 --> 00:05:46,000
+You only see it if you opt to surface it, and it costs the same either way.
+
+95
+00:05:46,000 --> 00:05:47,000
+So the habit is simple.
+
+96
+00:05:47,000 --> 00:05:52,000
+Name your model, check its default, and set thinking on purpose.
+
+97
+00:05:52,000 --> 00:05:56,000
+Let's put the two thinking styles side by side one more time, because the distinction
+
+98
+00:05:56,000 --> 00:05:59,000
+matters for real code.
+
+99
+00:05:59,000 --> 00:06:02,000
+With adaptive thinking, the model decides how much to reason.
+
+100
+00:06:02,000 --> 00:06:07,000
+There's no budget for you to set, and it's the current mode on the frontier models.
+
+101
+00:06:07,000 --> 00:06:12,000
+With the legacy budget mode, you set an explicit token budget for thinking yourself.
+
+102
+00:06:12,000 --> 00:06:19,000
+That style still works, but only on older models, things like Sonnet 4.5 and Opus 4.5.
+
+103
+00:06:19,000 --> 00:06:22,000
+Here's the trap that bites teams during upgrades.
+
+104
+00:06:22,000 --> 00:06:29,000
+If you carry old code that sets a thinking budget forward onto a current model, it doesn't quietly adapt.
+
+105
+00:06:29,000 --> 00:06:30,000
+It gets rejected.
+
+106
+00:06:30,000 --> 00:06:34,000
+The frontier models don't accept the old budget style at all.
+
+107
+00:06:34,000 --> 00:06:39,000
+So when you move to a newer model, you switch to adaptive thinking.
+
+108
+00:06:39,000 --> 00:06:43,000
+Same goal, different switch. Let's recap.
+
+109
+00:06:43,000 --> 00:06:48,000
+Fast mode and thinking are two separate levers on one call.
+
+110
+00:06:48,000 --> 00:06:53,000
+Fast mode buys speed at a premium on Opus 5 and Opus 4.8.
+
+111
+00:06:53,000 --> 00:06:56,000
+Adaptive thinking lets the model reason before it answers.
+
+112
+00:06:56,000 --> 00:07:01,000
+It's off by default on the Opus models and on by default on Sonnet 5.
+
+113
+00:07:01,000 --> 00:07:07,000
+Just remember, availability is model specific, so name the model first and understand the
+
+114
+00:07:07,000 --> 00:07:09,000
+model that you're using.
+
+115
+00:07:09,000 --> 00:07:12,000
+That covers fast mode and adaptive thinking.
+
+116
+00:07:12,000 --> 00:07:13,000
+I'll see you in the next one.
+

@@ -1,0 +1,396 @@
+1
+00:00:00,000 --> 00:00:04,000
+You've classified the error, now you have to act on it, and the recovery almost falls
+
+2
+00:00:04,000 --> 00:00:06,000
+straight out of the type.
+
+3
+00:00:06,000 --> 00:00:12,000
+The common mistake is matching your fix to how the failure feels instead of what it actually is.
+
+4
+00:00:12,000 --> 00:00:13,000
+That's why we classify first.
+
+5
+00:00:13,000 --> 00:00:21,000
+This lesson covers the main recovery paths, and when to fix, when to fall back, and when to escalate.
+
+6
+00:00:21,000 --> 00:00:27,000
+Let's define three recovery moves up front, because every strategy is a combination of them.
+
+7
+00:00:27,000 --> 00:00:29,000
+First, retry with backoff.
+
+8
+00:00:29,000 --> 00:00:34,000
+That's resending a transient request after a wait that grows on each attempt, so you're
+
+9
+00:00:34,000 --> 00:00:37,000
+not hammering a service that's already busy.
+
+10
+00:00:37,000 --> 00:00:39,000
+Second, fallback.
+
+11
+00:00:39,000 --> 00:00:44,000
+That's switching to a different model, a simpler path, or a cached result when the primary
+
+12
+00:00:44,000 --> 00:00:50,000
+call can't succeed, so the user still gets an answer instead of an error.
+
+13
+00:00:50,000 --> 00:00:52,000
+Third, escalation.
+
+14
+00:00:52,000 --> 00:00:57,000
+That's handing the problem to a human, or a support channel, when no automated recovery
+
+15
+00:00:57,000 --> 00:01:04,000
+fits, and you carry the request ID along so whoever picks it up can find the exact call.
+
+16
+00:01:04,000 --> 00:01:07,000
+Retry, fallback, escalate.
+
+17
+00:01:07,000 --> 00:01:12,000
+The single most important habit here is matching your recovery to the error's type, never to
+
+18
+00:01:12,000 --> 00:01:14,000
+how it looks on the surface.
+
+19
+00:01:14,000 --> 00:01:19,000
+A pair of failures can feel identical and need opposite responses.
+
+20
+00:01:19,000 --> 00:01:24,000
+A slow response and a rate limit both leave you waiting, but one just needs a little patience
+
+21
+00:01:24,000 --> 00:01:28,000
+while the other needs a real backoff schedule.
+
+22
+00:01:28,000 --> 00:01:30,000
+Retrying a malformed request feels productive.
+
+23
+00:01:30,000 --> 00:01:34,000
+You're doing something, yet it fixes nothing and burns budget.
+
+24
+00:01:34,000 --> 00:01:37,000
+So resist the urge to react to the symptom.
+
+25
+00:01:37,000 --> 00:01:42,000
+Go back to the classification you already made, transient or permanent, integration
+
+26
+00:01:42,000 --> 00:01:48,000
+or model output, and let that type point you at the response that addresses the cause.
+
+27
+00:01:49,000 --> 00:01:52,000
+Everything collapses into three recovery buckets.
+
+28
+00:01:52,000 --> 00:01:54,000
+The first is retry and backoff.
+
+29
+00:01:54,000 --> 00:02:00,000
+That's for transient integration errors, connection drops, a 429, or any 500 series error.
+
+30
+00:02:00,000 --> 00:02:05,000
+You let the wait grow between attempts and honor the retry after header when it's there.
+
+31
+00:02:05,000 --> 00:02:07,000
+The second is fix the request.
+
+32
+00:02:07,000 --> 00:02:12,000
+That's for permanent errors like a 400, a 401, or a 413.
+
+33
+00:02:12,000 --> 00:02:17,000
+You change the payload, the credentials, or the size, then send the corrected call.
+
+34
+00:02:17,000 --> 00:02:20,000
+The third is fix the prompt or fallback.
+
+35
+00:02:20,000 --> 00:02:23,000
+That's for model output problems that ride on a 200.
+
+36
+00:02:23,000 --> 00:02:27,000
+You adjust the prompt, raise a limit, or switch to another model.
+
+37
+00:02:27,000 --> 00:02:32,000
+Three buckets and the error type tells you which one you're in.
+
+38
+00:02:32,000 --> 00:02:36,000
+Let's zoom in on backoff because it's powerful and it's often misapplied.
+
+39
+00:02:36,000 --> 00:02:40,000
+Exponential backoff means you wait a little after the first failure, then wait longer
+
+40
+00:02:40,000 --> 00:02:45,000
+after the next, and longer still, giving a busy service room to recover.
+
+41
+00:02:45,000 --> 00:02:50,000
+On a 429, don't guess the interval, honor the retry after header because it tells you
+
+42
+00:02:50,000 --> 00:02:53,000
+exactly how long to hold off.
+
+43
+00:02:53,000 --> 00:02:58,000
+And always cap the number of attempts so a persistent problem fails loudly instead of
+
+44
+00:02:58,000 --> 00:03:00,000
+looping forever.
+
+45
+00:03:00,000 --> 00:03:01,000
+Here's the key limit.
+
+46
+00:03:01,000 --> 00:03:09,000
+Backoff only belongs to transient failures, never to a permanent error like a bad request or a bad key.
+
+47
+00:03:09,000 --> 00:03:13,000
+It helps to know what the SDK already does for you.
+
+48
+00:03:13,000 --> 00:03:17,000
+The official SDKs automatically retry transient failures.
+
+49
+00:03:17,000 --> 00:03:24,000
+And the set is specific, connection errors, 429 rate limits, and 500 series server errors.
+
+50
+00:03:24,000 --> 00:03:28,000
+They use exponential backoff and they honor the retry after header.
+
+51
+00:03:28,000 --> 00:03:30,000
+By default, that's a couple of retries.
+
+52
+00:03:30,000 --> 00:03:33,000
+And you can raise, lower, or disable it.
+
+53
+00:03:33,000 --> 00:03:38,000
+What they won't do is retry a permanent 400 series client error for you.
+
+54
+00:03:38,000 --> 00:03:45,000
+A 400, a 401, a 403, a 413, those come straight back because retrying them is pointless.
+
+55
+00:03:45,000 --> 00:03:51,000
+The 429 is the one 400 series error carved out as transient, which is why it sits in
+
+56
+00:03:51,000 --> 00:03:53,000
+the retried set.
+
+57
+00:03:53,000 --> 00:03:55,000
+And a 409 conflict is its own case.
+
+58
+00:03:55,000 --> 00:03:59,000
+You resolve the conflicting state first, then retry the call.
+
+59
+00:03:59,000 --> 00:04:04,000
+Lean on the SDEC for the transient set and own the rest yourself.
+
+60
+00:04:04,000 --> 00:04:09,000
+When the error is permanent, the whole job is changing something before you try again.
+
+61
+00:04:09,000 --> 00:04:11,000
+On a 400, read the message field.
+
+62
+00:04:11,000 --> 00:04:15,000
+It usually points right at the malformed part, then correct it.
+
+63
+00:04:15,000 --> 00:04:20,000
+On a 401 or 403, the problem is credentials or permissions.
+
+64
+00:04:20,000 --> 00:04:23,000
+So repair the key or grant it access.
+
+65
+00:04:23,000 --> 00:04:26,000
+On a 413, the request is simply too big.
+
+66
+00:04:26,000 --> 00:04:31,000
+So shrink it or split the work across the batch's API when there's a lot of it.
+
+67
+00:04:31,000 --> 00:04:34,000
+And treat a 409 conflict as its own thing.
+
+68
+00:04:34,000 --> 00:04:36,000
+It means the resource changed under you.
+
+69
+00:04:36,000 --> 00:04:39,000
+So resolve that conflict first, and then retry.
+
+70
+00:04:39,000 --> 00:04:44,000
+In none of these, does the same unchanged call ever start working.
+
+71
+00:04:44,000 --> 00:04:48,000
+Model output problems arrive on a successful 200.
+
+72
+00:04:48,000 --> 00:04:50,000
+So there's no status code to react to.
+
+73
+00:04:50,000 --> 00:04:53,000
+And there are four fixes worth memorizing.
+
+74
+00:04:53,000 --> 00:04:55,000
+First, max tokens.
+
+75
+00:04:55,000 --> 00:04:58,000
+The answer was truncated at the cap you set.
+
+76
+00:04:58,000 --> 00:05:03,000
+So raise max tokens or continue the response from where it stopped.
+
+77
+00:05:03,000 --> 00:05:06,000
+Second, model context window exceeded.
+
+78
+00:05:06,000 --> 00:05:11,000
+The response ran into the model's total context window, not your requested cap.
+
+79
+00:05:11,000 --> 00:05:18,000
+So reduce the input, prune history, or compact the context. Third, refusal.
+
+80
+00:05:18,000 --> 00:05:20,000
+Claude declined on policy grounds.
+
+81
+00:05:20,000 --> 00:05:26,000
+So read stop details for the reason, then adjust the prompt or fall back to another model.
+
+82
+00:05:26,000 --> 00:05:29,000
+Fourth, a clean answer that's simply wrong.
+
+83
+00:05:29,000 --> 00:05:33,000
+That's a prompt and eval problem, and no network retry will fix it.
+
+84
+00:05:33,000 --> 00:05:37,000
+Four different tells, four different fixes.
+
+85
+00:05:37,000 --> 00:05:43,000
+That leaves the two exits when a call can't just be repaired in place, fallback and escalation.
+
+86
+00:05:43,000 --> 00:05:50,000
+A fallback is your automated plan B. You switch to another model, a simpler path, or a cached result.
+
+87
+00:05:50,000 --> 00:05:55,000
+So the user still walks away with something useful instead of an error page.
+
+88
+00:05:55,000 --> 00:06:00,000
+Escalation is what you reach for when no automated recovery fits at all.
+
+89
+00:06:00,000 --> 00:06:05,000
+You route the failure to a human or a support channel, and you carry the request ID and
+
+90
+00:06:05,000 --> 00:06:11,000
+the error type with it, because that's exactly what lets someone reconstruct what happened.
+
+91
+00:06:11,000 --> 00:06:14,000
+Fallback keeps the system running on its own.
+
+92
+00:06:14,000 --> 00:06:18,000
+Escalation admits a person has to step in.
+
+93
+00:06:18,000 --> 00:06:19,000
+Here's the bottom line.
+
+94
+00:06:19,000 --> 00:06:24,000
+When you choose a recovery, you're really acting on the type you diagnosed.
+
+95
+00:06:24,000 --> 00:06:30,000
+Try and back off for transient issues, fix and request for permanent issues, and adjust
+
+96
+00:06:30,000 --> 00:06:34,000
+the prompt or fallback for model output.
+
+97
+00:06:34,000 --> 00:06:38,000
+The trap is retrying an error that will never clear.
+
+98
+00:06:38,000 --> 00:06:41,000
+That covers selecting the right recovery strategy.
+
+99
+00:06:41,000 --> 00:06:42,000
+I'll catch you in the next one.
+

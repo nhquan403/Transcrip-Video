@@ -1,0 +1,644 @@
+1
+00:00:00,000 --> 00:00:01,000
+Welcome back.
+
+2
+00:00:01,000 --> 00:00:03,000
+When you move an app to a newer cloud model,
+
+3
+00:00:03,000 --> 00:00:05,000
+you can hit a surprise.
+
+4
+00:00:05,000 --> 00:00:07,000
+A call that worked on the old model
+
+5
+00:00:07,000 --> 00:00:09,000
+suddenly returns an error,
+
+6
+00:00:09,000 --> 00:00:11,000
+and nothing in your logic changed.
+
+7
+00:00:11,000 --> 00:00:13,000
+This lesson covers why that happens,
+
+8
+00:00:13,000 --> 00:00:15,000
+which parameters usually break,
+
+9
+00:00:15,000 --> 00:00:20,000
+and why thinking has to be tested on the target model. Let's dive in.
+
+10
+00:00:21,000 --> 00:00:24,000
+Let's start with three terms that frame everything else.
+
+11
+00:00:24,000 --> 00:00:26,000
+First, a breaking change.
+
+12
+00:00:26,000 --> 00:00:29,000
+That's when a newer model generation rejects a parameter,
+
+13
+00:00:29,000 --> 00:00:32,000
+an older generation happily accepted,
+
+14
+00:00:32,000 --> 00:00:35,000
+so a request that once worked now fails.
+
+15
+00:00:35,000 --> 00:00:38,000
+Second, the 400 error.
+
+16
+00:00:38,000 --> 00:00:39,000
+When you send a parameter
+
+17
+00:00:39,000 --> 00:00:41,000
+the target model no longer supports,
+
+18
+00:00:41,000 --> 00:00:43,000
+the API answers with a 400.
+
+19
+00:00:43,000 --> 00:00:46,000
+It means bad request, your input,
+
+20
+00:00:46,000 --> 00:00:49,000
+not a server outage on Anthropic's side.
+
+21
+00:00:50,000 --> 00:00:53,000
+Third, model-specific behavior.
+
+22
+00:00:53,000 --> 00:00:55,000
+Which parameters a call accepts
+
+23
+00:00:55,000 --> 00:00:57,000
+depends on the exact model you're hitting,
+
+24
+00:00:57,000 --> 00:01:00,000
+so identical code can pass on one model
+
+25
+00:01:00,000 --> 00:01:02,000
+and fail on another.
+
+26
+00:01:02,000 --> 00:01:06,000
+Breaking change, 400 error, model-specific behavior.
+
+27
+00:01:06,000 --> 00:01:07,000
+Keep those three in mind,
+
+28
+00:01:07,000 --> 00:01:09,000
+because the rest of this lesson
+
+29
+00:01:09,000 --> 00:01:11,000
+is really about spotting and avoiding them.
+
+30
+00:01:12,000 --> 00:01:16,000
+So why would a call that's worked for months suddenly break?
+
+31
+00:01:16,000 --> 00:01:19,000
+It comes down to how model generations evolve.
+
+32
+00:01:19,000 --> 00:01:23,000
+Anthropic doesn't freeze the API surface forever.
+
+33
+00:01:23,000 --> 00:01:27,000
+As newer models ship, some older parameters get removed,
+
+34
+00:01:27,000 --> 00:01:30,000
+because a better mechanism replaced them.
+
+35
+00:01:30,000 --> 00:01:31,000
+On current models,
+
+36
+00:01:31,000 --> 00:01:34,000
+sampling controls like temperature are gone.
+
+37
+00:01:34,000 --> 00:01:36,000
+Final turn pre-fill is gone.
+
+38
+00:01:36,000 --> 00:01:40,000
+The old budget-based thinking setting is gone.
+
+39
+00:01:40,000 --> 00:01:42,000
+None of those were deleted to annoy you.
+
+40
+00:01:42,000 --> 00:01:46,000
+Each was retired in favor of a cleaner approach.
+
+41
+00:01:46,000 --> 00:01:48,000
+But here's the catch for migration.
+
+42
+00:01:48,000 --> 00:01:50,000
+When you point old code at a new model,
+
+43
+00:01:50,000 --> 00:01:53,000
+the request body still carries those retired parameters,
+
+44
+00:01:53,000 --> 00:01:56,000
+and the model rejects them with a 400.
+
+45
+00:01:57,000 --> 00:01:59,000
+The code didn't change.
+
+46
+00:01:59,000 --> 00:02:00,000
+The rules underneath it did.
+
+47
+00:02:02,000 --> 00:02:05,000
+Let me make this concrete with a before and after.
+
+48
+00:02:05,000 --> 00:02:09,000
+Before migration, your app runs on an older model.
+
+49
+00:02:09,000 --> 00:02:11,000
+The request sets a temperature,
+
+50
+00:02:11,000 --> 00:02:13,000
+maybe pre-fills the start of the assistance reply
+
+51
+00:02:13,000 --> 00:02:15,000
+to force a format,
+
+52
+00:02:15,000 --> 00:02:18,000
+and it comes back with a clean response every time.
+
+53
+00:02:18,000 --> 00:02:19,000
+Everything's fine.
+
+54
+00:02:19,000 --> 00:02:20,000
+Then you migrate.
+
+55
+00:02:20,000 --> 00:02:23,000
+You swap in a current model, like Opus 5,
+
+56
+00:02:23,000 --> 00:02:26,000
+and you change nothing else, because why would you?
+
+57
+00:02:26,000 --> 00:02:29,000
+If you do the exact same request, body returns a 400.
+
+58
+00:02:29,000 --> 00:02:31,000
+The temperature and the pre-fill
+
+59
+00:02:31,000 --> 00:02:34,000
+that were perfectly valid a moment ago
+
+60
+00:02:34,000 --> 00:02:36,000
+are rejected outright.
+
+61
+00:02:36,000 --> 00:02:40,000
+Same code, same prompt, different model, different rules.
+
+62
+00:02:40,000 --> 00:02:43,000
+That gap between what the old model tolerated
+
+63
+00:02:43,000 --> 00:02:45,000
+and what the new one accepts
+
+64
+00:02:45,000 --> 00:02:47,000
+is exactly where migration bugs live.
+
+65
+00:02:48,000 --> 00:02:51,000
+Let's name the three parameters that break most often,
+
+66
+00:02:51,000 --> 00:02:54,000
+because these are the usual suspects.
+
+67
+00:02:54,000 --> 00:02:56,000
+The first is sampling parameters.
+
+68
+00:02:56,000 --> 00:03:00,000
+Temperature, top P, and top K return a 400
+
+69
+00:03:00,000 --> 00:03:01,000
+on the current tier.
+
+70
+00:03:01,000 --> 00:03:06,000
+Fable 5, Opus 5, Opus 4.8, and Sonnet 5.
+
+71
+00:03:06,000 --> 00:03:10,000
+You steer behavior with prompting and effort now instead.
+
+72
+00:03:10,000 --> 00:03:13,000
+The second is final turn pre-fill.
+
+73
+00:03:13,000 --> 00:03:16,000
+Putting words in the assistance mouth on the last turn
+
+74
+00:03:16,000 --> 00:03:20,000
+to shape the output is rejected on those same four models.
+
+75
+00:03:20,000 --> 00:03:23,000
+The third is the legacy thinking budget.
+
+76
+00:03:23,000 --> 00:03:25,000
+Setting thinking to enabled with a token budget
+
+77
+00:03:26,000 --> 00:03:30,000
+returns a 400 on the same four models as well.
+
+78
+00:03:30,000 --> 00:03:33,000
+Sampling, pre-fill, thinking budget.
+
+79
+00:03:33,000 --> 00:03:35,000
+If your old code touches any of these,
+
+80
+00:03:35,000 --> 00:03:37,000
+expect a 400 on a current model.
+
+81
+00:03:38,000 --> 00:03:40,000
+Let's slow down on sampling,
+
+82
+00:03:40,000 --> 00:03:43,000
+because developers reach for it out of habit.
+
+83
+00:03:43,000 --> 00:03:45,000
+On older models, you'd tune temperature
+
+84
+00:03:45,000 --> 00:03:48,000
+to make output more or less random,
+
+85
+00:03:48,000 --> 00:03:51,000
+and maybe top P or top K alongside it.
+
+86
+00:03:51,000 --> 00:03:56,000
+On current models like Fable 5, Opus 5, Opus 4.8,
+
+87
+00:03:56,000 --> 00:03:59,000
+and Sonnet 5, those parameters are removed,
+
+88
+00:03:59,000 --> 00:04:02,000
+and sending any of them returns a 400.
+
+89
+00:04:02,000 --> 00:04:04,000
+So what do you do instead?
+
+90
+00:04:04,000 --> 00:04:08,000
+You steer with prompting and with the effort level.
+
+91
+00:04:08,000 --> 00:04:10,000
+There's a related myth worth killing too.
+
+92
+00:04:10,000 --> 00:04:12,000
+People set temperature to zero,
+
+93
+00:04:12,000 --> 00:04:16,000
+expecting perfectly identical output every time.
+
+94
+00:04:16,000 --> 00:04:19,000
+That was never truly guaranteed, even on the old models.
+
+95
+00:04:19,000 --> 00:04:23,000
+So don't cling to sampling knobs for determinism.
+
+96
+00:04:23,000 --> 00:04:25,000
+They're gone on current models,
+
+97
+00:04:25,000 --> 00:04:27,000
+and they never delivered that guarantee anyway.
+
+98
+00:04:28,000 --> 00:04:29,000
+Here's the good news.
+
+99
+00:04:29,000 --> 00:04:32,000
+For each retired parameter, there's a clear replacement.
+
+100
+00:04:32,000 --> 00:04:35,000
+So migration is mostly a set of swaps.
+
+101
+00:04:35,000 --> 00:04:37,000
+Three of them cover most cases.
+
+102
+00:04:37,000 --> 00:04:40,000
+First, sampling to effort.
+
+103
+00:04:40,000 --> 00:04:42,000
+Instead of tuning temperature, you set the effort level
+
+104
+00:04:42,000 --> 00:04:45,000
+and lean on your prompt to shape behavior.
+
+105
+00:04:45,000 --> 00:04:48,000
+Second, budget to adaptive.
+
+106
+00:04:48,000 --> 00:04:51,000
+Instead of the legacy budget tokens thinking mode,
+
+107
+00:04:51,000 --> 00:04:54,000
+current models use adaptive thinking,
+
+108
+00:04:54,000 --> 00:04:56,000
+where the model decides how much to think,
+
+109
+00:04:56,000 --> 00:04:59,000
+and there's no budget to hand-tune.
+
+110
+00:04:59,000 --> 00:05:01,000
+Third, pre-fill to structured.
+
+111
+00:05:01,000 --> 00:05:03,000
+Instead of pre-filling the assistant turn,
+
+112
+00:05:03,000 --> 00:05:06,000
+you ask for a structured output format,
+
+113
+00:05:06,000 --> 00:05:09,000
+or you put the instruction in the system prompt.
+
+114
+00:05:09,000 --> 00:05:12,000
+Sampling to effort, budget to adaptive,
+
+115
+00:05:12,000 --> 00:05:13,000
+pre-fill to structured.
+
+116
+00:05:13,000 --> 00:05:15,000
+Learn those three swaps,
+
+117
+00:05:15,000 --> 00:05:17,000
+and most migrations get straightforward.
+
+118
+00:05:18,000 --> 00:05:21,000
+Now the part that surprises people most.
+
+119
+00:05:21,000 --> 00:05:24,000
+Thinking behavior isn't uniform across the lineup,
+
+120
+00:05:24,000 --> 00:05:26,000
+so you can't assume it ports forward.
+
+121
+00:05:26,000 --> 00:05:31,000
+On Opus 5 and Sonnet 5, adaptive thinking is the path.
+
+122
+00:05:31,000 --> 00:05:36,000
+And if you send the old enabled with a budget style, you get a 400.
+
+123
+00:05:36,000 --> 00:05:39,000
+On Haiku 4.5, it's the opposite.
+
+124
+00:05:39,000 --> 00:05:41,000
+Haiku still uses the budget tokens mode
+
+125
+00:05:41,000 --> 00:05:44,000
+and has no adaptive thinking at all.
+
+126
+00:05:44,000 --> 00:05:46,000
+And Fable 5 is different again.
+
+127
+00:05:46,000 --> 00:05:48,000
+Thinking is always on there,
+
+128
+00:05:48,000 --> 00:05:51,000
+and trying to disable it is rejected.
+
+129
+00:05:51,000 --> 00:05:54,000
+So the same thinking code can be correct on one model
+
+130
+00:05:54,000 --> 00:05:56,000
+and broken on the next.
+
+131
+00:05:56,000 --> 00:06:00,000
+That's why you can't port thinking configuration blindly.
+
+132
+00:06:00,000 --> 00:06:03,000
+You check what the specific target model supports,
+
+133
+00:06:03,000 --> 00:06:04,000
+then match your call to it.
+
+134
+00:06:05,000 --> 00:06:07,000
+So what's the takeaway you act on?
+
+135
+00:06:07,000 --> 00:06:10,000
+Never assume parameters carry forward.
+
+136
+00:06:10,000 --> 00:06:12,000
+The safe habit is simple.
+
+137
+00:06:12,000 --> 00:06:14,000
+Before you trust migrated code,
+
+138
+00:06:14,000 --> 00:06:16,000
+run it against the exact model
+
+139
+00:06:16,000 --> 00:06:17,000
+you plan to use in production,
+
+140
+00:06:17,000 --> 00:06:20,000
+not a similar one, the actual one.
+
+141
+00:06:20,000 --> 00:06:22,000
+When a call fails right after a migration
+
+142
+00:06:22,000 --> 00:06:24,000
+and returns a 400,
+
+143
+00:06:24,000 --> 00:06:27,000
+don't start debugging your own logic first.
+
+144
+00:06:27,000 --> 00:06:29,000
+That status code is pointing at a removed
+
+145
+00:06:29,000 --> 00:06:31,000
+or unsupported parameter
+
+146
+00:06:31,000 --> 00:06:34,000
+far more often than a bug in your handling.
+
+147
+00:06:34,000 --> 00:06:36,000
+And read the migration notes for the target model
+
+148
+00:06:36,000 --> 00:06:37,000
+before you cut over,
+
+149
+00:06:37,000 --> 00:06:40,000
+so you already know which parameters changed.
+
+150
+00:06:40,000 --> 00:06:42,000
+Test against the target.
+
+151
+00:06:42,000 --> 00:06:44,000
+Read the 400 as a parameter signal
+
+152
+00:06:44,000 --> 00:06:47,000
+and check the migration guide first.
+
+153
+00:06:47,000 --> 00:06:52,000
+That's how you catch these before your users do. Let's recap.
+
+154
+00:06:52,000 --> 00:06:54,000
+Newer models can reject parameters
+
+155
+00:06:54,000 --> 00:06:56,000
+that older models accepted.
+
+156
+00:06:56,000 --> 00:06:59,000
+So a once valid call can return a 400 error.
+
+157
+00:06:59,000 --> 00:07:03,000
+Just remember, sampling params, final turn pre-fill,
+
+158
+00:07:03,000 --> 00:07:06,000
+and legacy budget tokens, thinking, break first.
+
+159
+00:07:06,000 --> 00:07:09,000
+And thinking stays model specific.
+
+160
+00:07:09,000 --> 00:07:13,000
+That covers when a newer model rejects old params.
+
+161
+00:07:13,000 --> 00:07:15,000
+When you're ready, let's jump into the next one.
+

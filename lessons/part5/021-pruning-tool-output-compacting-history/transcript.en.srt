@@ -1,0 +1,332 @@
+1
+00:00:00,000 --> 00:00:06,000
+In a tool-heavy agent loop, the fastest thing to blow up your context window isn't the conversation.
+
+2
+00:00:06,000 --> 00:00:09,000
+It's the raw tool output piling up turn after turn.
+
+3
+00:00:09,000 --> 00:00:14,000
+This lesson covers how to fight that, pruning tool results down to what matters, and
+
+4
+00:00:15,000 --> 00:00:19,000
+compacting older history when the gist is enough. Let's break it down.
+
+5
+00:00:20,000 --> 00:00:26,000
+Let's define three ways to win back tokens, because the rest of the lesson is really about when to reach for each.
+
+6
+00:00:26,000 --> 00:00:29,000
+First, tool output pruning. You trim,
+
+7
+00:00:30,000 --> 00:00:36,000
+summarize, or drop verbose tool results, so only the fields you'll actually use downstream survive.
+
+8
+00:00:36,000 --> 00:00:40,000
+This is your primary lever. Second,
+
+9
+00:00:40,000 --> 00:00:46,000
+context compaction. You periodically compress older turns into a shorter summary and
+
+10
+00:00:46,000 --> 00:00:51,000
+continue from that, which lets a long session run past what full history would allow.
+
+11
+00:00:51,000 --> 00:00:54,000
+Third, tool result clearing.
+
+12
+00:00:54,000 --> 00:01:00,000
+This is a mechanical edit that swaps old tool results for placeholders while leaving your tool calls
+
+13
+00:01:00,000 --> 00:01:01,000
+and reasoning in place.
+
+14
+00:01:02,000 --> 00:01:08,000
+Same goal, reclaim tokens, but each one makes a different trade-off, and picking wrong costs you.
+
+15
+00:01:09,000 --> 00:01:12,000
+Let's start with pruning, because in a tool-heavy loop,
+
+16
+00:01:12,000 --> 00:01:18,000
+it's almost always the biggest win. Think about what a single file read or API response
+
+17
+00:01:19,000 --> 00:01:25,000
+actually dumps into your window. It can be tens of thousands of tokens, and most of it is noise
+
+18
+00:01:25,000 --> 00:01:30,000
+you'll never reference again. The pattern is simple. Before that result lands in history for good,
+
+19
+00:01:31,000 --> 00:01:37,000
+cut it down to the load-bearing fields, the values, the status, the one section you needed. Keep
+
+20
+00:01:37,000 --> 00:01:38,000
+those, drop the rest.
+
+21
+00:01:39,000 --> 00:01:46,000
+Because raw tool dumps are the fastest source of bloat, pruning them buys back the most room for the least effort.
+
+22
+00:01:46,000 --> 00:01:49,000
+Reach for this before you reach for anything heavier.
+
+23
+00:01:50,000 --> 00:01:55,000
+Now, the distinction that trips people up, because these two sound alike and aren't,
+
+24
+00:01:55,000 --> 00:02:01,000
+tool result clearing is purely mechanical. The server swaps old tool results for placeholders and
+
+25
+00:02:02,000 --> 00:02:08,000
+leaves your tool calls, your user turns, and your reasoning untouched. There's no model involved,
+
+26
+00:02:08,000 --> 00:02:15,000
+so there's no inference cost. One caveat, editing the prefix invalidates the prompt cache from that point,
+
+27
+00:02:15,000 --> 00:02:18,000
+so you pay a cache rewrite on the next call.
+
+28
+00:02:18,000 --> 00:02:24,000
+Clear enough at once to make it worthwhile. It's ideal when your bloat is mostly big, refetchable results.
+
+29
+00:02:25,000 --> 00:02:32,000
+Compaction is different. It runs a model to summarize your older context into a compact block, then
+
+30
+00:02:32,000 --> 00:02:38,000
+continues from that summary. Because it's a real inference pass, it costs something, but it can shrink everything.
+
+31
+00:02:39,000 --> 00:02:43,000
+Dialogue and reasoning included, not just tool results.
+
+32
+00:02:43,000 --> 00:02:47,000
+Mechanical and free, or model driven and lossy, that's the choice.
+
+33
+00:02:48,000 --> 00:02:52,000
+Let's get concrete about clearing, because the defaults tell the story.
+
+34
+00:02:52,000 --> 00:02:58,000
+You configure it as a context management edit, and it watches your input token count.
+
+35
+00:02:58,000 --> 00:03:04,000
+By default, it fires when the input crosses a threshold, and it keeps the three most recent tool,
+
+36
+00:03:04,000 --> 00:03:05,000
+use, and result pairs,
+
+37
+00:03:06,000 --> 00:03:08,000
+so your latest work stays intact.
+
+38
+00:03:09,000 --> 00:03:12,000
+Everything older gets its results swapped for a placeholder.
+
+39
+00:03:12,000 --> 00:03:19,000
+You can protect specific tools from ever being cleared, which is how you'd shield something like a memory tool.
+
+40
+00:03:20,000 --> 00:03:25,000
+And because it never touches your tool calls or reasoning, the model still sees that a tool ran,
+
+41
+00:03:26,000 --> 00:03:29,000
+just not the giant payload it returned.
+
+42
+00:03:30,000 --> 00:03:32,000
+Mechanical, targeted, and cheap.
+
+43
+00:03:33,000 --> 00:03:38,000
+Let's look at what actually happens inside a compaction pass, because knowing what survives keeps
+
+44
+00:03:38,000 --> 00:03:39,000
+you out of trouble.
+
+45
+00:03:39,000 --> 00:03:46,000
+When your context approaches the window limit, compaction summarizes the older turns and continues from that summary.
+
+46
+00:03:46,000 --> 00:03:52,000
+What tends to survive is the high-value material, the key facts central to the task,
+
+47
+00:03:52,000 --> 00:03:59,000
+the architectural decisions you've made, and the questions still open. What gets lost is the fine-grained stuff,
+
+48
+00:03:59,000 --> 00:04:06,000
+obscure specifics, and exact verbatim phrasing. And remember, it runs a model to produce that summary,
+
+49
+00:04:06,000 --> 00:04:07,000
+so it isn't free.
+
+50
+00:04:07,000 --> 00:04:13,000
+The takeaway is to lean on compaction when the gist is genuinely enough, and to save anything you'll
+
+51
+00:04:13,000 --> 00:04:15,000
+need word-for-word before it runs.
+
+52
+00:04:16,000 --> 00:04:21,000
+Let's talk defaults and cost, because they shape when compaction kicks in.
+
+53
+00:04:22,000 --> 00:04:27,000
+Compaction watches your input token count and triggers once you cross a configured threshold.
+
+54
+00:04:27,000 --> 00:04:34,000
+The default trigger is 150,000 input tokens, and you can't set it below 50,000.
+
+55
+00:04:34,000 --> 00:04:39,000
+When it fires, the API summarizes the older content and on later requests
+
+56
+00:04:40,000 --> 00:04:45,000
+automatically drops everything before that summary block, so you don't manage the deletion yourself.
+
+57
+00:04:46,000 --> 00:04:48,000
+The cost to keep in mind is the inference pass,
+
+58
+00:04:49,000 --> 00:04:55,000
+summarizing costs, a model call that clearing never needs. So the mental model is straightforward.
+
+59
+00:04:56,000 --> 00:04:59,000
+Clearing is your cheap surgical tool for refetchable results, and
+
+60
+00:05:00,000 --> 00:05:06,000
+compaction is your heavier tool for when the whole history, reasoning included, has grown too large.
+
+61
+00:05:07,000 --> 00:05:11,000
+Three controls do most of the steering on clearing, so they're worth knowing by name.
+
+62
+00:05:11,000 --> 00:05:17,000
+First, keep. That sets how many of your most recent tool use and result pairs stay untouched,
+
+63
+00:05:17,000 --> 00:05:21,000
+so your current work is never the thing that gets wiped.
+
+64
+00:05:21,000 --> 00:05:23,000
+Second, trigger.
+
+65
+00:05:23,000 --> 00:05:30,000
+That's the input token threshold that decides when the edit fires. Cross it and clearing runs to free up room.
+
+66
+00:05:31,000 --> 00:05:36,000
+Third, exclude tools. That's a list of tools whose results are never cleared,
+
+67
+00:05:36,000 --> 00:05:43,000
+which is exactly how you shield something you always want visible. Like a memory tool, keep, trigger, exclude.
+
+68
+00:05:43,000 --> 00:05:47,000
+Three small settings that let you tune clearing to your own loop.
+
+69
+00:05:48,000 --> 00:05:54,000
+One more decision worth making, deliberately. When a session gets huge, compaction isn't your only option.
+
+70
+00:05:55,000 --> 00:06:01,000
+Sometimes the cleaner move is to start a brand new context window instead of summarizing the old one.
+
+71
+00:06:01,000 --> 00:06:09,000
+Why? Because a capable agent can often rediscover its state from the outside world faster than a summary can carry it,
+
+72
+00:06:09,000 --> 00:06:14,000
+reading the git log, a progress file, or the tests to see where things stand.
+
+73
+00:06:14,000 --> 00:06:16,000
+So the choice isn't automatic.
+
+74
+00:06:16,000 --> 00:06:22,000
+If the running thread genuinely matters, compact it. If the real state lives on disk and the
+
+75
+00:06:22,000 --> 00:06:23,000
+conversation is mostly noise,
+
+76
+00:06:23,000 --> 00:06:30,000
+a fresh window can be simpler and sharper. And whatever you pick, prune tool output along the way,
+
+77
+00:06:30,000 --> 00:06:32,000
+so you never hit overflow.
+
+78
+00:06:33,000 --> 00:06:35,000
+And here's the bottom line.
+
+79
+00:06:35,000 --> 00:06:40,000
+Pruning trims verbose tool outputs down to what matters, and it's your first move in any tool-heavy loop.
+
+80
+00:06:41,000 --> 00:06:47,000
+Just keep in mind that it can be lossy and it's hard to predict what exactly will be lost in the compaction.
+
+81
+00:06:48,000 --> 00:06:53,000
+Clearing is mechanical with no inference cost. Compaction runs a model and is lossy.
+
+82
+00:06:53,000 --> 00:06:59,000
+One thing to watch, save anything you'll need verbatim before compaction summarizes it away.
+
+83
+00:07:00,000 --> 00:07:04,000
+That covers pruning tool output and compaction history. I'll see you in the next one.
+

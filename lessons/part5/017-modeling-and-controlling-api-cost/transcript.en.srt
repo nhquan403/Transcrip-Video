@@ -1,0 +1,312 @@
+1
+00:00:00,000 --> 00:00:05,000
+Cost is where a promising prototype quietly dies, get the model wrong, and a feature that demos
+
+2
+00:00:05,000 --> 00:00:08,000
+beautifully becomes too expensive to run for real users.
+
+3
+00:00:09,000 --> 00:00:15,000
+This lesson covers how to build a cost model from token counts and rates, why output usually
+
+4
+00:00:15,000 --> 00:00:19,000
+dominates the bill, and the levers you pull to bring spend down.
+
+5
+00:00:20,000 --> 00:00:24,000
+Before we model anything, three pricing facts that shape every decision.
+
+6
+00:00:24,000 --> 00:00:31,000
+First, pricing is per token. Your spend is simply tokens times a rate. Every token going in and
+
+7
+00:00:31,000 --> 00:00:37,000
+every token coming out has a price, so cost scales directly with how many tokens you use.
+
+8
+00:00:38,000 --> 00:00:45,000
+Second, output costs more. On every current model, output tokens are priced several times higher
+
+9
+00:00:45,000 --> 00:00:47,000
+than input tokens for the same count.
+
+10
+00:00:48,000 --> 00:00:51,000
+That asymmetry matters more than almost anything else.
+
+11
+00:00:51,000 --> 00:00:58,000
+Third, cashing changes the price. Cashed reads bill at a fraction of base input, while cash writes
+
+12
+00:00:58,000 --> 00:01:03,000
+bill at a premium. Same tokens, different rate depending on how they're handled.
+
+13
+00:01:04,000 --> 00:01:09,000
+Per token, output heavy, cash aware. Keep those three in mind.
+
+14
+00:01:09,000 --> 00:01:14,000
+Let's write the actual formula because it's simpler than people expect.
+
+15
+00:01:14,000 --> 00:01:20,000
+The cost of one call is a short sum. You take your input tokens and multiply by the input rate. You
+
+16
+00:01:20,000 --> 00:01:24,000
+take your output tokens and multiply by the output rate.
+
+17
+00:01:25,000 --> 00:01:32,000
+Then you layer in the cash pieces, reads and writes at their own rates, and any server tool charges if you use them.
+
+18
+00:01:32,000 --> 00:01:38,000
+Add all of that up and you've got the cost of a single request. That's the whole thing. There's no
+
+19
+00:01:38,000 --> 00:01:40,000
+hidden multiplier and no monthly mystery fee.
+
+20
+00:01:41,000 --> 00:01:47,000
+Once you can compute one call, you can compute a million of them because it's the same sum repeated.
+
+21
+00:01:47,000 --> 00:01:50,000
+Master the single call cost first and scale comes for free.
+
+22
+00:01:51,000 --> 00:01:57,000
+Now let's stare at the two rates because their gap drives your strategy. The input rate is the price
+
+23
+00:01:57,000 --> 00:01:58,000
+for tokens the model reads.
+
+24
+00:01:59,000 --> 00:02:08,000
+On current models, it's the lower of the two, so a big prompt, even a long document, is relatively cheap per token.
+
+25
+00:02:08,000 --> 00:02:14,000
+The output rate is the price for tokens the model writes, and it runs several times higher than
+
+26
+00:02:14,000 --> 00:02:15,000
+input. Sit with that.
+
+27
+00:02:16,000 --> 00:02:23,000
+The same thousand tokens cost you a lot more coming out than going in. The practical consequence is huge.
+
+28
+00:02:23,000 --> 00:02:31,000
+A short prompt that triggers a long, rambling answer can cost more than a long prompt with a tight, short answer.
+
+29
+00:02:31,000 --> 00:02:37,000
+So when you optimize, look hard at output length first. That's usually where the money goes.
+
+30
+00:02:38,000 --> 00:02:43,000
+Caching earns a closer look because it doesn't just save tokens, it reprices them.
+
+31
+00:02:43,000 --> 00:02:50,000
+When a token is served from cache as a read, it bills at a small fraction of the base input rate, a real discount.
+
+32
+00:02:50,000 --> 00:02:56,000
+But writing a token into the cache the first time costs a premium, a bit more than base input.
+
+33
+00:02:56,000 --> 00:03:02,000
+So here's the modeling trap. If you take your cache tokens and price them at the full input rate,
+
+34
+00:03:02,000 --> 00:03:03,000
+your estimate is wrong.
+
+35
+00:03:04,000 --> 00:03:08,000
+The reads should be way cheaper, and the writes a little more expensive.
+
+36
+00:03:08,000 --> 00:03:15,000
+To model caching, honestly, weight each cache field by its own rate, not by the plain input rate.
+
+37
+00:03:15,000 --> 00:03:20,000
+Get that right, and caching savings actually show up in your numbers.
+
+38
+00:03:20,000 --> 00:03:25,000
+Let's scale one call up to a real workload in three steps.
+
+39
+00:03:25,000 --> 00:03:31,000
+Step one, estimate the tokens per request, both input and output, for a typical call.
+
+40
+00:03:31,000 --> 00:03:38,000
+Step two, multiply that by your expected call volume, how many times you'll run it per day or per month.
+
+41
+00:03:38,000 --> 00:03:43,000
+Step three, and this is the one people skip, find the dominant driver.
+
+42
+00:03:43,000 --> 00:03:47,000
+Look at where the tokens and dollars actually concentrate.
+
+43
+00:03:47,000 --> 00:03:53,000
+Is it a giant system prompt on every call, long outputs, sheer volume on one endpoint?
+
+44
+00:03:53,000 --> 00:03:57,000
+Whatever the biggest slice is, that's what you optimize first.
+
+45
+00:03:57,000 --> 00:04:02,000
+Optimizing a tiny cost center feels productive, but barely moves the bill.
+
+46
+00:04:02,000 --> 00:04:06,000
+Three steps, and the payoff is knowing exactly where to aim.
+
+47
+00:04:06,000 --> 00:04:10,000
+Once you know your driver, four levers cover most of the fix.
+
+48
+00:04:10,000 --> 00:04:16,000
+First, tier selection. Run the lightest model tier that still clears the quality bar, since
+
+49
+00:04:16,000 --> 00:04:18,000
+over-provisioning simple work is pure waste.
+
+50
+00:04:20,000 --> 00:04:28,000
+Second, smaller prompts. Trim your system prompt and history down to the tokens the task truly needs.
+
+51
+00:04:28,000 --> 00:04:32,000
+Fewer input tokens, lower cost, every call.
+
+52
+00:04:32,000 --> 00:04:41,000
+Third, prompt caching. Reuse a stable prefix, so repeated tokens bill at the cheap read rate instead of full input.
+
+53
+00:04:41,000 --> 00:04:46,000
+Fourth, batch processing. Send work that isn't time-sensitive through the batch path for a large
+
+54
+00:04:46,000 --> 00:04:49,000
+discount when you can trade immediacy for savings.
+
+55
+00:04:50,000 --> 00:04:57,000
+Tier, prompt size, caching, batch. You'll reach for different dials, depending on your driver.
+
+56
+00:04:57,000 --> 00:05:02,000
+Let's make tier selection concrete, because it's the biggest single lever.
+
+57
+00:05:02,000 --> 00:05:09,000
+Think of the three tiers as a cost ladder. The opus tier is the most capable and the most expensive per token.
+
+58
+00:05:09,000 --> 00:05:16,000
+You reach for it when a task genuinely needs top-end reasoning, hard problems where a weaker model would fail.
+
+59
+00:05:16,000 --> 00:05:22,000
+The sonnet tier is the balanced middle, strong quality, at a noticeably lower price than opus, and
+
+60
+00:05:22,000 --> 00:05:25,000
+it's sized for high-volume production work.
+
+61
+00:05:26,000 --> 00:05:31,000
+The haiku tier is the cheapest and fastest per token, and it's the right call for simple,
+
+62
+00:05:31,000 --> 00:05:35,000
+high-throughput jobs like routing, extraction, and classification.
+
+63
+00:05:36,000 --> 00:05:42,000
+The discipline is to pick the lightest tier that meets your quality bar, not to default to the most
+
+64
+00:05:42,000 --> 00:05:43,000
+powerful one out of habit.
+
+65
+00:05:44,000 --> 00:05:50,000
+One habit ties this whole lesson together. Don't wait for the invoice to find out what a feature
+
+66
+00:05:50,000 --> 00:05:52,000
+costs. Model it before you ship.
+
+67
+00:05:53,000 --> 00:05:59,000
+Use the count token's endpoint to size your input precisely, without spending anything on generation.
+
+68
+00:06:00,000 --> 00:06:05,000
+Pair that with a realistic estimate of output length. And remember, output is the pricey side, so
+
+69
+00:06:05,000 --> 00:06:08,000
+estimate it honestly rather than optimistically.
+
+70
+00:06:09,000 --> 00:06:14,000
+Multiply your per-call cost by your expected volume, and you've got a monthly projection you can put
+
+71
+00:06:14,000 --> 00:06:15,000
+in front of someone.
+
+72
+00:06:16,000 --> 00:06:23,000
+If that number is scary, you now know to pull your levers before launch, not after the first bill lands.
+
+73
+00:06:23,000 --> 00:06:27,000
+A rough number on paper always beats a nasty surprise on the statement.
+
+74
+00:06:28,000 --> 00:06:35,000
+Here's the bottom line. A cost model is tokens times rates, summed across input, output, and cache.
+
+75
+00:06:35,000 --> 00:06:39,000
+Each has its own price, and output is the expensive one.
+
+76
+00:06:39,000 --> 00:06:45,000
+Keep in mind, the fastest win is finding your dominant driver, then pulling the tier, prompt size,
+
+77
+00:06:45,000 --> 00:06:46,000
+caching, or batch against it.
+
+78
+00:06:47,000 --> 00:06:53,000
+That covers modeling and controlling API cost. Take a breath here, and I'll see you in the next one.
+

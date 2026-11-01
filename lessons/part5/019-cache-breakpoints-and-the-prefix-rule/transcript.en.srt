@@ -1,0 +1,348 @@
+1
+00:00:00,000 --> 00:00:06,000
+Here's a frustrating one. You turn on caching, but your bill doesn't move, and your reads keep coming back zero.
+
+2
+00:00:06,000 --> 00:00:09,000
+Almost always, the prefix isn't matching on the cache.
+
+3
+00:00:10,000 --> 00:00:16,000
+This lesson walks through the render order, the byte exact rule, where breakpoints go, the size floors, and the
+
+4
+00:00:17,000 --> 00:00:19,000
+silent mistakes that break caching.
+
+5
+00:00:20,000 --> 00:00:24,000
+Three terms carry the mechanics. First, the cache control breakpoint.
+
+6
+00:00:24,000 --> 00:00:30,000
+That's an explicit marker you drop on a block, and it closes off a cacheable prefix right at that point.
+
+7
+00:00:30,000 --> 00:00:33,000
+You get up to four of them per request.
+
+8
+00:00:34,000 --> 00:00:36,000
+Second, the rendered prefix.
+
+9
+00:00:36,000 --> 00:00:42,000
+That's everything from the very start of your request up to a breakpoint, and it's assembled in one fixed order,
+
+10
+00:00:42,000 --> 00:00:47,000
+tools, then system, then messages. Third, the cache key.
+
+11
+00:00:47,000 --> 00:00:52,000
+That's the exact rendered bytes of that prefix, and I mean exact.
+
+12
+00:00:52,000 --> 00:00:59,000
+The match is byte for byte, never fuzzy, and it's always prefix only. So a breakpoint marks where?
+
+13
+00:01:00,000 --> 00:01:06,000
+The render order fixes how the prefix is built, and the byte exact key decides whether you actually hit.
+
+14
+00:01:07,000 --> 00:01:09,000
+Hold those three together, and the rest follows.
+
+15
+00:01:10,000 --> 00:01:13,000
+Let's nail the order, because it's the thing people get backwards.
+
+16
+00:01:14,000 --> 00:01:19,000
+The API renders your request in one fixed sequence before it ever looks for a match.
+
+17
+00:01:19,000 --> 00:01:25,000
+Tools go first, right at the front of the prefix. The system prompt renders next, sitting after the tools.
+
+18
+00:01:26,000 --> 00:01:32,000
+Then the messages render last, in conversation order. That sequence never changes, and it's why
+
+19
+00:01:32,000 --> 00:01:33,000
+placement matters so much.
+
+20
+00:01:34,000 --> 00:01:39,000
+Here's the useful consequence. If you put a single breakpoint on your last system block, you cache
+
+21
+00:01:39,000 --> 00:01:41,000
+your tools and your whole system
+
+22
+00:01:41,000 --> 00:01:46,000
+prompt together as one chunk, because tools already rendered ahead of system.
+
+23
+00:01:46,000 --> 00:01:52,000
+So the order isn't trivia. It tells you exactly what a given breakpoint will and won't pull into the cache.
+
+24
+00:01:53,000 --> 00:01:57,000
+Tools, system, messages, in that order, every time.
+
+25
+00:01:58,000 --> 00:02:01,000
+So how do you actually tell the API what to cache?
+
+26
+00:02:01,000 --> 00:02:05,000
+You place cache control breakpoints, and you get up to four per request.
+
+27
+00:02:06,000 --> 00:02:10,000
+The rule for placement is simple. Put each one where the content stops changing.
+
+28
+00:02:10,000 --> 00:02:17,000
+Your big stable system prompt and your tools are natural spots, since they rarely move between calls.
+
+29
+00:02:17,000 --> 00:02:23,000
+Then the design discipline that follows push everything volatile after your final breakpoint.
+
+30
+00:02:24,000 --> 00:02:27,000
+The current user turn per request variables.
+
+31
+00:02:27,000 --> 00:02:32,000
+Anything that shifts, all of it lives past the last mark. Why?
+
+32
+00:02:32,000 --> 00:02:35,000
+Because a change anywhere inside the prefix
+
+33
+00:02:35,000 --> 00:02:37,000
+invalidates the cache from that point on.
+
+34
+00:02:38,000 --> 00:02:44,000
+So keep the stable content up front in front of your breakpoints, and keep the changing content behind them.
+
+35
+00:02:44,000 --> 00:02:48,000
+Stable first, volatile last, and your cache holds.
+
+36
+00:02:49,000 --> 00:02:54,000
+This is where caching quietly fails, and none of these throw an error.
+
+37
+00:02:54,000 --> 00:02:57,000
+First, volatile text in the system prompt.
+
+38
+00:02:57,000 --> 00:03:04,000
+Bake in a timestamp, a UUID, or a session ID, and the bytes change on every call, so nothing matches.
+
+39
+00:03:05,000 --> 00:03:12,000
+Second, unsorted JSON. If you serialize your tools or data with a different key order each time,
+
+40
+00:03:12,000 --> 00:03:15,000
+the bytes shift, even though the content is the same.
+
+41
+00:03:15,000 --> 00:03:21,000
+Third, a shifting tool set. Tools sit at the front of the prefix,
+
+42
+00:03:21,000 --> 00:03:25,000
+so adding or reordering one invalidates everything after it.
+
+43
+00:03:26,000 --> 00:03:32,000
+Fourth, switching models. Caches are model scoped, so moving the same prefix to a different model is a full miss.
+
+44
+00:03:33,000 --> 00:03:35,000
+Freeze all four, and your cache survives.
+
+45
+00:03:37,000 --> 00:03:38,000
+Picture your request in two halves.
+
+46
+00:03:38,000 --> 00:03:45,000
+The frozen prefix is the stable front, your tools, your system prompt, and the settled conversation history
+
+47
+00:03:45,000 --> 00:03:47,000
+that isn't going to change anymore.
+
+48
+00:03:47,000 --> 00:03:52,000
+That half caches once, and then gets reused byte for byte on every later call.
+
+49
+00:03:53,000 --> 00:03:59,000
+The volatile tail is the other half, the newest user turn and whatever per request data you inject.
+
+50
+00:04:00,000 --> 00:04:05,000
+That part changes constantly. The whole discipline of caching is keeping those two halves
+
+51
+00:04:06,000 --> 00:04:12,000
+separated by your last breakpoint. Frozen stuff in front of it. Volatile stuff after it.
+
+52
+00:04:13,000 --> 00:04:19,000
+Do that, and the changing tail never reaches back into the cached prefix to invalidate it.
+
+53
+00:04:19,000 --> 00:04:26,000
+Mix them, and every request touches the prefix, and you lose the hit. Draw that line deliberately.
+
+54
+00:04:27,000 --> 00:04:32,000
+Now, the piece the name Checkpointing really points at, a conversation that keeps growing.
+
+55
+00:04:32,000 --> 00:04:39,000
+Early on, your prefix is short. As the chat runs, earlier turns settle and stop changing, and you
+
+56
+00:04:39,000 --> 00:04:40,000
+want those cached, too.
+
+57
+00:04:41,000 --> 00:04:44,000
+So you move a breakpoint forward to cover the newly frozen history.
+
+58
+00:04:45,000 --> 00:04:52,000
+One mechanical limit to know, a breakpoint only looks back about 20 content blocks to find a matching prior entry.
+
+59
+00:04:52,000 --> 00:04:59,000
+In a long, agentic run with lots of tool calls and results, you can blow past 20 blocks between marks.
+
+60
+00:04:59,000 --> 00:05:05,000
+When that happens, you add intermediate breakpoints along the way, so each stretch stays within the lookback window.
+
+61
+00:05:06,000 --> 00:05:11,000
+The habit is simple. Re-checkpoint the settled history as it grows, so every new turn reuses
+
+62
+00:05:11,000 --> 00:05:13,000
+everything that came before it.
+
+63
+00:05:14,000 --> 00:05:17,000
+There's a floor you have to clear, and it trips people up.
+
+64
+00:05:18,000 --> 00:05:25,000
+A prefix has to reach a minimum token count before it caches, and that minimum depends on the model.
+
+65
+00:05:25,000 --> 00:05:35,000
+On Opus 4.8, it's 1024 tokens. On some other models, the floor is lower, for example, 512 tokens on Fable 5.
+
+66
+00:05:36,000 --> 00:05:45,000
+That difference bites. The exact same prefix can cache cleanly on Fable 5, and silently refuse to cache on Opus 4.8,
+
+67
+00:05:45,000 --> 00:05:51,000
+purely because it clears one floor and not the other. And when you come in under the floor, there's
+
+68
+00:05:51,000 --> 00:05:52,000
+no error to warn you.
+
+69
+00:05:52,000 --> 00:05:56,000
+You just see cache creation come back as zero.
+
+70
+00:05:56,000 --> 00:06:02,000
+So size your stable prefix above the floor for the specific model you're calling, and always name
+
+71
+00:06:02,000 --> 00:06:04,000
+that model when you reason about it.
+
+72
+00:06:05,000 --> 00:06:13,000
+Last piece, proving the cache is real. Every response carries usage fields, and the one to watch is cache-read input tokens.
+
+73
+00:06:14,000 --> 00:06:20,000
+Fire two calls with an identical prefix, and on the second, that number should climb.
+
+74
+00:06:20,000 --> 00:06:24,000
+If it sits at a steady zero across repeated identical calls,
+
+75
+00:06:24,000 --> 00:06:29,000
+something is silently invalidating your prefix, and now you know the suspects.
+
+76
+00:06:29,000 --> 00:06:35,000
+While you're in there, remember, the full prompt size is the sum of your uncached input,
+
+77
+00:06:35,000 --> 00:06:41,000
+your cache creation tokens, and your cache-read tokens, not the input field alone.
+
+78
+00:06:41,000 --> 00:06:44,000
+So when reads don't show up, don't assume caching is off.
+
+79
+00:06:45,000 --> 00:06:52,000
+Go hunt the one byte that keeps changing between calls, the stray timestamp, the reordered JSON,
+
+80
+00:06:52,000 --> 00:06:56,000
+the tool that slipped in. Freeze it, and the reads appear right where you expect.
+
+81
+00:06:57,000 --> 00:07:05,000
+Let's recap. A cache hit lives or dies on a byte-exact prefix, rendered tools, then system, then messages.
+
+82
+00:07:06,000 --> 00:07:12,000
+You mark up to four breakpoints at stable positions, keep volatile content behind them, and clear
+
+83
+00:07:12,000 --> 00:07:14,000
+the per-model token floor.
+
+84
+00:07:15,000 --> 00:07:17,000
+1024 on Opus 4.8.
+
+85
+00:07:18,000 --> 00:07:24,000
+One thing to watch, a timestamp, unsorted JSON, or a model switch invalidates this silently.
+
+86
+00:07:24,000 --> 00:07:27,000
+So verify with cache-read input tokens.
+
+87
+00:07:27,000 --> 00:07:30,000
+That wraps up this lesson. I'll see you in the next one.
+

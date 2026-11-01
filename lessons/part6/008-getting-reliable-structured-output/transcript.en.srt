@@ -1,0 +1,444 @@
+1
+00:00:00,000 --> 00:00:05,000
+There's more than one way to ask a cloud model for JSON, and they're not equally trustworthy.
+
+2
+00:00:05,000 --> 00:00:10,000
+Some models only nudge the output toward a shape, others guarantee it.
+
+3
+00:00:10,000 --> 00:00:14,000
+This lesson walks through that reliability ladder, when to climb it, and how to design
+
+4
+00:00:14,000 --> 00:00:19,000
+a schema the model fills cleanly. Let's dive in.
+
+5
+00:00:19,000 --> 00:00:22,000
+Let's start with the big idea, the reliability ladder.
+
+6
+00:00:22,000 --> 00:00:23,000
+Picture three rungs.
+
+7
+00:00:23,000 --> 00:00:29,000
+The bottom rung is format instructions, a prose request, like, return only JSON.
+
+8
+00:00:29,000 --> 00:00:35,000
+It shapes the output, and honestly it works a lot of the time, but it's best effort.
+
+9
+00:00:35,000 --> 00:00:37,000
+The middle rung is few-shot examples.
+
+10
+00:00:37,000 --> 00:00:42,000
+You show the model a couple of input-output pairs, and that steers the shape more strongly
+
+11
+00:00:42,000 --> 00:00:43,000
+than words alone.
+
+12
+00:00:43,000 --> 00:00:46,000
+Still, it guarantees nothing.
+
+13
+00:00:46,000 --> 00:00:52,000
+The top rung is schema enforcement, structured outputs, or strict tool use, where constrained
+
+14
+00:00:52,000 --> 00:00:56,000
+decoding actually forces the response to match your schema.
+
+15
+00:00:56,000 --> 00:00:58,000
+As you climb, reliability goes up.
+
+16
+00:00:58,000 --> 00:01:03,000
+The trick is knowing which rung a given job really needs.
+
+17
+00:01:03,000 --> 00:01:05,000
+Here's the distinction that trips people up.
+
+18
+00:01:05,000 --> 00:01:10,000
+Syntactically valid JSON isn't the same thing as schema compliance.
+
+19
+00:01:10,000 --> 00:01:12,000
+Those are two different bars.
+
+20
+00:01:12,000 --> 00:01:16,000
+A response can parse perfectly, and still be wrong for you.
+
+21
+00:01:16,000 --> 00:01:19,000
+It might be missing a field your code counts on.
+
+22
+00:01:19,000 --> 00:01:22,000
+It might have the right keys, but the wrong types.
+
+23
+00:01:22,000 --> 00:01:24,000
+A number where you expected a string.
+
+24
+00:01:24,000 --> 00:01:29,000
+It might even invent a category value you never planned for.
+
+25
+00:01:29,000 --> 00:01:31,000
+All of that is valid JSON.
+
+26
+00:01:31,000 --> 00:01:34,000
+None of it is what you actually asked for.
+
+27
+00:01:34,000 --> 00:01:36,000
+So the takeaway is simple.
+
+28
+00:01:36,000 --> 00:01:42,000
+Choose the mechanism the requirement demands, not the one that's fastest to type.
+
+29
+00:01:42,000 --> 00:01:46,000
+If the fields have to hold, a prose request isn't enough.
+
+30
+00:01:46,000 --> 00:01:49,000
+Let's put the two approaches side-by-side.
+
+31
+00:01:49,000 --> 00:01:54,000
+With a prose request, you write return only JSON in your instruction.
+
+32
+00:01:54,000 --> 00:01:58,000
+The model usually complies, and for plenty of low-stakes uses that's fine.
+
+33
+00:01:58,000 --> 00:02:04,000
+But nothing actually stops it from wrapping the JSON in a friendly sentence, or dropping a field.
+
+34
+00:02:04,000 --> 00:02:07,000
+And if your parser assumes clean input, that breaks you.
+
+35
+00:02:07,000 --> 00:02:13,000
+With enforcement, you attach a schema through structured outputs, or strict tool use.
+
+36
+00:02:13,000 --> 00:02:16,000
+Now constrained decoding makes the shape mandatory.
+
+37
+00:02:16,000 --> 00:02:21,000
+You get valid, typed output every time, not most of the time.
+
+38
+00:02:21,000 --> 00:02:24,000
+Prose asks for a shape, and hopes.
+
+39
+00:02:24,000 --> 00:02:26,000
+Enforcement makes the shape non-negotiable.
+
+40
+00:02:26,000 --> 00:02:31,000
+When correctness matters, that difference is the whole ballgame.
+
+41
+00:02:31,000 --> 00:02:34,000
+So how do you actually enforce a schema?
+
+42
+00:02:34,000 --> 00:02:38,000
+You've got two mechanisms, and you can use them alone or together in one request.
+
+43
+00:02:38,000 --> 00:02:44,000
+The first is JSON outputs, the whole response form of structured outputs.
+
+44
+00:02:44,000 --> 00:02:52,000
+You set output.config.format to a JSON schema, and the model's entire response comes back in that shape.
+
+45
+00:02:52,000 --> 00:02:56,000
+Reach for this when the whole reply is your data object.
+
+46
+00:02:56,000 --> 00:02:58,000
+The second is strict tool use.
+
+47
+00:02:58,000 --> 00:03:04,000
+You set strict to true on a tool, and the tool's input schema gets grammar-enforced,
+
+48
+00:03:04,000 --> 00:03:08,000
+so the arguments Claude generates are guaranteed to fit.
+
+49
+00:03:08,000 --> 00:03:11,000
+Reach for this when the model is calling into your code.
+
+50
+00:03:11,000 --> 00:03:14,000
+Same underlying guarantee, two entry points.
+
+51
+00:03:14,000 --> 00:03:18,000
+Pick whichever matches where the structured data needs to land.
+
+52
+00:03:19,000 --> 00:03:21,000
+Now, when do you reach for each one?
+
+53
+00:03:21,000 --> 00:03:25,000
+Because these are two different tools for two different jobs.
+
+54
+00:03:25,000 --> 00:03:30,000
+JSON outputs, the structured outputs mode for the final answer, is the first.
+
+55
+00:03:30,000 --> 00:03:36,000
+You set the output.config.format field to a JSON schema, and the entire response Claude
+
+56
+00:03:36,000 --> 00:03:39,000
+returns is constrained to that shape.
+
+57
+00:03:39,000 --> 00:03:44,000
+Reach for it when the answer itself has to be a structured object, like a record you're
+
+58
+00:03:44,000 --> 00:03:46,000
+about to write to a database.
+
+59
+00:03:46,000 --> 00:03:49,000
+Strict tool use is about function arguments.
+
+60
+00:03:49,000 --> 00:03:55,000
+You set strict to true on a tool, and the input schema for that tool is guaranteed.
+
+61
+00:03:55,000 --> 00:04:00,000
+Reach for it when Claude is calling a function, and the arguments have to be valid the first time.
+
+62
+00:04:00,000 --> 00:04:07,000
+Same guarantee engine underneath, but one shapes the response, and the other shapes the call.
+
+63
+00:04:07,000 --> 00:04:11,000
+Guaranteed shape is only as good as the schema you hand over, so let's talk design.
+
+64
+00:04:11,000 --> 00:04:13,000
+Three things earn their keep.
+
+65
+00:04:13,000 --> 00:04:15,000
+First, precise names and types.
+
+66
+00:04:15,000 --> 00:04:21,000
+Name each field clearly and pin its type, because a vague name invites a vague value.
+
+67
+00:04:21,000 --> 00:04:24,000
+Second, required versus optional.
+
+68
+00:04:24,000 --> 00:04:29,000
+Mark the fields that genuinely have to be present as required, and remember that for
+
+69
+00:04:29,000 --> 00:04:32,000
+objects, additional properties has to be false.
+
+70
+00:04:32,000 --> 00:04:34,000
+Third, enums and descriptions.
+
+71
+00:04:34,000 --> 00:04:39,000
+When a field is categorical, constrain it with an enum so the model picks from your
+
+72
+00:04:39,000 --> 00:04:44,000
+set and add a short description, so the intended value is unambiguous.
+
+73
+00:04:44,000 --> 00:04:49,000
+Precise names, honest required flags, enums with descriptions.
+
+74
+00:04:49,000 --> 00:04:53,000
+Get those right, and the model fills your schema cleanly.
+
+75
+00:04:53,000 --> 00:04:57,000
+Let's talk about what you actually get when you enforce the schema, because it changes
+
+76
+00:04:57,000 --> 00:04:59,000
+your code downstream.
+
+77
+00:04:59,000 --> 00:05:05,000
+First, the output is always valid JSON, which means the parse errors you used to guard against
+
+78
+00:05:05,000 --> 00:05:07,000
+simply stop happening.
+
+79
+00:05:07,000 --> 00:05:13,000
+Second, the fields come back type-safe, with the required keys present, so you're not writing
+
+80
+00:05:13,000 --> 00:05:18,000
+defensive checks for a missing name or a string that should have been a number.
+
+81
+00:05:18,000 --> 00:05:24,000
+Third, there's no retry loop, just to fix a schema violation, because a violation can't
+
+82
+00:05:24,000 --> 00:05:26,000
+be produced in the first place.
+
+83
+00:05:26,000 --> 00:05:30,000
+Add it up and you get to spend your validation effort where it matters, on whether the answer
+
+84
+00:05:30,000 --> 00:05:34,000
+is meaningful instead of babysitting syntax.
+
+85
+00:05:34,000 --> 00:05:38,000
+Let's turn this into a decision you can make quickly.
+
+86
+00:05:38,000 --> 00:05:40,000
+Ask what actually has to hold.
+
+87
+00:05:40,000 --> 00:05:45,000
+If downstream code depends on specific fields and types being there, that's your signal
+
+88
+00:05:45,000 --> 00:05:48,000
+to reach for structured outputs.
+
+89
+00:05:48,000 --> 00:05:49,000
+Not a prose ask.
+
+90
+00:05:49,000 --> 00:05:54,000
+If a value has to come from a fixed set, a status that's only ever open, pending, or
+
+91
+00:05:54,000 --> 00:06:00,000
+closed, lock it in with strict tool use or an enum in the schema.
+
+92
+00:06:00,000 --> 00:06:02,000
+And here's the rule underneath all of it.
+
+93
+00:06:02,000 --> 00:06:04,000
+Convenience isn't the test.
+
+94
+00:06:04,000 --> 00:06:09,000
+A prose request is quicker to write, sure, but you pick the most reliable mechanism.
+
+95
+00:06:09,000 --> 00:06:17,000
+The requirement demands, not the one that saves you 30 seconds now and costs you a debugging session later.
+
+96
+00:06:17,000 --> 00:06:21,000
+One more thing, because a lot of older code still does this.
+
+97
+00:06:21,000 --> 00:06:26,000
+Developers used to force JSON by pre-filling the assistance reply, dropping an open brace
+
+98
+00:06:26,000 --> 00:06:35,000
+at the start so the model had to continue in JSON, on clod 4.6, and later, that path is closed.
+
+99
+00:06:35,000 --> 00:06:37,000
+Pre-filling the final turn returns a 400 error.
+
+100
+00:06:37,000 --> 00:06:44,000
+So if you inherit code that leans on pre-fill to lock the format, don't patch it, replace it.
+
+101
+00:06:44,000 --> 00:06:47,000
+The supported answer is structured outputs.
+
+102
+00:06:47,000 --> 00:06:52,000
+You enforce the shape with a schema instead of steering the first few tokens by hand.
+
+103
+00:06:52,000 --> 00:06:58,000
+When you need the format guaranteed, the schema is the tool now, not a pre-filled brace.
+
+104
+00:06:58,000 --> 00:07:00,000
+Let's frame the big picture.
+
+105
+00:07:00,000 --> 00:07:03,000
+Structured output sits on a ladder.
+
+106
+00:07:03,000 --> 00:07:07,000
+From format instructions to examples to schema enforcement.
+
+107
+00:07:08,000 --> 00:07:10,000
+You climb only as high as the job needs.
+
+108
+00:07:10,000 --> 00:07:14,000
+Keep in mind, valid JSON is not schema compliance.
+
+109
+00:07:14,000 --> 00:07:18,000
+So when fields have to hold, enforce them.
+
+110
+00:07:18,000 --> 00:07:20,000
+That covers getting reliable structured output.
+
+111
+00:07:20,000 --> 00:07:22,000
+Let's keep going in the next video.
+

@@ -1,0 +1,644 @@
+1
+00:00:00,000 --> 00:00:02,000
+The first time you stream a response from Cloud,
+
+2
+00:00:02,000 --> 00:00:04,000
+the output shows up in pieces,
+
+3
+00:00:04,000 --> 00:00:07,000
+and it's easy to wonder what's actually happening on the wire.
+
+4
+00:00:07,000 --> 00:00:12,000
+This lesson covers how streaming works over a plain HTTPS connection,
+
+5
+00:00:12,000 --> 00:00:14,000
+the fixed order of events you get back,
+
+6
+00:00:14,000 --> 00:00:17,000
+and how you rebuild them into one response.
+
+7
+00:00:17,000 --> 00:00:20,000
+Let's dive in. Let's lock down
+
+8
+00:00:20,000 --> 00:00:23,000
+three fundamentals because the rest of the lesson builds on them.
+
+9
+00:00:23,000 --> 00:00:25,000
+First, the connection.
+
+10
+00:00:25,000 --> 00:00:30,000
+You reach the Cloud API over a normal encrypted HTTP request.
+
+11
+00:00:30,000 --> 00:00:33,000
+There's no exotic protocol, no special socket.
+
+12
+00:00:33,000 --> 00:00:37,000
+It's the same kind of request your browser makes to load a page.
+
+13
+00:00:37,000 --> 00:00:39,000
+Second, streaming mode.
+
+14
+00:00:39,000 --> 00:00:41,000
+By default, the server builds
+
+15
+00:00:41,000 --> 00:00:44,000
+your whole response and hands it back in one piece.
+
+16
+00:00:44,000 --> 00:00:46,000
+When you set stream to true,
+
+17
+00:00:46,000 --> 00:00:50,000
+you're asking it to send the answer incrementally as it's produced.
+
+18
+00:00:50,000 --> 00:00:53,000
+Third, the format those pieces travel in.
+
+19
+00:00:53,000 --> 00:00:56,000
+Cloud uses server sent events.
+
+20
+00:00:56,000 --> 00:00:59,000
+It's a simple standard where the server pushes
+
+21
+00:00:59,000 --> 00:01:02,000
+named events down the open connection,
+
+22
+00:01:02,000 --> 00:01:04,000
+one direction only from server to client.
+
+23
+00:01:04,000 --> 00:01:08,000
+Connection, streaming flag, server sent events.
+
+24
+00:01:08,000 --> 00:01:10,000
+Those three frame everything.
+
+25
+00:01:10,000 --> 00:01:13,000
+What actually happens when you turn streaming on?
+
+26
+00:01:13,000 --> 00:01:16,000
+Almost nothing changes about the call itself.
+
+27
+00:01:16,000 --> 00:01:18,000
+You hit the same endpoint with
+
+28
+00:01:18,000 --> 00:01:21,000
+the same request body and you add the streaming flag.
+
+29
+00:01:21,000 --> 00:01:23,000
+What changes is the response.
+
+30
+00:01:23,000 --> 00:01:25,000
+Instead of closing quickly with a finished message,
+
+31
+00:01:25,000 --> 00:01:28,000
+the server keeps one HTTP response
+
+32
+00:01:28,000 --> 00:01:30,000
+open and writes to it over time.
+
+33
+00:01:30,000 --> 00:01:36,000
+Each piece of output arrives as a labeled event with a small JSON payload.
+
+34
+00:01:36,000 --> 00:01:40,000
+Your client reads those events off the connection as they land,
+
+35
+00:01:40,000 --> 00:01:44,000
+and the connection stays alive right up until the final event ends it.
+
+36
+00:01:44,000 --> 00:01:46,000
+The mental model is simple.
+
+37
+00:01:46,000 --> 00:01:49,000
+You're not polling and you're not opening a second channel.
+
+38
+00:01:49,000 --> 00:01:54,000
+You're reading one response as the server writes it, piece by piece.
+
+39
+00:01:54,000 --> 00:01:57,000
+Let's compare the two ways a response can come back.
+
+40
+00:01:57,000 --> 00:01:59,000
+Because the trade-off matters,
+
+41
+00:01:59,000 --> 00:02:00,000
+the default is buffered.
+
+42
+00:02:00,000 --> 00:02:03,000
+The server generates the entire message,
+
+43
+00:02:03,000 --> 00:02:05,000
+then returns it in one response.
+
+44
+00:02:05,000 --> 00:02:07,000
+It's dead simple to handle.
+
+45
+00:02:07,000 --> 00:02:08,000
+You call, you wait,
+
+46
+00:02:08,000 --> 00:02:10,000
+you get one complete object.
+
+47
+00:02:10,000 --> 00:02:12,000
+The cost is that waiting.
+
+48
+00:02:12,000 --> 00:02:15,000
+Nothing appears until the whole thing is finished.
+
+49
+00:02:15,000 --> 00:02:16,000
+Streaming flips that.
+
+50
+00:02:16,000 --> 00:02:18,000
+With the flag on,
+
+51
+00:02:18,000 --> 00:02:20,000
+tokens reach you as they're generated.
+
+52
+00:02:20,000 --> 00:02:21,000
+Two things get better.
+
+53
+00:02:21,000 --> 00:02:23,000
+First, perceived speed.
+
+54
+00:02:23,000 --> 00:02:28,000
+Your user sees text appear right away instead of watching a spinner.
+
+55
+00:02:28,000 --> 00:02:32,000
+Second, and this is the practical one for builders, long responses.
+
+56
+00:02:32,000 --> 00:02:34,000
+A big generation can take long enough that
+
+57
+00:02:34,000 --> 00:02:37,000
+a single blocking call would hit a timeout.
+
+58
+00:02:37,000 --> 00:02:39,000
+Streaming keeps data flowing,
+
+59
+00:02:39,000 --> 00:02:42,000
+so the connection never sits idle long enough to drop.
+
+60
+00:02:42,000 --> 00:02:46,000
+Here's something that makes streaming much easier to work with.
+
+61
+00:02:46,000 --> 00:02:50,000
+The events don't show up in some unpredictable jumble.
+
+62
+00:02:50,000 --> 00:02:54,000
+They follow one guaranteed order every single time.
+
+63
+00:02:54,000 --> 00:02:57,000
+It opens with a message, start event.
+
+64
+00:02:57,000 --> 00:02:59,000
+That event carries a message object,
+
+65
+00:02:59,000 --> 00:03:01,000
+but the content is empty.
+
+66
+00:03:01,000 --> 00:03:03,000
+So don't go looking for text in it.
+
+67
+00:03:03,000 --> 00:03:06,000
+It's just the signal that the response has begun.
+
+68
+00:03:06,000 --> 00:03:09,000
+After that come the content block events.
+
+69
+00:03:09,000 --> 00:03:11,000
+This is where the real payload lives,
+
+70
+00:03:11,000 --> 00:03:14,000
+the actual text tokens.
+
+71
+00:03:14,000 --> 00:03:15,000
+And for tool calls,
+
+72
+00:03:15,000 --> 00:03:18,000
+the tool input arriving in fragments.
+
+73
+00:03:18,000 --> 00:03:19,000
+Then near the end,
+
+74
+00:03:19,000 --> 00:03:23,000
+you get a message stop event that marks the response complete.
+
+75
+00:03:23,000 --> 00:03:25,000
+Because that order is fixed,
+
+76
+00:03:25,000 --> 00:03:28,000
+your code always knows what to expect next.
+
+77
+00:03:28,000 --> 00:03:30,000
+You're never guessing whether more is coming.
+
+78
+00:03:30,000 --> 00:03:33,000
+The structure tells you.
+
+79
+00:03:33,000 --> 00:03:36,000
+Let me point out three events that frame every stream
+
+80
+00:03:36,000 --> 00:03:38,000
+because they anchor the whole sequence.
+
+81
+00:03:38,000 --> 00:03:40,000
+The first is message start.
+
+82
+00:03:40,000 --> 00:03:45,000
+It opens the stream and hands you a message with empty content. Remember that.
+
+83
+00:03:45,000 --> 00:03:48,000
+The very first event is never the text itself.
+
+84
+00:03:48,000 --> 00:03:50,000
+It's just the opening bracket.
+
+85
+00:03:50,000 --> 00:03:53,000
+In the middle sit the content block delta events.
+
+86
+00:03:53,000 --> 00:03:55,000
+These are the workhorses.
+
+87
+00:03:55,000 --> 00:03:57,000
+Each one carries a small piece of output,
+
+88
+00:03:57,000 --> 00:04:01,000
+a chunk of text, or a slice of tool input.
+
+89
+00:04:01,000 --> 00:04:03,000
+And there are usually many of them.
+
+90
+00:04:03,000 --> 00:04:05,000
+Then comes message stop.
+
+91
+00:04:05,000 --> 00:04:06,000
+That's the closing bracket.
+
+92
+00:04:06,000 --> 00:04:08,000
+The moment you receive it,
+
+93
+00:04:08,000 --> 00:04:11,000
+the response is finished and the connection can close.
+
+94
+00:04:11,000 --> 00:04:14,000
+Start, deltas, stop.
+
+95
+00:04:14,000 --> 00:04:15,000
+Handle those three correctly
+
+96
+00:04:15,000 --> 00:04:19,000
+and you've got the backbone of a streaming reader.
+
+97
+00:04:19,000 --> 00:04:21,000
+Now let's talk about putting the pieces back together
+
+98
+00:04:21,000 --> 00:04:24,000
+because a streamed response arrives in fragments
+
+99
+00:04:24,000 --> 00:04:26,000
+and your code reassembles it.
+
+100
+00:04:26,000 --> 00:04:28,000
+The pattern is straightforward.
+
+101
+00:04:28,000 --> 00:04:30,000
+When the message start event lands,
+
+102
+00:04:30,000 --> 00:04:32,000
+you set up an empty buffer.
+
+103
+00:04:32,000 --> 00:04:34,000
+Then as each delta event comes in,
+
+104
+00:04:34,000 --> 00:04:38,000
+you append its chunk of text onto that buffer.
+
+105
+00:04:38,000 --> 00:04:40,000
+Piece by piece, the full message builds up.
+
+106
+00:04:40,000 --> 00:04:43,000
+When a content block's stop event arrives,
+
+107
+00:04:43,000 --> 00:04:44,000
+that block is done.
+
+108
+00:04:44,000 --> 00:04:47,000
+And when the final message stop event fires,
+
+109
+00:04:47,000 --> 00:04:50,000
+your buffer holds the complete response,
+
+110
+00:04:50,000 --> 00:04:53,000
+exactly what a single buffered call would have returned.
+
+111
+00:04:53,000 --> 00:04:56,000
+The good news is that the official SDKs
+
+112
+00:04:56,000 --> 00:05:00,000
+do this accumulation for you and hand back finished text.
+
+113
+00:05:00,000 --> 00:05:03,000
+But it helps to know what's happening underneath,
+
+114
+00:05:03,000 --> 00:05:04,000
+especially when you're debugging.
+
+115
+00:05:05,000 --> 00:05:08,000
+Let's get more precise about the delta events
+
+116
+00:05:08,000 --> 00:05:10,000
+because there's more than one kind.
+
+117
+00:05:10,000 --> 00:05:13,000
+The most common is the content block delta.
+
+118
+00:05:13,000 --> 00:05:17,000
+Each one adds a chunk of output to a specific content block
+
+119
+00:05:17,000 --> 00:05:19,000
+and most of your streamed text
+
+120
+00:05:19,000 --> 00:05:22,000
+arrives as a long series of them.
+
+121
+00:05:22,000 --> 00:05:24,000
+Then there's the message delta.
+
+122
+00:05:24,000 --> 00:05:27,000
+These show up later and carry top-level information
+
+123
+00:05:27,000 --> 00:05:29,000
+about the response as a whole.
+
+124
+00:05:29,000 --> 00:05:32,000
+Things like the stop reason and the token usage counts.
+
+125
+00:05:32,000 --> 00:05:37,000
+And third, for tool calls, there's the input JSON delta.
+
+126
+00:05:38,000 --> 00:05:39,000
+This one's special.
+
+127
+00:05:39,000 --> 00:05:42,000
+It carries partial JSON, fragments of a tool's arguments
+
+128
+00:05:42,000 --> 00:05:45,000
+that build up gradually across several events.
+
+129
+00:05:45,000 --> 00:05:48,000
+Content block delta for output.
+
+130
+00:05:48,000 --> 00:05:50,000
+Message delta for the wrap-up.
+
+131
+00:05:50,000 --> 00:05:54,000
+Input JSON delta for tool arguments.
+
+132
+00:05:54,000 --> 00:05:56,000
+Same idea, three flavors.
+
+133
+00:05:57,000 --> 00:06:00,000
+That last one, the partial JSON, trips people up.
+
+134
+00:06:00,000 --> 00:06:02,000
+So let's slow down on it.
+
+135
+00:06:02,000 --> 00:06:04,000
+When Claude decides to call a tool,
+
+136
+00:06:04,000 --> 00:06:08,000
+it doesn't hand you the arguments in one clean object.
+
+137
+00:06:08,000 --> 00:06:10,000
+They stream in as partial JSON,
+
+138
+00:06:10,000 --> 00:06:13,000
+small fragments spread across several delta events.
+
+139
+00:06:13,000 --> 00:06:15,000
+Here's the catch.
+
+140
+00:06:15,000 --> 00:06:18,000
+A half-built fragment isn't valid JSON on its own.
+
+141
+00:06:18,000 --> 00:06:21,000
+If you parse it midstream, it'll fail
+
+142
+00:06:21,000 --> 00:06:23,000
+because the object isn't finished.
+
+143
+00:06:23,000 --> 00:06:25,000
+So the rule is simple.
+
+144
+00:06:25,000 --> 00:06:28,000
+Accumulate the fragments as they arrive,
+
+145
+00:06:28,000 --> 00:06:31,000
+but wait to parse until the content block's stop event lands.
+
+146
+00:06:31,000 --> 00:06:33,000
+At that point, and only then,
+
+147
+00:06:33,000 --> 00:06:37,000
+the tool input is guaranteed to be a complete, valid object.
+
+148
+00:06:37,000 --> 00:06:39,000
+So don't parse early.
+
+149
+00:06:39,000 --> 00:06:42,000
+Collect everything, wait for the stop signal,
+
+150
+00:06:42,000 --> 00:06:43,000
+then parse once.
+
+151
+00:06:43,000 --> 00:06:48,000
+That habit saves a lot of confusing errors. Let's recap.
+
+152
+00:06:48,000 --> 00:06:51,000
+Streaming is just server-sent events
+
+153
+00:06:51,000 --> 00:06:54,000
+flowing over one ordinary HTTPS response.
+
+154
+00:06:54,000 --> 00:06:56,000
+The events come in a fixed order,
+
+155
+00:06:56,000 --> 00:06:59,000
+and you accumulate deltas into a buffer
+
+156
+00:06:59,000 --> 00:07:01,000
+to rebuild the message.
+
+157
+00:07:01,000 --> 00:07:02,000
+One thing to watch.
+
+158
+00:07:02,000 --> 00:07:05,000
+Tool arguments arrive as partial JSON,
+
+159
+00:07:05,000 --> 00:07:08,000
+so parse them only at the block's close.
+
+160
+00:07:08,000 --> 00:07:12,000
+That covers streaming over HTTP with server-sent events.
+
+161
+00:07:12,000 --> 00:07:14,000
+I'll see you in the next lesson.
+
