@@ -6,7 +6,7 @@ window.PARTS = [
   { id: 3, title: 'Phần 3', name: 'Vận hành Claude Code và phân loại lỗi', quiz: false, mindmap: true },
   { id: 4, title: 'Phần 4', name: 'Gỡ lỗi, khôi phục và ngân sách token', quiz: false, mindmap: true },
   { id: 5, title: 'Phần 5', name: 'Nền tảng LLM, prompting, SDK và chọn model', quiz: false, mindmap: true },
-  { id: 6, title: 'Phần 6', name: 'Prompt engineering và context engineering', quiz: false },
+  { id: 6, title: 'Phần 6', name: 'Prompt engineering và context engineering', quiz: false, mindmap: true },
 ];
 
 window.LESSONS = [
