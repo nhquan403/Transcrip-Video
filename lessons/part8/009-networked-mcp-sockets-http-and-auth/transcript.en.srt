@@ -1,0 +1,260 @@
+1
+00:00:00,000 --> 00:00:07,000
+Welcome back. Remote MCP is where security really starts to matter. The moment your server leaves
+
+2
+00:00:07,000 --> 00:00:12,000
+the local machine and accepts connections over a network, an unauthenticated endpoint becomes a
+
+3
+00:00:12,000 --> 00:00:20,000
+real risk. This lesson covers the streamable HTTP transport and how OAuth protects a remote server.
+
+4
+00:00:20,000 --> 00:00:26,000
+Let's break it down. When your MCP server needs to live somewhere other than the user's machine,
+
+5
+00:00:26,000 --> 00:00:32,000
+you move to the streamable HTTP transport. Let's frame it with three basics. First,
+
+6
+00:00:32,000 --> 00:00:38,000
+the server is an independent process. It isn't a child of any client. It runs on its own and
+
+7
+00:00:38,000 --> 00:00:45,000
+can serve many clients at once over the network. Second, it exposes a single endpoint. One path,
+
+8
+00:00:45,000 --> 00:00:52,000
+something like slash MCP, handles all the traffic and it accepts both post and get requests.
+
+9
+00:00:52,000 --> 00:00:59,000
+Third, it's streaming capable. The server can answer with a single JSON object or it can open
+
+10
+00:00:59,000 --> 00:01:05,000
+a stream and send several messages back over time. Independent process, one endpoint, streaming when
+
+11
+00:01:05,000 --> 00:01:12,000
+it needs to. You'll sometimes hear this networked setup described loosely as talking over sockets.
+
+12
+00:01:13,000 --> 00:01:21,000
+In MCP's own spec, the standard remote transport has a specific name, streamable HTTP. So that's
+
+13
+00:01:21,000 --> 00:01:29,000
+the term we'll use. Here's how a message actually moves. The client posts each JSON RPC message
+
+14
+00:01:29,000 --> 00:01:34,000
+to that single endpoint. Along with it, the client sends an accept header saying it can
+
+15
+00:01:34,000 --> 00:01:42,000
+handle both plain JSON and an event stream. The server then has a choice. It can reply with one
+
+16
+00:01:42,000 --> 00:01:49,000
+JSON object or it can open an event stream and push several messages back. There's also an
+
+17
+00:01:49,000 --> 00:01:56,000
+optional get request that opens a stream purely for server initiated messages. Post to send,
+
+18
+00:01:56,000 --> 00:02:03,000
+get to listen, one endpoint for both. Because HTTP is stateless on its own,
+
+19
+00:02:03,000 --> 00:02:09,000
+MCP uses two headers to keep a session coherent across many requests. The first is the session
+
+20
+00:02:09,000 --> 00:02:16,000
+ID header, MCP session ID. When the connection initializes, the server may assign a session ID
+
+21
+00:02:16,000 --> 00:02:21,000
+and hand it back. From then on, the client echoes that ID on every request it sends,
+
+22
+00:02:21,000 --> 00:02:27,000
+so the server knows which session each message belongs to. The second is the protocol version
+
+23
+00:02:27,000 --> 00:02:34,000
+header, MCP protocol version. After initialization, the client includes this on its later requests,
+
+24
+00:02:34,000 --> 00:02:39,000
+so both sides stay agreed on exactly which revision of the protocol they're speaking.
+
+25
+00:02:39,000 --> 00:02:45,000
+Two headers, one for the session, one for the version, and together they keep a multi-request
+
+26
+00:02:45,000 --> 00:02:50,000
+conversation straight. It's worth being clear about which remote transport is current, because
+
+27
+00:02:50,000 --> 00:02:57,000
+there's an older one you'll still see referenced. The one to use is streamable HTTP, introduced in
+
+28
+00:02:57,000 --> 00:03:03,000
+2025. It's the single endpoint design we've been describing, with post, get, and optional streaming
+
+29
+00:03:03,000 --> 00:03:10,000
+built in. The older approach from 2024 was a separate HTTP and server sent events transport
+
+30
+00:03:10,000 --> 00:03:17,000
+that used a distinct channel just for streaming. Streamable HTTP replaced it. That older transport
+
+31
+00:03:17,000 --> 00:03:22,000
+is deprecated now, which means new servers shouldn't build on it. So if you see guidance
+
+32
+00:03:22,000 --> 00:03:28,000
+pointing at the standalone server sent events transport, treat it as legacy. For anything
+
+33
+00:03:28,000 --> 00:03:34,000
+you're building today, streamable HTTP is the answer. The moment your endpoint is reachable
+
+34
+00:03:34,000 --> 00:03:41,000
+over a network, you've got a surface to defend. And the spec bakes in a few protections. First,
+
+35
+00:03:41,000 --> 00:03:47,000
+the server validates the origin header on incoming requests. That's a defense against DNS rebinding
+
+36
+00:03:47,000 --> 00:03:53,000
+attacks, where a malicious page tries to reach a local server. Second, when the server is running
+
+37
+00:03:53,000 --> 00:04:00,000
+locally but still over HTTP, it should bind to loopback only, rather than exposing itself on
+
+38
+00:04:00,000 --> 00:04:07,000
+every network interface. Third, it should authenticate clients before it serves any tools
+
+39
+00:04:07,000 --> 00:04:13,000
+or resources. None of these are optional niceties on a real deployment. An open,
+
+40
+00:04:13,000 --> 00:04:20,000
+unauthenticated endpoint is exactly the kind of thing an attacker goes looking for. Authentication
+
+41
+00:04:20,000 --> 00:04:27,000
+on the HTTP transport uses OAuth 2.1, and it helps to know the three roles in that flow.
+
+42
+00:04:27,000 --> 00:04:34,000
+First is the resource server. That's the MCP server itself. Its job is to validate the access
+
+43
+00:04:34,000 --> 00:04:40,000
+token on every request and serve its tools only to callers that present a valid one.
+
+44
+00:04:41,000 --> 00:04:47,000
+Second is the OAuth client, which is the MCP client. It's responsible for obtaining a token
+
+45
+00:04:47,000 --> 00:04:53,000
+and attaching it to each request. Third is the authorization server. That's a separate party
+
+46
+00:04:53,000 --> 00:05:00,000
+whose job is to issue the tokens in the first place. It might be co-hosted with the MCP server,
+
+47
+00:05:00,000 --> 00:05:06,000
+or it might run completely independently. Resource server, client, authorization server,
+
+48
+00:05:06,000 --> 00:05:12,000
+three roles, one token. Once the client holds a valid token, there are a few rules about how it
+
+49
+00:05:12,000 --> 00:05:18,000
+uses that token. The token travels in the authorization header as a bearer token,
+
+50
+00:05:18,000 --> 00:05:24,000
+and it goes on every single request to the server. One thing to avoid, you never put the token in the
+
+51
+00:05:24,000 --> 00:05:32,000
+query string of the URL, because URLs get logged and cached in ways that leak secrets. On the
+
+52
+00:05:32,000 --> 00:05:38,000
+receiving side, the server validates that the token's intended audience actually matches this
+
+53
+00:05:38,000 --> 00:05:44,000
+server, so a token minted for somewhere else won't be accepted, and the server avoids blindly
+
+54
+00:05:44,000 --> 00:05:52,000
+forwarding your token to upstream APIs it calls, which closes off a confused deputy style problem.
+
+55
+00:05:52,000 --> 00:05:59,000
+Bearer header, right audience, and never in the URL. Let's put the two transports side by side,
+
+56
+00:05:59,000 --> 00:06:06,000
+since together they cover the whole picture. On the local side, you have stdio, one client,
+
+57
+00:06:06,000 --> 00:06:12,000
+the server running as a child process on your own machine, and any credentials coming straight from
+
+58
+00:06:12,000 --> 00:06:18,000
+the environment. There's no network identity to prove, because nothing remote is connecting.
+
+59
+00:06:18,000 --> 00:06:25,000
+On the remote side, you have streamable HTTP. Now, the server is an independent service,
+
+60
+00:06:25,000 --> 00:06:31,000
+potentially handling many clients at once from across a network. Because those clients are remote
+
+61
+00:06:31,000 --> 00:06:37,000
+and untrusted, each one has to prove who it is first, and that's exactly why oauth enters the
+
+62
+00:06:37,000 --> 00:06:44,000
+picture here, and not with stdio. Same protocol underneath, two very different deployment shapes.
+
+63
+00:06:46,000 --> 00:06:53,000
+Networked MCP runs on streamable HTTP transport, one endpoint serving many clients, and it
+
+64
+00:06:53,000 --> 00:07:02,000
+authenticates them using oauth 2.1. Keep in mind, that auth is defined for HTTP only, never for local
+
+65
+00:07:02,000 --> 00:07:09,000
+stdio. And that wraps up networked MCP over sockets, HTTP, and auth. I'll see you in the next one.
+

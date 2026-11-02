@@ -1,0 +1,328 @@
+1
+00:00:00,000 --> 00:00:06,000
+When you build an MCP server, the real question isn't what primitives are, it's how you stand one up.
+
+2
+00:00:06,000 --> 00:00:14,000
+You register your tools, resources, and prompts, then route the requests clients send and format the responses.
+
+3
+00:00:14,000 --> 00:00:20,000
+This lesson walks through registering each primitive and the mechanics behind a working server.
+
+4
+00:00:20,000 --> 00:00:26,000
+Everything a server does starts with registering its primitives, so let's take the three in turn.
+
+5
+00:00:26,000 --> 00:00:33,000
+First, tools. You register each tool with a name, a description, and an input schema, and the client
+
+6
+00:00:33,000 --> 00:00:35,000
+invokes it by sending tools slash call.
+
+7
+00:00:36,000 --> 00:00:43,000
+Second, resources. Each resource gets a URI and is served read-only through resources slash read, so
+
+8
+00:00:43,000 --> 00:00:46,000
+the host can pull it in as context whenever it needs to.
+
+9
+00:00:47,000 --> 00:00:53,000
+Third, prompts. You register a prompt with a name and optional arguments, and when the client sends
+
+10
+00:00:53,000 --> 00:00:56,000
+prompts slash get, the server returns it as messages.
+
+11
+00:00:57,000 --> 00:01:03,000
+Tools you register to be called. Resources to be read. Prompts to be fetched. Same registration
+
+12
+00:01:03,000 --> 00:01:05,000
+idea, three different retrieval methods.
+
+13
+00:01:06,000 --> 00:01:10,000
+Get these registered correctly, and the rest is routing.
+
+14
+00:01:10,000 --> 00:01:15,000
+Let's zoom in on registering a tool, since it's the primitive that does work.
+
+15
+00:01:15,000 --> 00:01:21,000
+At minimum, a tool definition needs a name, a description, and an input schema that spells out its parameters.
+
+16
+00:01:21,000 --> 00:01:29,000
+You can add optional fields too, a display title, an output schema for structured results, and annotations.
+
+17
+00:01:29,000 --> 00:01:35,000
+On the wire, clients find your tools by calling tools slash list, which returns everything you've
+
+18
+00:01:35,000 --> 00:01:38,000
+registered, and then they run one with tools slash call.
+
+19
+00:01:39,000 --> 00:01:45,000
+One piece of naming advice, prefer a namespaced name like calculator arithmetic over a bare
+
+20
+00:01:45,000 --> 00:01:48,000
+calculate, so tools from different servers don't collide.
+
+21
+00:01:49,000 --> 00:01:56,000
+Register the definition, advertise it through list, execute it through call. That's the full life of
+
+22
+00:01:56,000 --> 00:01:57,000
+a tool on your server.
+
+23
+00:01:58,000 --> 00:02:06,000
+There's a clean split running through the whole protocol, discovery versus execution, and it's worth seeing directly.
+
+24
+00:02:06,000 --> 00:02:13,000
+On the discovery side, every primitive gives clients a list method. Tools slash list, resources
+
+25
+00:02:13,000 --> 00:02:20,000
+slash list, and prompts slash list each let a client find out what your server actually exposes
+
+26
+00:02:20,000 --> 00:02:21,000
+before it uses anything.
+
+27
+00:02:22,000 --> 00:02:26,000
+On the execution side, the calls are separate and specific.
+
+28
+00:02:26,000 --> 00:02:34,000
+Tools slash call runs a tool and returns its result. Resources slash read hands back the data for a
+
+29
+00:02:34,000 --> 00:02:38,000
+URI and prompts slash get returns a filled in template.
+
+30
+00:02:39,000 --> 00:02:45,000
+So a client first asks what's here, then asks for the specific thing it wants. Discovery is always a
+
+31
+00:02:45,000 --> 00:02:48,000
+list. Retrieval and action each have their own method.
+
+32
+00:02:49,000 --> 00:02:54,000
+Keeping those two phases straight makes the request flow easy to reason about.
+
+33
+00:02:55,000 --> 00:03:00,000
+Now resources, which you register a little differently because they're data, not actions. Each
+
+34
+00:03:00,000 --> 00:03:04,000
+resource gets a unique URI, and that URI is how a client addresses it.
+
+35
+00:03:05,000 --> 00:03:11,000
+You serve resources through two methods, resources slash list to enumerate what's available, and
+
+36
+00:03:11,000 --> 00:03:14,000
+resources slash read to return the actual contents.
+
+37
+00:03:15,000 --> 00:03:22,000
+You can attach optional fields like a name, a description, and a mime type so the client knows what it's getting.
+
+38
+00:03:22,000 --> 00:03:28,000
+One handy feature, templated URIs. Instead of registering a thousand files one by one, you register
+
+39
+00:03:28,000 --> 00:03:32,000
+a URI pattern that stands in for a whole family of resources.
+
+40
+00:03:33,000 --> 00:03:39,000
+Remember, all of this is read only. Registering a resource exposes data for the application to
+
+41
+00:03:39,000 --> 00:03:42,000
+inject. It never gives the model something to execute.
+
+42
+00:03:44,000 --> 00:03:49,000
+Underneath the primitives, a server has four jobs to handle. So let's name them.
+
+43
+00:03:49,000 --> 00:03:55,000
+First, capability declaration. When the server starts up, it announces which primitives it supports
+
+44
+00:03:55,000 --> 00:03:58,000
+so a connecting client knows what to expect.
+
+45
+00:03:59,000 --> 00:04:06,000
+Second, request routing. As list, read, and call methods come in, the server dispatches each one to
+
+46
+00:04:06,000 --> 00:04:07,000
+the right handler.
+
+47
+00:04:08,000 --> 00:04:14,000
+Third, response formatting. Each handler returns its result in the shape the protocol defines, as
+
+48
+00:04:14,000 --> 00:04:16,000
+content the client can actually use.
+
+49
+00:04:17,000 --> 00:04:23,000
+Fourth, error signaling, and this one has a wrinkle. Protocol errors, like an unknown tool, are
+
+50
+00:04:23,000 --> 00:04:27,000
+reported one way, and tool execution errors are reported another.
+
+51
+00:04:28,000 --> 00:04:34,000
+Capability declaration, request routing, response formatting, error signaling. Four concerns, and a
+
+52
+00:04:34,000 --> 00:04:36,000
+real server handles all of them.
+
+53
+00:04:37,000 --> 00:04:42,000
+Prompts round out the set, and remember, these belong to the user. You register a prompt with a name
+
+54
+00:04:42,000 --> 00:04:47,000
+and an optional list of arguments, each argument describing what the user can fill in.
+
+55
+00:04:48,000 --> 00:04:54,000
+Clients discover prompts with a list call, then fetch a specific one by sending prompts slash get,
+
+56
+00:04:54,000 --> 00:04:58,000
+and your server responds with a set of messages that seed the conversation.
+
+57
+00:04:59,000 --> 00:05:04,000
+Because the person is the one choosing, prompts usually surface in the host as slash commands or
+
+58
+00:05:04,000 --> 00:05:07,000
+menu items. That's the contrast to keep in mind.
+
+59
+00:05:08,000 --> 00:05:14,000
+A tool is something the model decides to call, but a prompt just sits there as an option until a
+
+60
+00:05:14,000 --> 00:05:18,000
+user deliberately picks it. You register it, the user reaches for it.
+
+61
+00:05:20,000 --> 00:05:27,000
+The error field follows the same spelling rule as input schema. MCP flags a failed execution with
+
+62
+00:05:27,000 --> 00:05:34,000
+isError in camel case on the JSON RPC wire, and the Cloud Messages API signals the same failure with
+
+63
+00:05:34,000 --> 00:05:35,000
+isError in snake case.
+
+64
+00:05:36,000 --> 00:05:42,000
+Note what isError covers. It marks a tool that ran and failed with the details in the result content
+
+65
+00:05:42,000 --> 00:05:44,000
+so the model can read them and adjust.
+
+66
+00:05:45,000 --> 00:05:52,000
+A protocol-level failure, like a call to a tool you never registered, comes back as a JSON RPC error
+
+67
+00:05:52,000 --> 00:05:53,000
+instead, not as a result.
+
+68
+00:05:54,000 --> 00:05:59,000
+Keep the two channels separate in your handlers. When you're writing server code against the MCP
+
+69
+00:05:59,000 --> 00:06:05,000
+spec, use the camel case names. When you're handling the API response in your application, use the
+
+70
+00:06:05,000 --> 00:06:09,000
+snake case ones. Get the layer right and you'll get the spelling right.
+
+71
+00:06:10,000 --> 00:06:14,000
+One more piece of authoring to know, and it's about scope.
+
+72
+00:06:14,000 --> 00:06:20,000
+Roots are how a client tells a server which file system paths or URIs are in scope for the work.
+
+73
+00:06:20,000 --> 00:06:26,000
+Here's the important part. Roots are advisory. A well-behaved server should respect them, but
+
+74
+00:06:26,000 --> 00:06:28,000
+nothing in the protocol enforces it.
+
+75
+00:06:29,000 --> 00:06:36,000
+A local STDIO server runs with the full file system access of its operating system user, whether or
+
+76
+00:06:36,000 --> 00:06:43,000
+not roots are declared. So, treat roots as a scoping convention, and get real isolation from the
+
+77
+00:06:43,000 --> 00:06:47,000
+environment, OS-level sandboxing, containers, and file permissions.
+
+78
+00:06:48,000 --> 00:06:55,000
+When you build a server, honor the roots the client declares. When you run one, sandbox it as though it might not.
+
+79
+00:06:56,000 --> 00:07:01,000
+Here's the bottom line. Authoring a server is registering the three primitives and wiring the
+
+80
+00:07:01,000 --> 00:07:06,000
+mechanics around them. You declare capabilities, route requests, and format responses.
+
+81
+00:07:07,000 --> 00:07:13,000
+Discovering with list and then calling, reading, or getting. That covers authoring and registering
+
+82
+00:07:13,000 --> 00:07:15,000
+an MCP server. I'll see you in the next one.
+

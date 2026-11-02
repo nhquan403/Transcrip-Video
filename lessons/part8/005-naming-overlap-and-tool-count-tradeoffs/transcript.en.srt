@@ -1,0 +1,408 @@
+1
+00:00:00,000 --> 00:00:04,000
+A toolset gives you a few decisions that quietly make or break routing.
+
+2
+00:00:04,000 --> 00:00:10,000
+How you name tools, whether any overlap, and how many you expose all shape whether the
+
+3
+00:00:10,000 --> 00:00:12,000
+model picks correctly.
+
+4
+00:00:12,000 --> 00:00:20,000
+This lesson walks through naming, overlap, and the token cost of tools, and also when to prune. Let's dive in.
+
+5
+00:00:20,000 --> 00:00:25,000
+Names are the first thing the model scans, so make each one unambiguous.
+
+6
+00:00:25,000 --> 00:00:30,000
+Give every tool a distinct, action-oriented name that says what it does.
+
+7
+00:00:30,000 --> 00:00:36,000
+When your tools span several services, namespace them by prefixing the service, so related
+
+8
+00:00:36,000 --> 00:00:39,000
+tools group together and don't collide.
+
+9
+00:00:39,000 --> 00:00:44,000
+A name like BillingListInvoices tells the model far more than a bare list, which could
+
+10
+00:00:44,000 --> 00:00:46,000
+mean almost anything.
+
+11
+00:00:46,000 --> 00:00:51,000
+Consistent service resource patterns across your set cut confusion, especially once you're
+
+12
+00:00:51,000 --> 00:00:55,000
+using tool search to surface tools on demand.
+
+13
+00:00:55,000 --> 00:01:00,000
+The goal is to shrink the gap between what the model wants to do and what it actually picks.
+
+14
+00:01:00,000 --> 00:01:05,000
+Now, the description is still the primary routing signal, just as you learned earlier.
+
+15
+00:01:05,000 --> 00:01:14,000
+But in a multi-server setup, a distinct, namespaced name removes ambiguity before the description is even read.
+
+16
+00:01:14,000 --> 00:01:17,000
+Overlap is the quiet killer of tool routing.
+
+17
+00:01:17,000 --> 00:01:24,000
+Picture two distinct tools, each owning one clear job, with descriptions that don't compete.
+
+18
+00:01:24,000 --> 00:01:27,000
+The model maps a request straight to the obvious choice.
+
+19
+00:01:27,000 --> 00:01:31,000
+Now picture two tools whose descriptions blur into each other.
+
+20
+00:01:31,000 --> 00:01:37,000
+The model has no clean way to tell them apart, so it misselects, and that gets worse when
+
+21
+00:01:37,000 --> 00:01:39,000
+the names look similar too.
+
+22
+00:01:39,000 --> 00:01:41,000
+This is why adding a tool is never free.
+
+23
+00:01:41,000 --> 00:01:47,000
+A new tool that overlaps an existing one doesn't just add capability, it adds ambiguity to
+
+24
+00:01:47,000 --> 00:01:50,000
+every decision nearby.
+
+25
+00:01:50,000 --> 00:01:54,000
+Before you add one, check that it doesn't step on a tool you already have.
+
+26
+00:01:54,000 --> 00:01:58,000
+If it does, consolidate, instead of stacking.
+
+27
+00:01:58,000 --> 00:02:02,000
+When the model calls the wrong tool, it usually traces back to three sources.
+
+28
+00:02:02,000 --> 00:02:04,000
+First, similar names.
+
+29
+00:02:04,000 --> 00:02:10,000
+When two tools read almost the same, the model confuses them and picks the wrong one under pressure.
+
+30
+00:02:10,000 --> 00:02:12,000
+Second, competing descriptions.
+
+31
+00:02:12,000 --> 00:02:17,000
+When two descriptions overlap, there's no clean signal for which tool fits the request,
+
+32
+00:02:17,000 --> 00:02:19,000
+so the choice becomes a coin flip.
+
+33
+00:02:19,000 --> 00:02:21,000
+Third, vague scope.
+
+34
+00:02:21,000 --> 00:02:27,000
+A tool that tries to do everything matches too many requests, so it fires when a sharper,
+
+35
+00:02:27,000 --> 00:02:30,000
+more specific tool should have handled the job.
+
+36
+00:02:30,000 --> 00:02:33,000
+Notice the fix for all three is the same instinct.
+
+37
+00:02:33,000 --> 00:02:38,000
+Sharpen the names, separate the descriptions, and tighten each tool's scope until every
+
+38
+00:02:38,000 --> 00:02:41,000
+choice is obvious.
+
+39
+00:02:41,000 --> 00:02:44,000
+Tools aren't free, and it's worth knowing the price.
+
+40
+00:02:44,000 --> 00:02:49,000
+The moment you provide tools, the API injects a tool use system prompt into every request.
+
+41
+00:02:49,000 --> 00:02:56,000
+On Opus 4.8, that's roughly 290 tokens of overhead, and the tool names, descriptions,
+
+42
+00:02:56,000 --> 00:03:00,000
+and schemas all count as input tokens on top of that.
+
+43
+00:03:00,000 --> 00:03:02,000
+Here's the part people miss.
+
+44
+00:03:02,000 --> 00:03:07,000
+Even setting tool choice to none still pays this cost once tools are present.
+
+45
+00:03:07,000 --> 00:03:13,000
+The genuinely zero token case is providing no tools at all, not turning them off with a parameter.
+
+46
+00:03:13,000 --> 00:03:15,000
+None of this means avoid tools.
+
+47
+00:03:15,000 --> 00:03:20,000
+It means a big tool set spins context before the conversation even starts.
+
+48
+00:03:20,000 --> 00:03:25,000
+So every tool you keep should earn that ongoing cost.
+
+49
+00:03:25,000 --> 00:03:30,000
+Pruning is as important as adding, and three signals tell you when to cut.
+
+50
+00:03:30,000 --> 00:03:32,000
+First, rarely correct.
+
+51
+00:03:32,000 --> 00:03:38,000
+If your evals show a tool is seldom the right call, its token cost and its ambiguity outweigh
+
+52
+00:03:38,000 --> 00:03:39,000
+whatever it adds.
+
+53
+00:03:39,000 --> 00:03:41,000
+Second, redundant.
+
+54
+00:03:41,000 --> 00:03:46,000
+If another tool already covers the action, fold them together and drop the duplicate
+
+55
+00:03:46,000 --> 00:03:48,000
+rather than keeping both.
+
+56
+00:03:48,000 --> 00:03:51,000
+Third, unused surface.
+
+57
+00:03:51,000 --> 00:03:54,000
+Every extra tool widens the attack surface.
+
+58
+00:03:54,000 --> 00:03:57,000
+So remove anything the task doesn't actually need.
+
+59
+00:03:57,000 --> 00:04:02,000
+The instinct to resist is hoarding tools because more feels like more capability.
+
+60
+00:04:02,000 --> 00:04:03,000
+It usually isn't.
+
+61
+00:04:03,000 --> 00:04:11,000
+A leaner set the model routes cleanly through beats a bloated one that leaves it guessing on every turn.
+
+62
+00:04:11,000 --> 00:04:16,000
+Sometimes an agent genuinely needs dozens of tools, and loading them all up front burns
+
+63
+00:04:16,000 --> 00:04:19,000
+context and blurs selection.
+
+64
+00:04:19,000 --> 00:04:20,000
+There's a mechanism for this.
+
+65
+00:04:20,000 --> 00:04:27,000
+The tool search tool lets Claude discover tools on demand instead of holding every definition in context.
+
+66
+00:04:27,000 --> 00:04:32,000
+You mark rarely used tools with defer loading set to true.
+
+67
+00:04:32,000 --> 00:04:39,000
+So they load only when the model reaches for them, while you keep the few most used tools always loaded.
+
+68
+00:04:39,000 --> 00:04:43,000
+The effect is that a large surface stops crowding the context window and the model
+
+69
+00:04:43,000 --> 00:04:47,000
+reasons over a smaller active set at any moment.
+
+70
+00:04:47,000 --> 00:04:52,000
+I won't tie this to specific benchmark numbers, since those shift.
+
+71
+00:04:52,000 --> 00:04:54,000
+The mechanism is the point.
+
+72
+00:04:54,000 --> 00:04:59,000
+Discovery on demand is how large tool sets stay manageable.
+
+73
+00:04:59,000 --> 00:05:03,000
+Tool search is the first scaling lever, and it's already working for you.
+
+74
+00:05:03,000 --> 00:05:08,000
+Two more levers build on it once a tool set gets large.
+
+75
+00:05:08,000 --> 00:05:10,000
+First, programmatic calling.
+
+76
+00:05:10,000 --> 00:05:15,000
+It lets Claude orchestrate tools through code, which keeps intermediate results out of the
+
+77
+00:05:15,000 --> 00:05:20,000
+context window instead of piling them into the conversation.
+
+78
+00:05:20,000 --> 00:05:25,000
+Note it's first party API only, not available on Bedrock or Vertex.
+
+79
+00:05:25,000 --> 00:05:28,000
+Second, tool use examples.
+
+80
+00:05:28,000 --> 00:05:34,000
+Attaching a few example inputs to a tool sharpens accuracy when its parameters are complex and
+
+81
+00:05:34,000 --> 00:05:36,000
+hard to describe in prose alone.
+
+82
+00:05:36,000 --> 00:05:42,000
+You won't need these on a small set, but as the surface grows, they're how you keep
+
+83
+00:05:42,000 --> 00:05:47,000
+routing accurate without paying for every tool on every turn.
+
+84
+00:05:47,000 --> 00:05:48,000
+One last decision.
+
+85
+00:05:48,000 --> 00:05:51,000
+Not every tool belongs locked inside a single app.
+
+86
+00:05:51,000 --> 00:05:58,000
+Some capabilities are worth sharing across many clients, and that's the call MCP is for.
+
+87
+00:05:58,000 --> 00:06:03,000
+Keep app-specific tools as plain custom tools in the one app that uses them.
+
+88
+00:06:03,000 --> 00:06:08,000
+But when several clients need the same set, package it behind an MCP server.
+
+89
+00:06:08,000 --> 00:06:13,000
+That gives you one standardized model-agnostic integration instead of re-implementing the
+
+90
+00:06:13,000 --> 00:06:16,000
+same tools in every app.
+
+91
+00:06:16,000 --> 00:06:18,000
+The deciding question isn't how many tools you have.
+
+92
+00:06:18,000 --> 00:06:23,000
+It's whether the capability has to travel beyond a single client.
+
+93
+00:06:23,000 --> 00:06:26,000
+If it does, MCP is the clean way to expose it.
+
+94
+00:06:26,000 --> 00:06:31,000
+If it doesn't, a local custom tool is simpler and lighter.
+
+95
+00:06:31,000 --> 00:06:36,000
+Right-sizing a tool surface comes down to naming, overlap, and count.
+
+96
+00:06:36,000 --> 00:06:42,000
+It matters because distinct names and non-overlapping tools route correctly, while every tool you
+
+97
+00:06:42,000 --> 00:06:44,000
+add spends more tokens.
+
+98
+00:06:44,000 --> 00:06:46,000
+One thing to watch.
+
+99
+00:06:46,000 --> 00:06:53,000
+You should prune rarely-used tools, defer load, and reserve a shared server for capabilities
+
+100
+00:06:53,000 --> 00:06:56,000
+that clients reuse over and over.
+
+101
+00:06:56,000 --> 00:06:59,000
+That wraps up naming, overlap, and tool count tradeoffs.
+
+102
+00:06:59,000 --> 00:07:01,000
+When you're ready, let's jump into the next video.
+

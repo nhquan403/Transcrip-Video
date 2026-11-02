@@ -1,0 +1,464 @@
+1
+00:00:00,000 --> 00:00:07,000
+A tool definition only pays off inside the tool use loop, where Claude calls and your code answers.
+
+2
+00:00:07,000 --> 00:00:10,000
+Get the definition sloppy and it's where things break.
+
+3
+00:00:10,000 --> 00:00:14,000
+Wrong tool, bad arguments, a call that never comes.
+
+4
+00:00:14,000 --> 00:00:19,000
+This lesson covers that round trip, the tool choice options, the pre-typed client tools,
+
+5
+00:00:19,000 --> 00:00:22,000
+and the authoring mistakes to avoid.
+
+6
+00:00:22,000 --> 00:00:26,000
+Before we trace the loop, let's name the three pieces that make it work.
+
+7
+00:00:26,000 --> 00:00:28,000
+First, the tool use block.
+
+8
+00:00:28,000 --> 00:00:33,000
+That's what Claude returns when it decides to call a tool, and it carries three things,
+
+9
+00:00:33,000 --> 00:00:37,000
+an ID, the name of the tool, and an input object with the arguments.
+
+10
+00:00:37,000 --> 00:00:39,000
+Second, the tool result block.
+
+11
+00:00:39,000 --> 00:00:45,000
+That's what your code returns after you run the tool, handing the output back so Claude can keep going.
+
+12
+00:00:45,000 --> 00:00:48,000
+Third, the tool use ID.
+
+13
+00:00:48,000 --> 00:00:52,000
+That's the ID that links a tool result to the specific tool, use it answers.
+
+14
+00:00:52,000 --> 00:00:56,000
+So Claude knows which call your output belongs to.
+
+15
+00:00:56,000 --> 00:01:01,000
+Tool use, tool result, and the ID that ties them together.
+
+16
+00:01:01,000 --> 00:01:04,000
+Those three thread the whole conversation.
+
+17
+00:01:04,000 --> 00:01:07,000
+Now let's walk the round trip, and it's four steps.
+
+18
+00:01:07,000 --> 00:01:12,000
+Step one, you send your request to Claude along with your tool definitions, so it knows
+
+19
+00:01:12,000 --> 00:01:14,000
+what's available.
+
+20
+00:01:14,000 --> 00:01:20,000
+Step two, if Claude decides to use a tool, it comes back with a stop reason of tool use,
+
+21
+00:01:20,000 --> 00:01:24,000
+and it includes the tool name and the input object it wants you to run.
+
+22
+00:01:24,000 --> 00:01:30,000
+Step three, your code takes that input, actually executes the tool, and returns a tool result
+
+23
+00:01:30,000 --> 00:01:32,000
+carrying the output.
+
+24
+00:01:32,000 --> 00:01:39,000
+Step four, Claude reads that result and uses it to answer the user, or to decide on its next tool call.
+
+25
+00:01:39,000 --> 00:01:44,000
+Send with tools, get tool use back, run it, and return the result, then Claude answers.
+
+26
+00:01:44,000 --> 00:01:48,000
+Four steps, and your code drives two of them.
+
+27
+00:01:48,000 --> 00:01:54,000
+Let's get the mechanics of returning a result exactly right, because small mistakes here cause errors.
+
+28
+00:01:54,000 --> 00:01:58,000
+When you send a result back, you wrap it in a tool result block.
+
+29
+00:01:58,000 --> 00:02:00,000
+A couple of details matter.
+
+30
+00:02:00,000 --> 00:02:08,000
+First, every tool result carries a tool use ID, and it has to match the ID of the call it answers.
+
+31
+00:02:08,000 --> 00:02:11,000
+That's how Claude connects your answer to the right request.
+
+32
+00:02:11,000 --> 00:02:18,000
+Second, all of your results go inside a single user message, not spread across several.
+
+33
+00:02:18,000 --> 00:02:25,000
+And if Claude asked for more than one tool in that turn, you include a result for every one of them.
+
+34
+00:02:25,000 --> 00:02:29,000
+Leave a tool use unanswered, and the API rejects the whole turn.
+
+35
+00:02:29,000 --> 00:02:35,000
+So account for all of them, match the IDs, and pack them into one message.
+
+36
+00:02:35,000 --> 00:02:40,000
+One more capability to understand is parallel tool use, and it's on by default.
+
+37
+00:02:40,000 --> 00:02:46,000
+When Claude sees several independent things it needs, it can emit multiple tool use blocks
+
+38
+00:02:46,000 --> 00:02:50,000
+in a single message, rather than going one at a time.
+
+39
+00:02:50,000 --> 00:02:53,000
+That's efficient, but it changes how you respond.
+
+40
+00:02:53,000 --> 00:02:58,000
+You gather the results from all of those calls and return them together, as multiple tool
+
+41
+00:02:58,000 --> 00:03:02,000
+result blocks inside one user message.
+
+42
+00:03:02,000 --> 00:03:04,000
+There's a subtle case to know, too.
+
+43
+00:03:04,000 --> 00:03:09,000
+If a server tool ends up grouped in parallel with a client tool, the whole turn falls back
+
+44
+00:03:09,000 --> 00:03:13,000
+to stop reason tool use, so you handle it just like a client call.
+
+45
+00:03:13,000 --> 00:03:20,000
+Keep that in mind when you mix the two, otherwise parallel calls are a straightforward speed win.
+
+46
+00:03:20,000 --> 00:03:25,000
+You can steer whether and how Claude calls a tool with a parameter called tool choice,
+
+47
+00:03:25,000 --> 00:03:27,000
+and it has four values.
+
+48
+00:03:27,000 --> 00:03:29,000
+The first is auto.
+
+49
+00:03:29,000 --> 00:03:35,000
+Claude decides on its own whether to use a tool, and this is the default whenever you provide tools.
+
+50
+00:03:35,000 --> 00:03:36,000
+The second is any.
+
+51
+00:03:36,000 --> 00:03:40,000
+This forces Claude to call one of your tools, though it doesn't say which one.
+
+52
+00:03:40,000 --> 00:03:42,000
+The third is tool.
+
+53
+00:03:42,000 --> 00:03:47,000
+This forces one specific named tool for when you know exactly the call you need.
+
+54
+00:03:47,000 --> 00:03:49,000
+The fourth is none.
+
+55
+00:03:49,000 --> 00:03:54,000
+No tool gets called at all, and that's the default when you haven't provided any tools.
+
+56
+00:03:54,000 --> 00:03:56,000
+Auto, any tool, and none.
+
+57
+00:03:56,000 --> 00:04:02,000
+Four values, and knowing them keeps you from inventing a fifth that doesn't exist.
+
+58
+00:04:02,000 --> 00:04:07,000
+Let's contrast the relaxed option with the forcing ones, because they behave differently
+
+59
+00:04:07,000 --> 00:04:09,000
+in a way that surprises people.
+
+60
+00:04:09,000 --> 00:04:14,000
+With auto, Claude chooses whether and which tool to call, and it can also speak in plain
+
+61
+00:04:14,000 --> 00:04:18,000
+prose before it calls, or instead of calling.
+
+62
+00:04:18,000 --> 00:04:21,000
+That's the natural, flexible mode.
+
+63
+00:04:21,000 --> 00:04:23,000
+With any or tool, you're forcing a call.
+
+64
+00:04:23,000 --> 00:04:28,000
+The API prefills the assistance turn to make the tool happen, which means Claude emits
+
+65
+00:04:28,000 --> 00:04:33,000
+no natural language text before the tool use block.
+
+66
+00:04:33,000 --> 00:04:36,000
+So if you force a call, you don't get commentary alongside it.
+
+67
+00:04:36,000 --> 00:04:43,000
+If you want both a forced call and some prose, the move is to stay on auto and add an explicit
+
+68
+00:04:43,000 --> 00:04:48,000
+instruction in your message telling Claude to use the tool.
+
+69
+00:04:48,000 --> 00:04:53,000
+There's a category of tools worth calling out, because their location trips people up.
+
+70
+00:04:53,000 --> 00:04:59,000
+Anthropic defines the schema for a handful of client tools, so you don't write the definition yourself.
+
+71
+00:04:59,000 --> 00:05:04,000
+Bash, text editor, memory, and computer use all come pre-typed.
+
+72
+00:05:04,000 --> 00:05:06,000
+Here's the catch.
+
+73
+00:05:06,000 --> 00:05:08,000
+Pre-typed doesn't mean anthropic runs them.
+
+74
+00:05:08,000 --> 00:05:13,000
+These are client tools, which means they execute in your application, on your side.
+
+75
+00:05:13,000 --> 00:05:18,000
+Claude returns a tool use block just like with any custom tool, and your code is what
+
+76
+00:05:18,000 --> 00:05:23,000
+actually runs the command or edits the file, then returns the tool result.
+
+77
+00:05:23,000 --> 00:05:26,000
+So don't assume a built-in schema means server execution.
+
+78
+00:05:26,000 --> 00:05:31,000
+The schema is provided, but the running is still yours to do.
+
+79
+00:05:31,000 --> 00:05:34,000
+Let's name the three authoring mistakes that cause most tool problems.
+
+80
+00:05:34,000 --> 00:05:39,000
+The first is vague descriptions, the number one culprit, and you already know the fix
+
+81
+00:05:39,000 --> 00:05:41,000
+from the routing lesson.
+
+82
+00:05:41,000 --> 00:05:47,000
+A thin description misroutes, so Claude either skips the tool or fires it on the wrong request.
+
+83
+00:05:47,000 --> 00:05:50,000
+The second is overbroad schemas.
+
+84
+00:05:50,000 --> 00:05:55,000
+When your types are loose and your strings are wide open, you invite bad arguments, and
+
+85
+00:05:55,000 --> 00:05:59,000
+the model fills them with invented or malformed values.
+
+86
+00:05:59,000 --> 00:06:01,000
+The third is missing required fields.
+
+87
+00:06:01,000 --> 00:06:06,000
+If a field is genuinely essential, but you didn't mark it required, the model is free
+
+88
+00:06:06,000 --> 00:06:10,000
+to leave it out, and the call arrives incomplete.
+
+89
+00:06:10,000 --> 00:06:15,000
+Vague descriptions, overbroad schemas, missing required fields.
+
+90
+00:06:15,000 --> 00:06:18,000
+Fix those three, and most tool failures go away.
+
+91
+00:06:18,000 --> 00:06:21,000
+Here's a technique for the tools that are hard to describe.
+
+92
+00:06:21,000 --> 00:06:27,000
+When a parameter is genuinely complex, add a couple of input examples to the definition.
+
+93
+00:06:27,000 --> 00:06:32,000
+An example shows the model what a valid, well-formed call actually looks like, which
+
+94
+00:06:32,000 --> 00:06:36,000
+is often clearer than another paragraph of prose.
+
+95
+00:06:36,000 --> 00:06:40,000
+Examples are especially good at clarifying which combinations of fields make sense together,
+
+96
+00:06:40,000 --> 00:06:44,000
+something a schema by itself can't express.
+
+97
+00:06:44,000 --> 00:06:49,000
+One rule to keep in mind, every example you provide has to validate against the schema
+
+98
+00:06:49,000 --> 00:06:52,000
+or the request is rejected outright.
+
+99
+00:06:52,000 --> 00:06:58,000
+So for a tool with an unusual or nested argument shape, one solid worked example often teaches
+
+100
+00:06:58,000 --> 00:07:03,000
+the model more than a long written explanation ever would.
+
+101
+00:07:03,000 --> 00:07:08,000
+Let's bring the whole lesson together into what a tool Claude calls, well actually looks like.
+
+102
+00:07:08,000 --> 00:07:13,000
+It starts with a precise description, one that says not just what the tool does, but
+
+103
+00:07:13,000 --> 00:07:16,000
+when to use it and when to reach for something else.
+
+104
+00:07:16,000 --> 00:07:23,000
+It pairs that with a tight schema, narrow types, and enums instead of loose, open strings.
+
+105
+00:07:23,000 --> 00:07:27,000
+And it marks only the genuinely essential fields as required.
+
+106
+00:07:27,000 --> 00:07:32,000
+So the model isn't forced to stop and ask for things it could reasonably default.
+
+107
+00:07:32,000 --> 00:07:37,000
+Get those three right, the description, the schema, and the required list, and the misroutes
+
+108
+00:07:37,000 --> 00:07:43,000
+and malformed arguments that plague sloppy definitions mostly just disappear.
+
+109
+00:07:43,000 --> 00:07:47,000
+With clear intent in, clean calls out.
+
+110
+00:07:47,000 --> 00:07:48,000
+Let's frame the big picture.
+
+111
+00:07:48,000 --> 00:07:52,000
+When you write a tool definition, you're really setting up a clean round trip.
+
+112
+00:07:52,000 --> 00:07:56,000
+Claude returns tool use, your code returns tool result.
+
+113
+00:07:56,000 --> 00:08:03,000
+What to get right is a precise description, a tight schema, and only the essential fields required.
+
+114
+00:08:03,000 --> 00:08:08,000
+The trap is assuming a built-in schema like Bash means Anthropic runs it.
+
+115
+00:08:08,000 --> 00:08:13,000
+And that wraps up writing tool definitions Claude will actually call.
+
+116
+00:08:13,000 --> 00:08:14,000
+I'll catch you in the next one.
+

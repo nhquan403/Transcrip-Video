@@ -1,0 +1,316 @@
+1
+00:00:00,000 --> 00:00:04,000
+Now let's spend some time talking about jailbreaks. A jailbreak and a prompt injection
+
+2
+00:00:04,000 --> 00:00:11,000
+sound similar, but they aim at different things. Injection hijacks what your agent does with data.
+
+3
+00:00:11,000 --> 00:00:17,000
+A jailbreak goes after the model's own safety, trying to talk it into doing something that's
+
+4
+00:00:17,000 --> 00:00:22,000
+banned output. This lesson maps the jailbreak surface and how you defend against it.
+
+5
+00:00:23,000 --> 00:00:29,000
+Let's pin down what a jailbreak is in three parts. First, the attack itself. A jailbreak
+
+6
+00:00:29,000 --> 00:00:34,000
+is an attempt to coax the model past its own safety guidelines so it produces disallowed
+
+7
+00:00:34,000 --> 00:00:41,000
+output, and it usually leans on roleplay, obfuscation, or persuasion. Second, where it
+
+8
+00:00:41,000 --> 00:00:48,000
+sits. A jailbreak is a subset of prompt injection, the special case that targets safety itself
+
+9
+00:00:48,000 --> 00:00:52,000
+rather than your application's behavior. That matters because the emphasis differs.
+
+10
+00:00:53,000 --> 00:00:59,000
+Jailbreak resistance starts with the model's own safety training, and you still layer application
+
+11
+00:00:59,000 --> 00:01:05,000
+defenses on top, which is exactly what this lesson builds. Injection defense is almost entirely your
+
+12
+00:01:05,000 --> 00:01:12,000
+application's job. Third, who's attacking. In a jailbreak, the user of your application
+
+13
+00:01:12,000 --> 00:01:17,000
+is the adversary. They're crafting the hostile input themselves, deliberately, to get around
+
+14
+00:01:17,000 --> 00:01:24,000
+your guardrails. Attack, subset, adversary. Hold those three, and the rest of the lesson lines up.
+
+15
+00:01:25,000 --> 00:01:30,000
+So what does a jailbreak look like? They tend to follow a playbook, and recognizing the moves
+
+16
+00:01:30,000 --> 00:01:36,000
+helps you spot an attempt. The first is roleplay framing. The attacker asks the model to pretend
+
+17
+00:01:36,000 --> 00:01:42,000
+it's some unrestricted persona, a character with no rules, and to answer as that character.
+
+18
+00:01:42,000 --> 00:01:49,000
+The second is obfuscation, hiding the real intent inside encoding, deliberate typos, or a
+
+19
+00:01:49,000 --> 00:01:55,000
+translation into another language, so a naive filter doesn't catch the harmful ask. The third
+
+20
+00:01:55,000 --> 00:02:02,000
+is persuasion, an argument that the normal rules shouldn't apply just this once, often dressed up
+
+21
+00:02:02,000 --> 00:02:08,000
+as an emergency or a special exception. All three are chasing the same prize, disallowed output,
+
+22
+00:02:08,000 --> 00:02:14,000
+and all three come from a direct user who's working against you. When you see these patterns,
+
+23
+00:02:14,000 --> 00:02:20,000
+you're looking at a jailbreak attempt. It helps to hold two threat models side by side,
+
+24
+00:02:20,000 --> 00:02:24,000
+because they call for different defenses. The first is direct injection, which includes
+
+25
+00:02:24,000 --> 00:02:30,000
+jailbreaks. Here the user is the adversary. They craft the input themselves to bypass your
+
+26
+00:02:30,000 --> 00:02:36,000
+guardrails, so your defense is to screen and validate what the user sends before it ever
+
+27
+00:02:36,000 --> 00:02:42,000
+reaches Claude. The second is indirect injection. Here the user is trusted, but Claude ends up
+
+28
+00:02:42,000 --> 00:02:49,000
+processing third-party content, a web page, an email, a document, a tool result that hides hostile
+
+29
+00:02:49,000 --> 00:02:55,000
+instructions. Your defense there is to isolate and screen that outside content, treating it as
+
+30
+00:02:55,000 --> 00:03:02,000
+untrusted data. Same underlying attack, injection, but the entry point flips from the user to the
+
+31
+00:03:02,000 --> 00:03:09,000
+content, and so does the control you reach for. For direct attacks, where the user is hostile,
+
+32
+00:03:09,000 --> 00:03:15,000
+you've got three practical ways to screen the input. First, a harmlessness screen. You run user
+
+33
+00:03:15,000 --> 00:03:20,000
+input through a lightweight model, something like Haiku, before it ever reaches your main
+
+34
+00:03:20,000 --> 00:03:26,000
+conversation, and you constrain that classifier to a simple JSON Boolean, safe or not safe.
+
+35
+00:03:26,000 --> 00:03:32,000
+Second, input validation. You filter incoming text for known injection patterns, and you can
+
+36
+00:03:32,000 --> 00:03:38,000
+even use a model to build a generalized screen from a pile of past jailbreak examples, so it
+
+37
+00:03:38,000 --> 00:03:45,000
+catches variations you didn't hand code. Third, prompt engineering. You craft a system prompt that
+
+38
+00:03:45,000 --> 00:03:51,000
+spells out the ethical and legal boundaries, and tells Claude exactly how to refuse when someone
+
+39
+00:03:51,000 --> 00:03:58,000
+crosses them. Harmlessness screen, input validation, prompt engineering. Three cheap layers you can
+
+40
+00:03:58,000 --> 00:04:04,000
+stack on the input side. Here's the doctrine that ties the input defenses together. No single line
+
+41
+00:04:04,000 --> 00:04:11,000
+of defense holds against a determined attacker, so you combine strategies. Picture an enterprise setup.
+
+42
+00:04:11,000 --> 00:04:17,000
+It starts with a hardened system prompt, one that lays out clear directives and an explicit refusal
+
+43
+00:04:17,000 --> 00:04:24,000
+script for out-of-bounds asks. On top of that sits a harmlessness screen on the incoming input, plus
+
+44
+00:04:24,000 --> 00:04:30,000
+screening on any tool output before the model acts on it. And around all of that, you throttle or ban
+
+45
+00:04:30,000 --> 00:04:35,000
+users who keep tripping refusals, because a repeat offender is usually probing for a way through.
+
+46
+00:04:36,000 --> 00:04:41,000
+No one of these is bulletproof by itself. The system prompt can be talked around, a classifier
+
+47
+00:04:41,000 --> 00:04:47,000
+can miss, but layered together, no single bypass is enough on its own. That's the idea behind guardrail
+
+48
+00:04:47,000 --> 00:04:54,000
+layering. Let's widen the lens to defense in depth, because the layering idea goes beyond the input
+
+49
+00:04:54,000 --> 00:05:02,000
+side. The core insight is that model layer defense is always probabilistic, so serious builders stack
+
+50
+00:05:02,000 --> 00:05:09,000
+four overlapping layers. The first is the model layer itself. The classifiers, system prompts, and
+
+51
+00:05:09,000 --> 00:05:16,000
+training that filter attacks. Best in class, it's still probabilistic. The second is the input layer,
+
+52
+00:05:16,000 --> 00:05:22,000
+which scans external content and tool results before they enter the context window. The third
+
+53
+00:05:22,000 --> 00:05:28,000
+is the output layer, transcript classifiers that check each action before it actually executes.
+
+54
+00:05:29,000 --> 00:05:36,000
+And the fourth is the environment layer, sandboxes, file system bounds, and egress controls. Here's the
+
+55
+00:05:36,000 --> 00:05:42,000
+part to remember. When every probabilistic layer finally misses, the environment is the thing that
+
+56
+00:05:42,000 --> 00:05:50,000
+holds. That's why no serious agent relies on the model alone. Let me sharpen the single most
+
+57
+00:05:50,000 --> 00:05:55,000
+important contrast in this whole lesson. Probabilistic versus deterministic. The model
+
+58
+00:05:55,000 --> 00:06:02,000
+layer, all of it, the classifiers, the system prompts, the training, is probabilistic. It filters the large
+
+59
+00:06:02,000 --> 00:06:08,000
+majority of attacks, and it keeps getting better, but it's never 100% effective, which means it can't
+
+60
+00:06:08,000 --> 00:06:15,000
+stand alone as your defense. The environment layer is different in kind. Sandboxes, file system bounds,
+
+61
+00:06:15,000 --> 00:06:21,000
+egress controls, these are deterministic. They don't estimate whether something is safe.
+
+62
+00:06:21,000 --> 00:06:27,000
+They enforce a hard limit. Think about a chain of individually benign actions, each one harmless on
+
+63
+00:06:27,000 --> 00:06:32,000
+its own, that only add up to damage in combination. There's nothing in any single step for a content
+
+64
+00:06:32,000 --> 00:06:38,000
+classifier to flag, so the model layer can't help. The only thing standing is the environment,
+
+65
+00:06:38,000 --> 00:06:43,000
+the egress block, the file system boundary. That's the layer that holds when everything probabilistic
+
+66
+00:06:43,000 --> 00:06:50,000
+misses. Let's close with a mindset shift that trips up a lot of developers, and it comes in
+
+67
+00:06:50,000 --> 00:06:57,000
+three parts. First, a refusal is valid behavior. When Claude declines a disallowed request,
+
+68
+00:06:57,000 --> 00:07:03,000
+that is the safety layer doing its job. It isn't an integration bug, and it shouldn't get escalated
+
+69
+00:07:03,000 --> 00:07:10,000
+to engineering as a defect. Second, politeness isn't a control. A system prompt that politely
+
+70
+00:07:10,000 --> 00:07:17,000
+asks Claude to ignore malicious instructions is one probabilistic layer, but it isn't an
+
+71
+00:07:17,000 --> 00:07:23,000
+enforceable guarantee. Don't mistake a request for a wall. Third, the real boundary lives in
+
+72
+00:07:23,000 --> 00:07:29,000
+the environment. Enforcement comes from least privilege, sandboxing, and egress limits. The
+
+73
+00:07:29,000 --> 00:07:35,000
+deterministic controls, not from a sentence you wrote into the prompt. Refusal is valid.
+
+74
+00:07:35,000 --> 00:07:38,000
+Politeness isn't enforcement. The environment is the boundary.
+
+75
+00:07:40,000 --> 00:07:46,000
+Here's the bottom line. A jailbreak targets the model's safety, and no single layer stops it.
+
+76
+00:07:46,000 --> 00:07:52,000
+Layer model safety with input screening. Remember, the model layer is probabilistic,
+
+77
+00:07:52,000 --> 00:07:56,000
+and lean on the environment as your deterministic boundary. Just remember,
+
+78
+00:07:56,000 --> 00:08:02,000
+a refusal is the safety layer working and doing its job. It's not a bug. That covers jailbreak
+
+79
+00:08:02,000 --> 00:08:05,000
+defense and safety layers. I'll see you in the next one.
+

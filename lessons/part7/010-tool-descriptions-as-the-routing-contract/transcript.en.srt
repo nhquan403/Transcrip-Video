@@ -1,0 +1,356 @@
+1
+00:00:00,000 --> 00:00:04,000
+When you give Claude a set of tools, you hit a problem right away.
+
+2
+00:00:04,000 --> 00:00:10,000
+It has to choose which ones to call, and it makes that choice by reading the words that you wrote.
+
+3
+00:00:10,000 --> 00:00:13,000
+Get the description wrong, and the right tool sits unused.
+
+4
+00:00:13,000 --> 00:00:18,000
+This lesson covers writing tool definitions that Claude will actually route to.
+
+5
+00:00:18,000 --> 00:00:23,000
+Every tool you define has three parts, and it helps to name them up front.
+
+6
+00:00:23,000 --> 00:00:30,000
+First is the name. That's the unique identifier your code and the API use to invoke the tool,
+
+7
+00:00:30,000 --> 00:00:34,000
+and it follows a strict pattern of letters, digits, underscores, and hyphens.
+
+8
+00:00:34,000 --> 00:00:40,000
+Second is the description. This is plain text prose that says what the tool does, when to use it,
+
+9
+00:00:40,000 --> 00:00:41,000
+and how it behaves.
+
+10
+00:00:42,000 --> 00:00:46,000
+It's the part Claude reads to decide whether to call the tool at all.
+
+11
+00:00:46,000 --> 00:00:54,000
+Third is the input schema, a JSON schema object that declares the parameters Claude may pass and their types.
+
+12
+00:00:54,000 --> 00:00:58,000
+Name to invoke, description to route, schema to shape the arguments.
+
+13
+00:00:58,000 --> 00:01:02,000
+Hold those three, and everything else follows.
+
+14
+00:01:02,000 --> 00:01:05,000
+Here's the idea that reframes the whole lesson.
+
+15
+00:01:05,000 --> 00:01:11,000
+Claude decides when to call a tool based on two things, the user's request and the tool's description.
+
+16
+00:01:11,000 --> 00:01:18,000
+That description is, by far, the single most important factor in how well your tools perform.
+
+17
+00:01:18,000 --> 00:01:22,000
+Read that again, because developers underweight it constantly.
+
+18
+00:01:22,000 --> 00:01:27,000
+Claude reads the description to judge whether this particular tool fits the request in front of it.
+
+19
+00:01:27,000 --> 00:01:33,000
+If the prose is thin, the model is left guessing at your intent, and it guesses wrong.
+
+20
+00:01:33,000 --> 00:01:40,000
+A terse label, like handler or process, tells Claude nothing about when the tool applies.
+
+21
+00:01:40,000 --> 00:01:45,000
+Precise prose is what turns a vague request into the right, well-formed call.
+
+22
+00:01:45,000 --> 00:01:48,000
+The description is the router.
+
+23
+00:01:48,000 --> 00:01:53,000
+Let's separate two things that get conflated, the name and the description.
+
+24
+00:01:53,000 --> 00:01:57,000
+The name is an identifier. Your code uses it to invoke the tool.
+
+25
+00:01:57,000 --> 00:02:01,000
+And the API uses it to match the returned call back to your function.
+
+26
+00:02:01,000 --> 00:02:06,000
+That's real work, but it's execution work, not routing work.
+
+27
+00:02:06,000 --> 00:02:11,000
+The description is different. It's the natural language signal Claude actually reasons over when
+
+28
+00:02:11,000 --> 00:02:12,000
+it's choosing among several tools.
+
+29
+00:02:13,000 --> 00:02:18,000
+So, when Claude picks the wrong tool, your instinct might be to rename it.
+
+30
+00:02:18,000 --> 00:02:20,000
+But that rarely helps.
+
+31
+00:02:20,000 --> 00:02:24,000
+Improving the description is almost always the first and best fix.
+
+32
+00:02:24,000 --> 00:02:27,000
+Name for execution, description for routing.
+
+33
+00:02:27,000 --> 00:02:32,000
+When selection goes wrong, reach for the description first, not the name.
+
+34
+00:02:32,000 --> 00:02:36,000
+So what belongs in a strong description? Four things.
+
+35
+00:02:36,000 --> 00:02:39,000
+First, what the tool does.
+
+36
+00:02:39,000 --> 00:02:43,000
+State the capability in plain language so Claude knows what it's for.
+
+37
+00:02:43,000 --> 00:02:46,000
+Second, when to use it.
+
+38
+00:02:46,000 --> 00:02:51,000
+Name the kinds of requests and situations where this tool is the right choice.
+
+39
+00:02:51,000 --> 00:02:55,000
+Third, and people skip this one, when not to use it.
+
+40
+00:02:55,000 --> 00:03:02,000
+If another tool fits a nearby case better, say so, because that prevents misroutes between similar tools.
+
+41
+00:03:02,000 --> 00:03:05,000
+Fourth, caveats and limits.
+
+42
+00:03:05,000 --> 00:03:10,000
+Explain what each parameter means, any side effects, and the boundaries the model should respect.
+
+43
+00:03:10,000 --> 00:03:15,000
+What it does, when to use it, when not to, and the caveats.
+
+44
+00:03:15,000 --> 00:03:19,000
+Cover those four, and Claude has what it needs to choose well.
+
+45
+00:03:19,000 --> 00:03:23,000
+You might think a good schema could carry the load by itself.
+
+46
+00:03:23,000 --> 00:03:26,000
+It can't, and it's worth understanding why.
+
+47
+00:03:26,000 --> 00:03:30,000
+A JSON schema tells Claude what's structurally valid.
+
+48
+00:03:30,000 --> 00:03:35,000
+It says this field is a string, this one's required, this number has to be an integer.
+
+49
+00:03:35,000 --> 00:03:38,000
+What it can't express is usage patterns.
+
+50
+00:03:38,000 --> 00:03:45,000
+It can't tell Claude when a call actually makes sense, or which optional fields to include in which situation.
+
+51
+00:03:45,000 --> 00:03:49,000
+That kind of when and why only lives in the description.
+
+52
+00:03:49,000 --> 00:03:52,000
+So think of it as a division of labor.
+
+53
+00:03:52,000 --> 00:03:58,000
+The schema constrains the shape of the arguments, and the description drives the decision to call in the first place.
+
+54
+00:03:58,000 --> 00:04:01,000
+You need both, doing different jobs.
+
+55
+00:04:01,000 --> 00:04:04,000
+Here's a practical way to think about writing the description.
+
+56
+00:04:04,000 --> 00:04:09,000
+Treat it like onboarding notes, for a new hire who has never seen this tool before.
+
+57
+00:04:09,000 --> 00:04:12,000
+They need context, not a label.
+
+58
+00:04:12,000 --> 00:04:17,000
+Aim for at least three to four sentences, and more if the tool is complex.
+
+59
+00:04:17,000 --> 00:04:21,000
+Explain what each parameter means, and how it shapes the tool's behavior.
+
+60
+00:04:21,000 --> 00:04:27,000
+Spell out the edge cases, instead of assuming Claude will infer them from the name.
+
+61
+00:04:27,000 --> 00:04:32,000
+The reflex is to write a clever, compact name, and a one-line description.
+
+62
+00:04:32,000 --> 00:04:40,000
+Resist it. Detailed prose beats a clever name every single time, because the name is nearly invisible to rooting.
+
+63
+00:04:40,000 --> 00:04:42,000
+And the prose is everything.
+
+64
+00:04:42,000 --> 00:04:48,000
+Let me make this concrete with a contrast between a vague description and a precise one.
+
+65
+00:04:48,000 --> 00:04:54,000
+Picture a tool named GetData, whose entire description is just the words DataTool.
+
+66
+00:04:54,000 --> 00:04:59,000
+Claude has no idea what data, from where, or when, this beats some other tool.
+
+67
+00:04:59,000 --> 00:05:02,000
+So it either skips it, or calls it blindly.
+
+68
+00:05:02,000 --> 00:05:07,000
+Now picture a tool named SearchOrders, described as retrieving a customer's orders, for support
+
+69
+00:05:07,000 --> 00:05:09,000
+questions about past purchases.
+
+70
+00:05:10,000 --> 00:05:12,000
+That version roots cleanly.
+
+71
+00:05:12,000 --> 00:05:16,000
+Claude knows exactly when it applies, and what to put in the arguments.
+
+72
+00:05:16,000 --> 00:05:20,000
+Same underlying function, wildly different behavior.
+
+73
+00:05:20,000 --> 00:05:23,000
+The difference isn't the code behind the tool.
+
+74
+00:05:23,000 --> 00:05:29,000
+It's entirely in how clearly you described what the tool is for, and when to reach for it.
+
+75
+00:05:29,000 --> 00:05:34,000
+So what do you do when Claude keeps ignoring a tool, or calling it at the wrong time?
+
+76
+00:05:34,000 --> 00:05:36,000
+Go to the description first.
+
+77
+00:05:36,000 --> 00:05:40,000
+A skipped tool almost always has a thin, underspecified description.
+
+78
+00:05:40,000 --> 00:05:46,000
+Add the intent, spell out the conditions where it applies, and give a concrete example or two of the
+
+79
+00:05:46,000 --> 00:05:48,000
+kind of request that should trigger it.
+
+80
+00:05:49,000 --> 00:05:54,000
+Do that before you start adjusting temperature, or reaching for a bigger model, because those rarely
+
+81
+00:05:54,000 --> 00:05:55,000
+fix a routing problem.
+
+82
+00:05:56,000 --> 00:06:03,000
+In practice, sharper description prose recovers more bad tool choices than any other single change you can make.
+
+83
+00:06:03,000 --> 00:06:08,000
+When selection misbehaves, rewrite the words before you touch anything else.
+
+84
+00:06:08,000 --> 00:06:13,000
+A tool definition is name, description, and input schema.
+
+85
+00:06:13,000 --> 00:06:15,000
+And the description carries the routing.
+
+86
+00:06:15,000 --> 00:06:20,000
+It matters because Claude selects tools from that prose, not the name or the schema.
+
+87
+00:06:20,000 --> 00:06:27,000
+Keep in mind, a vague description is the top cause for misrouting, so write real sentences of intent.
+
+88
+00:06:27,000 --> 00:06:31,000
+That covers tool descriptions as the routing contract.
+
+89
+00:06:31,000 --> 00:06:33,000
+I'll see you in the next video.
+

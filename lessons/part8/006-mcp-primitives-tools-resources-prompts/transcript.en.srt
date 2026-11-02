@@ -1,0 +1,264 @@
+1
+00:00:00,000 --> 00:00:06,000
+let's talk about authoring an MCP server. MCP gives you three primitives to expose,
+
+2
+00:00:06,000 --> 00:00:12,000
+tools, resources, and prompts. They look similar, but each answers to a different controller,
+
+3
+00:00:12,000 --> 00:00:18,000
+and that ownership split is the distinction developers sometimes get wrong. This lesson
+
+4
+00:00:18,000 --> 00:00:24,000
+walks through all three and explains how they work. Let's name the three primitives an MCP
+
+5
+00:00:24,000 --> 00:00:29,000
+server exposes. First, tools. These are executable functions the model can call,
+
+6
+00:00:29,000 --> 00:00:35,000
+like an API request or a database query. They are the actions your server offers. Second,
+
+7
+00:00:35,000 --> 00:00:42,000
+resources. These are read-only data sources, file contents, records, an API response,
+
+8
+00:00:42,000 --> 00:00:50,000
+each one identified by a URI. They supply context, they never do anything. Third, prompts. These are
+
+9
+00:00:50,000 --> 00:00:55,000
+reusable templates, and the user picks them, usually as a slash command or a menu item in
+
+10
+00:00:55,000 --> 00:01:02,000
+the host. Tools act, resources inform, prompts get selected. Hold those three apart because the
+
+11
+00:01:02,000 --> 00:01:07,000
+next thing we do is pin down who controls each one, and that is where it gets interesting.
+
+12
+00:01:09,000 --> 00:01:14,000
+Here's the idea that matters more than any field name. Each primitive answers to a different
+
+13
+00:01:14,000 --> 00:01:20,000
+controller. Tools are model-controlled, which means Cloud itself decides when to call one
+
+14
+00:01:20,000 --> 00:01:26,000
+based on the request in front of it. Resources are application-controlled, so the host application
+
+15
+00:01:26,000 --> 00:01:32,000
+decides which ones to pull in as context. The model doesn't reach out and grab a resource.
+
+16
+00:01:32,000 --> 00:01:37,000
+Prompts are user-controlled, meaning a person deliberately selects the template.
+
+17
+00:01:37,000 --> 00:01:43,000
+The model never triggers a prompt on its own. The model controls tools, the application controls
+
+18
+00:01:43,000 --> 00:01:49,000
+resources, the user controls prompts. Cross-attributing them is the single most common
+
+19
+00:01:49,000 --> 00:01:54,000
+MCP mistake, so match each primitive to its controller first and everything downstream
+
+20
+00:01:54,000 --> 00:02:01,000
+stays clear. Let's lock the ownership in with the three controllers side by side. First,
+
+21
+00:02:01,000 --> 00:02:07,000
+tools are controlled by the model. Cloud discovers what tools exist and invokes them on its own,
+
+22
+00:02:07,000 --> 00:02:13,000
+reading the request and the tool's description to decide. Second, resources are controlled by
+
+23
+00:02:13,000 --> 00:02:20,000
+the application. The host decides which resources to inject as context on its own terms, not because
+
+24
+00:02:20,000 --> 00:02:26,000
+the model asked. Third, prompts are controlled by the user. A person picks a prompt template
+
+25
+00:02:26,000 --> 00:02:34,000
+deliberately, and the model never fires one by itself. Model, application, user. Three primitives,
+
+26
+00:02:34,000 --> 00:02:39,000
+three controllers. That mapping is the thing to carry out of this lesson,
+
+27
+00:02:39,000 --> 00:02:45,000
+because almost every MCP question turns on it. Let's go deeper on tools, because they're the
+
+28
+00:02:45,000 --> 00:02:51,000
+primitive that acts. A tool is a callable action. Behind it sits an API call, a database query,
+
+29
+00:02:51,000 --> 00:02:56,000
+or a file operation, something that does work. The model is in charge here. It discovers the
+
+30
+00:02:56,000 --> 00:03:02,000
+tools your server advertises, then invokes them based on the conversation and the user's request.
+
+31
+00:03:02,000 --> 00:03:08,000
+Exactly the way tool calling works in the Cloud API. In fact, an MCP tool mirrors the tool use
+
+32
+00:03:08,000 --> 00:03:14,000
+contract you already know. The model emits a call, your server runs it, and the result comes back.
+
+33
+00:03:14,000 --> 00:03:19,000
+So when you register a tool, you're handing Cloud an action it can choose to take on its own.
+
+34
+00:03:20,000 --> 00:03:26,000
+Now, resources. And this is where people slip. A resource is read-only context.
+
+35
+00:03:26,000 --> 00:03:34,000
+Think file contents, a database record, or an API response, each one identified by a URI,
+
+36
+00:03:34,000 --> 00:03:40,000
+so the client can address it. Here's the key part. Resources are application controlled.
+
+37
+00:03:40,000 --> 00:03:45,000
+The host application decides when to read a resource and inject it into the context.
+
+38
+00:03:45,000 --> 00:03:51,000
+The model doesn't go fetch a resource on its own, the way it calls a tool. And because a resource
+
+39
+00:03:51,000 --> 00:03:57,000
+only supplies data, it never carries out an action. If you catch yourself saying a resource
+
+40
+00:03:57,000 --> 00:04:04,000
+runs something or changes state, stop. That's a tool's job. Resources inform, they don't act.
+
+41
+00:04:05,000 --> 00:04:11,000
+That brings us to prompts, the primitive that belongs to the user. A prompt is a reusable
+
+42
+00:04:11,000 --> 00:04:17,000
+template, a pre-built message or workflow the server offers. The user is the one who reaches
+
+43
+00:04:17,000 --> 00:04:23,000
+for it. Hosts usually surface prompts as slash commands or menu entries, so a person can pick
+
+44
+00:04:23,000 --> 00:04:29,000
+one deliberately. The model doesn't decide to run a prompt, and that's the whole point. A prompt is
+
+45
+00:04:29,000 --> 00:04:36,000
+an invitation the user accepts, not an action the model takes. So keep the line clear. Tools are the
+
+46
+00:04:36,000 --> 00:04:43,000
+models to call, resources are the applications to inject, and prompts are the users to select.
+
+47
+00:04:43,000 --> 00:04:49,000
+Same server, three very different kinds of control. Let's clear up a naming trap that
+
+48
+00:04:49,000 --> 00:04:56,000
+bites developers who know the Cloud API well. In MCP, when you define a tool, its parameters live
+
+49
+00:04:56,000 --> 00:05:03,000
+under input schema, spelled in camel case. You'll also see is error and the method tools slash call
+
+50
+00:05:03,000 --> 00:05:10,000
+written the same way, because MCP rides on JSON RPC. Now compare that to the Cloud Messages API,
+
+51
+00:05:10,000 --> 00:05:16,000
+where the same idea is input schema. In snake case, right next to is error and tool use.
+
+52
+00:05:17,000 --> 00:05:24,000
+Same concepts, different layer, different spelling. The MCP wire format and the Messages API are two
+
+53
+00:05:24,000 --> 00:05:29,000
+distinct things, and conflating their field names is an easy way to trip yourself up.
+
+54
+00:05:29,000 --> 00:05:35,000
+When you're authoring a server, match the MCP spelling. When you're calling the API,
+
+55
+00:05:35,000 --> 00:05:43,000
+match the APIs. One more thing worth stepping back for. MCP is an open model agnostic standard.
+
+56
+00:05:43,000 --> 00:05:49,000
+It isn't a cloud only feature, and it isn't just another single API you call. That matters because
+
+57
+00:05:49,000 --> 00:05:55,000
+of reuse. One MCP server can serve many different clients, and any host that speaks the protocol
+
+58
+00:05:55,000 --> 00:06:01,000
+can connect to it. Write your tools and resources once, and they work across every compliant client,
+
+59
+00:06:01,000 --> 00:06:07,000
+not just one application. That's the real payoff over a plain function calling setup,
+
+60
+00:06:07,000 --> 00:06:13,000
+where your tools are wired into a single app. A standard interface is what lets a whole ecosystem
+
+61
+00:06:13,000 --> 00:06:17,000
+share the same servers. Keep that in mind as we move into actually building one.
+
+62
+00:06:18,000 --> 00:06:24,000
+An MCP server exposes three primitives, and ownership is the piece to remember. Tools are
+
+63
+00:06:24,000 --> 00:06:30,000
+model-controlled actions. Resources are application-controlled data, and prompts
+
+64
+00:06:30,000 --> 00:06:36,000
+are user-controlled templates. Keep in mind, MCP writes input schema as camel case,
+
+65
+00:06:36,000 --> 00:06:43,000
+while the API writes input schema as snake case with an underscore. That covers the MCP primitives,
+
+66
+00:06:43,000 --> 00:06:46,000
+tools, resources, and prompts. I'll see you in the next one.
+

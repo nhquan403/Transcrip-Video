@@ -1,0 +1,488 @@
+1
+00:00:00,000 --> 00:00:03,000
+When you ship a cloud application, you often hit a gap.
+
+2
+00:00:03,000 --> 00:00:08,000
+The model's built-in safety isn't the same as your product's content policy,
+
+3
+00:00:08,000 --> 00:00:13,000
+and no single prompt line enforces the rules your deployment actually needs.
+
+4
+00:00:13,000 --> 00:00:18,000
+This lesson covers content policy and how builders layer guardrails to enforce it.
+
+5
+00:00:18,000 --> 00:00:20,000
+Let's break it down.
+
+6
+00:00:20,000 --> 00:00:25,000
+Let's get three building blocks straight because the rest of the lesson leans on them.
+
+7
+00:00:25,000 --> 00:00:27,000
+First, your content policy.
+
+8
+00:00:27,000 --> 00:00:33,000
+That's the set of rules your application defines for what it will and won't produce or act on.
+
+9
+00:00:33,000 --> 00:00:37,000
+It's enforced through the model's own safety, plus your own guardrails.
+
+10
+00:00:37,000 --> 00:00:39,000
+Second, guardrail layering.
+
+11
+00:00:39,000 --> 00:00:43,000
+You place controls at multiple points.
+
+12
+00:00:43,000 --> 00:00:47,000
+Screening on input, checks on output, and enforcement in your code,
+
+13
+00:00:47,000 --> 00:00:51,000
+so that no single failure exposes the system.
+
+14
+00:00:51,000 --> 00:00:53,000
+Third, defense in depth.
+
+15
+00:00:53,000 --> 00:00:56,000
+That's the security principle behind the layering.
+
+16
+00:00:56,000 --> 00:01:02,000
+You stack overlapping controls, so when one is bypassed, the next one catches it.
+
+17
+00:01:02,000 --> 00:01:05,000
+Content policy is the what. Layering is the how.
+
+18
+00:01:05,000 --> 00:01:09,000
+Defense in depth is why it holds.
+
+19
+00:01:09,000 --> 00:01:13,000
+Now, here's a distinction that trips up a lot of new builders.
+
+20
+00:01:13,000 --> 00:01:17,000
+The model's built-in safety isn't the same thing as your content policy.
+
+21
+00:01:17,000 --> 00:01:19,000
+Cloud ships with real safety behavior.
+
+22
+00:01:19,000 --> 00:01:24,000
+It's trained to decline requests that are broadly harmful, and that protection is genuine.
+
+23
+00:01:24,000 --> 00:01:28,000
+But Cloud can't know the bespoke rules of your specific deployment.
+
+24
+00:01:28,000 --> 00:01:31,000
+Maybe your app should never give medical dosing advice,
+
+25
+00:01:31,000 --> 00:01:36,000
+or never touch a customer's payment details, or never discuss a competitor.
+
+26
+00:01:36,000 --> 00:01:40,000
+That's an application-specific rule, and only you can define it.
+
+27
+00:01:40,000 --> 00:01:43,000
+The model's safety is a floor you build on.
+
+28
+00:01:43,000 --> 00:01:48,000
+Enforcing what this particular product refuses is the developer's own guardrail job,
+
+29
+00:01:48,000 --> 00:01:51,000
+and that's the work this lesson is about.
+
+30
+00:01:51,000 --> 00:01:56,000
+So why not just write one strong rule into your system prompt and call it done?
+
+31
+00:01:56,000 --> 00:02:00,000
+Because a single prompt-level guardrail is probabilistic.
+
+32
+00:02:00,000 --> 00:02:03,000
+Its guidance and guidance can be talked around.
+
+33
+00:02:03,000 --> 00:02:06,000
+A determined user can rephrase their way past it,
+
+34
+00:02:06,000 --> 00:02:10,000
+and a piece of injected content can override it entirely.
+
+35
+00:02:10,000 --> 00:02:14,000
+The model usually follows the instruction, but usually isn't the same as always.
+
+36
+00:02:14,000 --> 00:02:17,000
+For a low-stakes preference, that might be fine.
+
+37
+00:02:17,000 --> 00:02:20,000
+For a high-stakes constraint, something where one failure
+
+38
+00:02:20,000 --> 00:02:25,000
+means real harm or a compliance breach, probabilistic isn't good enough.
+
+39
+00:02:25,000 --> 00:02:26,000
+That's the whole reason we layer.
+
+40
+00:02:27,000 --> 00:02:29,000
+One instruction is a reasonable starting point,
+
+41
+00:02:29,000 --> 00:02:33,000
+but it should never be the entire defense for anything that actually matters.
+
+42
+00:02:35,000 --> 00:02:38,000
+Let's name the three layers you'll actually build.
+
+43
+00:02:38,000 --> 00:02:40,000
+The first is input screening.
+
+44
+00:02:40,000 --> 00:02:44,000
+Before content ever reaches the model, you screen or delimit it,
+
+45
+00:02:44,000 --> 00:02:46,000
+catching hostile input early.
+
+46
+00:02:46,000 --> 00:02:49,000
+Whether it came from the user or from a tool result.
+
+47
+00:02:49,000 --> 00:02:51,000
+The second is output checks.
+
+48
+00:02:52,000 --> 00:02:57,000
+After the model responds, you validate that response before it's released to the user
+
+49
+00:02:57,000 --> 00:03:03,000
+or handed to a downstream tool, so an unsafe answer gets blocked before it does anything.
+
+50
+00:03:04,000 --> 00:03:06,000
+The third is code-level enforcement.
+
+51
+00:03:06,000 --> 00:03:08,000
+This is the layer people forget.
+
+52
+00:03:08,000 --> 00:03:12,000
+You enforce policy directly in your own application code,
+
+53
+00:03:12,000 --> 00:03:16,000
+so a rule still holds even when the model is bypassed.
+
+54
+00:03:16,000 --> 00:03:20,000
+Input screening, output checks, code-level enforcement.
+
+55
+00:03:20,000 --> 00:03:22,000
+Those three are your defense in depth.
+
+56
+00:03:24,000 --> 00:03:26,000
+Let's zoom in on the input side.
+
+57
+00:03:26,000 --> 00:03:30,000
+Input guardrails act on content before the model ever sees it,
+
+58
+00:03:30,000 --> 00:03:34,000
+and that early position is exactly what makes them powerful.
+
+59
+00:03:34,000 --> 00:03:36,000
+The simplest version is screening.
+
+60
+00:03:36,000 --> 00:03:40,000
+You run incoming user input through a lightweight classifier
+
+61
+00:03:40,000 --> 00:03:44,000
+that looks for hostile patterns, known jailbreak phrasing,
+
+62
+00:03:44,000 --> 00:03:48,000
+obvious injection attempts, and flag anything suspicious.
+
+63
+00:03:49,000 --> 00:03:51,000
+The second move is delimiting.
+
+64
+00:03:51,000 --> 00:03:54,000
+When content is untrusted, you wrap it in clear boundaries
+
+65
+00:03:54,000 --> 00:03:59,000
+so the model reads it as data, not as instructions to follow.
+
+66
+00:03:59,000 --> 00:04:05,000
+And when something fails a check, you reject it or sanitize it before it goes any further.
+
+67
+00:04:05,000 --> 00:04:06,000
+The point is simple.
+
+68
+00:04:06,000 --> 00:04:11,000
+If bad input never reaches the model, the model never gets a chance to act on it.
+
+69
+00:04:12,000 --> 00:04:16,000
+Now the output side, and there are three checks worth building.
+
+70
+00:04:16,000 --> 00:04:18,000
+First, validate before release.
+
+71
+00:04:18,000 --> 00:04:20,000
+Before a response reaches the user,
+
+72
+00:04:20,000 --> 00:04:24,000
+you check it against your policy and block anything disallowed.
+
+73
+00:04:24,000 --> 00:04:27,000
+This is your last line before the content leaves your system.
+
+74
+00:04:28,000 --> 00:04:30,000
+Second, screen before downstream tools.
+
+75
+00:04:31,000 --> 00:04:36,000
+In an agent, a response often triggers a tool call or a real action,
+
+76
+00:04:36,000 --> 00:04:38,000
+so you validate the output before it fires,
+
+77
+00:04:38,000 --> 00:04:43,000
+because an unsafe response that moves money or deletes a file does real damage.
+
+78
+00:04:44,000 --> 00:04:46,000
+Third, monitor continuously.
+
+79
+00:04:46,000 --> 00:04:51,000
+You log and review outputs over time, looking for signs of a successful attack,
+
+80
+00:04:51,000 --> 00:04:55,000
+and you feed what you learn back into your prompts and filters.
+
+81
+00:04:55,000 --> 00:04:58,000
+Validate, screen before acting, and monitor.
+
+82
+00:04:59,000 --> 00:05:01,000
+Three habits that keep the output side honest.
+
+83
+00:05:03,000 --> 00:05:04,000
+Now let's talk placement.
+
+84
+00:05:04,000 --> 00:05:07,000
+In the jailbreak lesson, you saw the enterprise stack,
+
+85
+00:05:07,000 --> 00:05:11,000
+a hardened system prompt, a haiku class harmlessness screen,
+
+86
+00:05:11,000 --> 00:05:14,000
+on input, and screening on tool output.
+
+87
+00:05:15,000 --> 00:05:19,000
+That same stack is what policy enforcement placement looks like in practice,
+
+88
+00:05:19,000 --> 00:05:21,000
+so keep it as your reference build.
+
+89
+00:05:21,000 --> 00:05:24,000
+Here's what happens when one of those layers is missing.
+
+90
+00:05:24,000 --> 00:05:29,000
+Picture a health information app that shipped the hardened prompt and the input screen,
+
+91
+00:05:29,000 --> 00:05:31,000
+but skipped the screening on tool output.
+
+92
+00:05:32,000 --> 00:05:36,000
+Then a retrieved document carries an injected instruction,
+
+93
+00:05:36,000 --> 00:05:40,000
+and because nothing checks what the tool hands back,
+
+94
+00:05:40,000 --> 00:05:44,000
+the model relays specific dosing advice the content policy forbids.
+
+95
+00:05:44,000 --> 00:05:47,000
+The prompt held, the input screen held.
+
+96
+00:05:48,000 --> 00:05:51,000
+The incident walked through the one layer that wasn't there.
+
+97
+00:05:51,000 --> 00:05:53,000
+That's the postmortem lesson.
+
+98
+00:05:53,000 --> 00:05:57,000
+Every skipped enforcement point is where a failure will eventually walk through.
+
+99
+00:05:58,000 --> 00:06:01,000
+Let's be honest about the trade-offs, because layering isn't free.
+
+100
+00:06:02,000 --> 00:06:06,000
+On the benefit side, layered input and output classifiers
+
+101
+00:06:06,000 --> 00:06:08,000
+filter the large majority of jailbreak attempts.
+
+102
+00:06:09,000 --> 00:06:13,000
+Anthropic's own research shows this kind of classifier layering
+
+103
+00:06:13,000 --> 00:06:16,000
+sharply reduces successful jailbreaks,
+
+104
+00:06:16,000 --> 00:06:21,000
+and it gives you a defense-in-depth posture that no single control can match on its own.
+
+105
+00:06:22,000 --> 00:06:24,000
+That's real, and it's worth building.
+
+106
+00:06:24,000 --> 00:06:25,000
+But there's a cost.
+
+107
+00:06:25,000 --> 00:06:28,000
+Classifiers add some compute overhead,
+
+108
+00:06:28,000 --> 00:06:31,000
+since you're running extra checks on every request.
+
+109
+00:06:31,000 --> 00:06:34,000
+They also raise your over-refusal rate a little,
+
+110
+00:06:34,000 --> 00:06:37,000
+meaning a few legitimate requests get caught in the net,
+
+111
+00:06:37,000 --> 00:06:41,000
+and they still won't stop every possible jailbreak.
+
+112
+00:06:41,000 --> 00:06:44,000
+So layering isn't about reaching perfect.
+
+113
+00:06:44,000 --> 00:06:46,000
+It's about stacking enough good enough layers
+
+114
+00:06:46,000 --> 00:06:49,000
+that getting through all of them at once is very hard.
+
+115
+00:06:50,000 --> 00:06:52,000
+Let's frame the big picture.
+
+116
+00:06:52,000 --> 00:06:57,000
+Model safety gives you a floor, but it isn't your whole content policy.
+
+117
+00:06:57,000 --> 00:07:01,000
+Your rules need their own layered guardrails.
+
+118
+00:07:01,000 --> 00:07:05,000
+Screening input, checking output, and enforcing in code.
+
+119
+00:07:05,000 --> 00:07:09,000
+Just remember, one prompt line is probabilistic.
+
+120
+00:07:09,000 --> 00:07:10,000
+Never the whole defense.
+
+121
+00:07:10,000 --> 00:07:14,000
+That covers layering input and output guardrails.
+
+122
+00:07:14,000 --> 00:07:16,000
+When you're ready, I'll see you in the next one.
+

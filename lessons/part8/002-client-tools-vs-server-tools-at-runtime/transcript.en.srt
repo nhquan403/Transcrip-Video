@@ -1,0 +1,480 @@
+1
+00:00:00,000 --> 00:00:05,000
+Client tools and server tools give you the same type of result, but they are different.
+
+2
+00:00:05,000 --> 00:00:07,000
+And that difference is who runs the code.
+
+3
+00:00:07,000 --> 00:00:12,000
+One executes in your application, the other executes on Anthropx infrastructure.
+
+4
+00:00:12,000 --> 00:00:16,000
+Knowing which is which changes what your loop has to do.
+
+5
+00:00:16,000 --> 00:00:19,000
+This lesson maps that line.
+
+6
+00:00:19,000 --> 00:00:21,000
+Let's anchor three terms before we go deeper.
+
+7
+00:00:21,000 --> 00:00:23,000
+First, a client tool.
+
+8
+00:00:23,000 --> 00:00:27,000
+That's any tool that executes inside your own application.
+
+9
+00:00:27,000 --> 00:00:32,000
+Whether you defined it yourself or it uses an Anthropx provided schema.
+
+10
+00:00:32,000 --> 00:00:35,000
+Second, a server tool.
+
+11
+00:00:35,000 --> 00:00:41,000
+That's a tool that runs on Anthropx infrastructure where no handler of yours runs at all.
+
+12
+00:00:41,000 --> 00:00:43,000
+Third, stop reason tool use.
+
+13
+00:00:43,000 --> 00:00:49,000
+That's the signal in Claude's response telling you it wants a client tool executed
+
+14
+00:00:49,000 --> 00:00:53,000
+and is pausing for you to run it and hand back a result.
+
+15
+00:00:53,000 --> 00:00:55,000
+Client tool for where you execute.
+
+16
+00:00:55,000 --> 00:00:58,000
+Server tool for where Anthropx executes.
+
+17
+00:00:58,000 --> 00:01:03,000
+And stop reason tool use for the pause that puts the ball in your court.
+
+18
+00:01:03,000 --> 00:01:06,000
+Hold those three and the rest of this lesson clicks.
+
+19
+00:01:06,000 --> 00:01:11,000
+Let's put the two side by side because the whole topic rests on this one distinction.
+
+20
+00:01:11,000 --> 00:01:15,000
+With a client side tool, the code runs in your application.
+
+21
+00:01:15,000 --> 00:01:18,000
+Claude sends back a stop reason of tool use.
+
+22
+00:01:18,000 --> 00:01:22,000
+You execute the call yourself and you return a tool result.
+
+23
+00:01:22,000 --> 00:01:24,000
+So the conversation can continue.
+
+24
+00:01:24,000 --> 00:01:27,000
+Nothing happens until your code acts.
+
+25
+00:01:27,000 --> 00:01:32,000
+With a server side tool, the code runs on Anthropx infrastructure instead.
+
+26
+00:01:32,000 --> 00:01:35,000
+You don't write a handler and you don't send a tool result
+
+27
+00:01:35,000 --> 00:01:40,000
+because the result is already computed and returned to you in the response.
+
+28
+00:01:40,000 --> 00:01:42,000
+So the question to always ask is simple.
+
+29
+00:01:42,000 --> 00:01:44,000
+Whose machine runs this tool?
+
+30
+00:01:44,000 --> 00:01:48,000
+If it's yours, you're on the hook to execute and reply.
+
+31
+00:01:48,000 --> 00:01:52,000
+If it's Anthropx, the work is already done.
+
+32
+00:01:52,000 --> 00:01:56,000
+Let's trace what actually happens with a client tool step by step.
+
+33
+00:01:56,000 --> 00:01:59,000
+It's a round trip between Claude and your code.
+
+34
+00:01:59,000 --> 00:02:05,000
+Claude decides it needs the tool and returns a response with stop reason tool use,
+
+35
+00:02:05,000 --> 00:02:08,000
+carrying the tool's name and the input it wants you to use.
+
+36
+00:02:08,000 --> 00:02:12,000
+Your application takes that input, runs the real function,
+
+37
+00:02:12,000 --> 00:02:14,000
+and captures whatever comes back.
+
+38
+00:02:14,000 --> 00:02:18,000
+Then you package that output into a tool result block
+
+39
+00:02:18,000 --> 00:02:21,000
+and send it to Claude in the next message.
+
+40
+00:02:21,000 --> 00:02:26,000
+Claude reads the result and either answers the user or reaches for another tool.
+
+41
+00:02:26,000 --> 00:02:30,000
+The key thing to notice is that your code is doing the executing.
+
+42
+00:02:30,000 --> 00:02:36,000
+Claude asked, but nothing runs until your application actually runs it and reports back.
+
+43
+00:02:36,000 --> 00:02:40,000
+Now, four client tools ship with Anthropx-defined schemas
+
+44
+00:02:40,000 --> 00:02:44,000
+and they sit firmly on the client side of this map.
+
+45
+00:02:44,000 --> 00:02:46,000
+Bash runs shell commands.
+
+46
+00:02:46,000 --> 00:02:49,000
+Text Editor views and edits files.
+
+47
+00:02:49,000 --> 00:02:53,000
+Memory reads and writes persistent notes across turns.
+
+48
+00:02:53,000 --> 00:02:56,000
+And computer use controls a screen, a mouse, and a keyboard.
+
+49
+00:02:56,000 --> 00:02:59,000
+You already know the trap here from last lesson.
+
+50
+00:02:59,000 --> 00:03:03,000
+A pre-built schema doesn't mean Anthropx runs the tool.
+
+51
+00:03:03,000 --> 00:03:06,000
+All four execute in your environment on your side.
+
+52
+00:03:06,000 --> 00:03:09,000
+So Claude returns tool use just like any custom tool
+
+53
+00:03:09,000 --> 00:03:13,000
+and your code does the work and returns the tool result.
+
+54
+00:03:13,000 --> 00:03:16,000
+Pass Bash without wiring up a shell executor
+
+55
+00:03:16,000 --> 00:03:19,000
+and the conversation just stalls at the tool use pause,
+
+56
+00:03:19,000 --> 00:03:23,000
+waiting on a tool result your app never produces.
+
+57
+00:03:23,000 --> 00:03:24,000
+The schema saves you design work,
+
+58
+00:03:24,000 --> 00:03:30,000
+but the runtime responsibility, sandboxing included, stays with you.
+
+59
+00:03:30,000 --> 00:03:32,000
+On the other side, you've got the server tools
+
+60
+00:03:32,000 --> 00:03:35,000
+and these genuinely run on Anthropx infrastructure.
+
+61
+00:03:35,000 --> 00:03:40,000
+Web search and web fetch pull in live content from the web.
+
+62
+00:03:40,000 --> 00:03:43,000
+Code execution runs code in a hosted sandbox
+
+63
+00:03:43,000 --> 00:03:48,000
+and tool search lets Claude discover relevant tools on demand
+
+64
+00:03:48,000 --> 00:03:50,000
+instead of loading them all up front.
+
+65
+00:03:50,000 --> 00:03:53,000
+For every one of these, you write no handler at all.
+
+66
+00:03:53,000 --> 00:03:56,000
+There's no stop reason tool use pause
+
+67
+00:03:56,000 --> 00:03:59,000
+and there's no tool result for you to assemble.
+
+68
+00:03:59,000 --> 00:04:02,000
+Claude calls the tool, Anthropx runs it,
+
+69
+00:04:02,000 --> 00:04:06,000
+and the result comes straight back attached to the response.
+
+70
+00:04:06,000 --> 00:04:07,000
+That's the whole appeal.
+
+71
+00:04:07,000 --> 00:04:10,000
+For capabilities Anthropx already hosts,
+
+72
+00:04:10,000 --> 00:04:11,000
+you get the behavior without writing
+
+73
+00:04:12,000 --> 00:04:15,000
+or running any execution code yourself.
+
+74
+00:04:15,000 --> 00:04:17,000
+There's one wrinkle that breaks the clean split,
+
+75
+00:04:17,000 --> 00:04:19,000
+so let's be precise about it.
+
+76
+00:04:19,000 --> 00:04:24,000
+Normally, a server tool runs on Anthropx side with no pause,
+
+77
+00:04:24,000 --> 00:04:28,000
+but if a server tool ends up grouped in parallel with a client tool
+
+78
+00:04:28,000 --> 00:04:31,000
+in the same batch of calls, the behavior changes.
+
+79
+00:04:31,000 --> 00:04:35,000
+The whole group falls back to stop reason tool use.
+
+80
+00:04:35,000 --> 00:04:37,000
+That means Claude hands the batch back to you
+
+81
+00:04:37,000 --> 00:04:42,000
+and your loop drives execution for every call in it,
+
+82
+00:04:42,000 --> 00:04:45,000
+including the server tool that would normally have run on its own.
+
+83
+00:04:45,000 --> 00:04:48,000
+So the rule to remember is this,
+
+84
+00:04:48,000 --> 00:04:52,000
+a mixed batch, one that pairs a client tool with a server tool,
+
+85
+00:04:52,000 --> 00:04:55,000
+always pauses for your code.
+
+86
+00:04:55,000 --> 00:05:00,000
+When in doubt, assume the client tool behavior wins in a parallel group.
+
+87
+00:05:00,000 --> 00:05:04,000
+Let's pull out three consequences this split has for how you build.
+
+88
+00:05:04,000 --> 00:05:08,000
+First, you write fewer handlers than you'd think.
+
+89
+00:05:08,000 --> 00:05:11,000
+You only need execution code for client tools.
+
+90
+00:05:11,000 --> 00:05:15,000
+Server tools need none because Anthropx runs them.
+
+91
+00:05:15,000 --> 00:05:18,000
+Second, results arrive by two different paths.
+
+92
+00:05:18,000 --> 00:05:22,000
+Client results are ones you assemble and send back in a tool result.
+
+93
+00:05:22,000 --> 00:05:27,000
+Server results show up in line, already attached to the response you got.
+
+94
+00:05:27,000 --> 00:05:31,000
+Third, tools aren't free even when unused.
+
+95
+00:05:31,000 --> 00:05:33,000
+The moment you provide any tools,
+
+96
+00:05:33,000 --> 00:05:38,000
+you pay a standing tool use system prompt cost whatever tool choice you set, even none.
+
+97
+00:05:38,000 --> 00:05:42,000
+We'll put a number on that overhead and show how to trim it
+
+98
+00:05:42,000 --> 00:05:44,000
+when we get to right-sizing the tool surface.
+
+99
+00:05:44,000 --> 00:05:48,000
+Fewer handlers, two result paths, and a standing token cost.
+
+100
+00:05:48,000 --> 00:05:51,000
+Keep those three in view.
+
+101
+00:05:51,000 --> 00:05:54,000
+So how do you decide which kind of tool to reach for?
+
+102
+00:05:54,000 --> 00:05:57,000
+Let it follow from what you need and who should run it.
+
+103
+00:05:57,000 --> 00:06:00,000
+When Anthropx already hosts the capability,
+
+104
+00:06:00,000 --> 00:06:02,000
+like searching the web or running code,
+
+105
+00:06:02,000 --> 00:06:07,000
+reach for the matching server tool and skip writing any execution code.
+
+106
+00:06:07,000 --> 00:06:13,000
+When you need to touch your own systems, your database, your internal API, your files,
+
+107
+00:06:13,000 --> 00:06:17,000
+that's a client tool because only your application can reach those.
+
+108
+00:06:17,000 --> 00:06:20,000
+And keep one limit front of mind.
+
+109
+00:06:20,000 --> 00:06:23,000
+Server tools run on Anthropx's side,
+
+110
+00:06:23,000 --> 00:06:27,000
+so they can't see your private environment or your internal data.
+
+111
+00:06:27,000 --> 00:06:31,000
+Match the runtime location to the job.
+
+112
+00:06:31,000 --> 00:06:33,000
+Hosted capability, server tool.
+
+113
+00:06:33,000 --> 00:06:38,000
+Your own systems, client tool. Let's recap.
+
+114
+00:06:38,000 --> 00:06:42,000
+Client tools and server tools differ on one thing, where the code runs.
+
+115
+00:06:42,000 --> 00:06:45,000
+Client tools run in your app, so you execute them
+
+116
+00:06:45,000 --> 00:06:51,000
+and return a tool result after a stop reason tool use pause.
+
+117
+00:06:51,000 --> 00:06:56,000
+Server tools run on Anthropx infrastructure with results returned directly.
+
+118
+00:06:56,000 --> 00:07:02,000
+Keep in mind, a server tool in a parallel group falls back to tool use.
+
+119
+00:07:02,000 --> 00:07:06,000
+That covers client tools versus server tools at runtime.
+
+120
+00:07:06,000 --> 00:07:07,000
+I'll see you in the next one.
+

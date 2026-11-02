@@ -1,0 +1,432 @@
+1
+00:00:00,000 --> 00:00:07,000
+Welcome back. The moment your app feeds outside content to Claude, a web page, a document, you inherit a problem.
+
+2
+00:00:07,000 --> 00:00:13,000
+Any of that text can carry hidden instructions. The model then follows as if you wrote them.
+
+3
+00:00:13,000 --> 00:00:20,000
+That's prompt injection. This lesson covers what it is and how builders actually defend against it.
+
+4
+00:00:20,000 --> 00:00:24,000
+Let's get the vocabulary straight because three terms do a lot of work here.
+
+5
+00:00:25,000 --> 00:00:27,000
+Prompt injection is the broad category.
+
+6
+00:00:27,000 --> 00:00:33,000
+Untrusted content reaches the model carrying instructions, and the model follows them as commands
+
+7
+00:00:33,000 --> 00:00:34,000
+you never intended.
+
+8
+00:00:34,000 --> 00:00:37,000
+The malicious instruction rides in as data.
+
+9
+00:00:37,000 --> 00:00:42,000
+Now, direct injection is when the user of your application is the adversary.
+
+10
+00:00:42,000 --> 00:00:48,000
+They type a prompt designed to change how the model behaves. Indirect injection is sneakier.
+
+11
+00:00:48,000 --> 00:00:54,000
+The user is trusted, but the model reads third-party content, a web page, a file, a tool result, and
+
+12
+00:00:54,000 --> 00:00:57,000
+that content hides hostile instructions.
+
+13
+00:00:57,000 --> 00:01:03,000
+Same core attack, different entry point, and as you'll see, the indirect case is the one that bites
+
+14
+00:01:03,000 --> 00:01:05,000
+agent builders hardest.
+
+15
+00:01:05,000 --> 00:01:12,000
+Before we go deeper, let's separate injection from its more famous cousin, the jailbreak, because people mix them up.
+
+16
+00:01:12,000 --> 00:01:17,000
+Prompt injection hijacks what the agent does with untrusted data.
+
+17
+00:01:17,000 --> 00:01:22,000
+The attacker redirects your application's behavior, and the defenses are architectural.
+
+18
+00:01:22,000 --> 00:01:26,000
+Input isolation, leased privilege, output checks.
+
+19
+00:01:26,000 --> 00:01:34,000
+A jailbreak targets the model's own safety behavior, coaxing it past its content policy to produce banned output.
+
+20
+00:01:34,000 --> 00:01:40,000
+Here's the key relationship. A jailbreak is a subset of injection, the case aimed at safety.
+
+21
+00:01:40,000 --> 00:01:44,000
+Resistance there starts with the model's own safety training.
+
+22
+00:01:44,000 --> 00:01:50,000
+Though you still layer application guardrails on top, which the next lesson builds, injection
+
+23
+00:01:50,000 --> 00:01:53,000
+defense is almost entirely your application's job.
+
+24
+00:01:53,000 --> 00:01:58,000
+When you hear injection, think hijacked data and behavior.
+
+25
+00:01:58,000 --> 00:02:01,000
+When you hear jailbreak, think defeated safety.
+
+26
+00:02:01,000 --> 00:02:04,000
+Different target, different fix.
+
+27
+00:02:04,000 --> 00:02:07,000
+The rest of this lesson focuses on injection.
+
+28
+00:02:07,000 --> 00:02:10,000
+Here's the idea that reframes everything.
+
+29
+00:02:10,000 --> 00:02:15,000
+Injection is fundamentally an input problem, which means you can't fix it by making the model safer.
+
+30
+00:02:15,000 --> 00:02:21,000
+A more safety-aligned model still reads a poisoned document and still sees instructions buried in it.
+
+31
+00:02:21,000 --> 00:02:24,000
+Refusing to write malware is a safety behavior.
+
+32
+00:02:24,000 --> 00:02:29,000
+Ignoring a hidden do-this-now line in a web page is a different skill entirely, so your defenses
+
+33
+00:02:29,000 --> 00:02:32,000
+live in your architecture, not in the model's training.
+
+34
+00:02:32,000 --> 00:02:38,000
+You isolate untrusted input, so the model treats it as data, not commands.
+
+35
+00:02:38,000 --> 00:02:44,000
+You cap the damage with least privilege, and you screen the output before you act on it.
+
+36
+00:02:44,000 --> 00:02:48,000
+Stronger safety alignment stops the model from producing banned content.
+
+37
+00:02:48,000 --> 00:02:53,000
+It doesn't stop your agent from being hijacked by data it was told to trust.
+
+38
+00:02:53,000 --> 00:02:56,000
+So, how do you defend the indirect case?
+
+39
+00:02:56,000 --> 00:03:02,000
+Four moves, and they share one goal, separating your instructions from untrusted content.
+
+40
+00:03:02,000 --> 00:03:08,000
+First, deliver third-party content only inside tool result blocks, never in the system prompt or a
+
+41
+00:03:08,000 --> 00:03:14,000
+plain user text block, because Claude is trained to treat tool results with skepticism.
+
+42
+00:03:14,000 --> 00:03:18,000
+Second, JSON-encode the untrusted payload.
+
+43
+00:03:18,000 --> 00:03:21,000
+JSON escaping closes the delimiter breakout route.
+
+44
+00:03:21,000 --> 00:03:25,000
+There's no quote or tag for an attacker to close.
+
+45
+00:03:25,000 --> 00:03:27,000
+Know its limit, though.
+
+46
+00:03:27,000 --> 00:03:35,000
+The model can still obey plain language instructions inside escaped data, so escaping is one layer, never the cure.
+
+47
+00:03:35,000 --> 00:03:42,000
+Third, put your own instructions in the user turn that follows the tool result, not inside it.
+
+48
+00:03:42,000 --> 00:03:48,000
+Fourth, screen tool outputs with a lightweight classifier before the agent acts, passing content
+
+49
+00:03:48,000 --> 00:03:50,000
+through only when it comes back clean.
+
+50
+00:03:50,000 --> 00:03:54,000
+Four layers, and none of them touch the model's training.
+
+51
+00:03:54,000 --> 00:03:58,000
+Let's zoom in on isolation, the heart of injection defense.
+
+52
+00:03:58,000 --> 00:04:03,000
+The whole game is making sure Claude can always tell the difference between your instructions and
+
+53
+00:04:03,000 --> 00:04:05,000
+content that came from outside.
+
+54
+00:04:05,000 --> 00:04:07,000
+You do that with boundaries.
+
+55
+00:04:07,000 --> 00:04:13,000
+Delimit untrusted input with clear tags or a fenced structure so it's clearly separate from your directives.
+
+56
+00:04:13,000 --> 00:04:20,000
+Tell the model what the content is and where it came from, a search result, a user-uploaded file, an
+
+57
+00:04:20,000 --> 00:04:23,000
+email so it can calibrate how much to trust it.
+
+58
+00:04:23,000 --> 00:04:26,000
+And state the policy directly in your system prompt.
+
+59
+00:04:26,000 --> 00:04:33,000
+Tell Claude that tool output, documents, and search results are untrusted data that never override
+
+60
+00:04:33,000 --> 00:04:36,000
+the system prompt or the user's original request.
+
+61
+00:04:36,000 --> 00:04:43,000
+When the boundary is clear, the model treats outside content as data, not as commands to obey.
+
+62
+00:04:43,000 --> 00:04:48,000
+Let me boil the indirect defenses down to three placement rules for any agent.
+
+63
+00:04:48,000 --> 00:04:52,000
+Rule one, untrusted content goes in tool results.
+
+64
+00:04:52,000 --> 00:04:55,000
+When a tool hands back data, that's where it belongs.
+
+65
+00:04:55,000 --> 00:05:00,000
+And the model is trained to treat it skeptically instead of as a fresh set of orders.
+
+66
+00:05:00,000 --> 00:05:05,000
+Rule two, your instructions go in the user turn after the result.
+
+67
+00:05:05,000 --> 00:05:11,000
+If you bury your own directive inside a tool result, the model may treat it as untrusted and ignore it.
+
+68
+00:05:11,000 --> 00:05:14,000
+So keep your voice in the turn that follows.
+
+69
+00:05:14,000 --> 00:05:16,000
+Rule three, screen before acting.
+
+70
+00:05:17,000 --> 00:05:23,000
+Run a lightweight classifier over the tool output first, and only let the agent use it when it comes back clean.
+
+71
+00:05:23,000 --> 00:05:28,000
+Content in results, instructions after, screen before acting.
+
+72
+00:05:28,000 --> 00:05:32,000
+Three rules, and injection has far fewer ways in.
+
+73
+00:05:32,000 --> 00:05:37,000
+No defense is perfect, so build as if some injection will eventually land.
+
+74
+00:05:37,000 --> 00:05:40,000
+And make sure a hit does as little damage as possible.
+
+75
+00:05:40,000 --> 00:05:43,000
+That's least privilege, and it's your safety net.
+
+76
+00:05:43,000 --> 00:05:46,000
+Start by not giving the agent secrets it doesn't need.
+
+77
+00:05:46,000 --> 00:05:50,000
+An injection can only exfiltrate a key that's actually in reach.
+
+78
+00:05:50,000 --> 00:05:55,000
+Run your tools in sandboxed environments, so even a hijacked tool call is boxed in.
+
+79
+00:05:55,000 --> 00:05:58,000
+And scope every permission as tightly as the task allows.
+
+80
+00:05:58,000 --> 00:06:00,000
+Read only where you can.
+
+81
+00:06:00,000 --> 00:06:03,000
+A narrow directory instead of the whole file system.
+
+82
+00:06:03,000 --> 00:06:05,000
+One API instead of ten.
+
+83
+00:06:05,000 --> 00:06:07,000
+The logic is simple.
+
+84
+00:06:07,000 --> 00:06:12,000
+The smaller the capability you hand the agent, the less an attacker gains by hijacking it.
+
+85
+00:06:12,000 --> 00:06:18,000
+Least privilege doesn't prevent injection, but it caps the blast radius when injection gets through.
+
+86
+00:06:18,000 --> 00:06:24,000
+Let's close the loop with what counts as a real control, and what only feels like one.
+
+87
+00:06:24,000 --> 00:06:26,000
+Because this is where people waste effort.
+
+88
+00:06:26,000 --> 00:06:29,000
+The real controls are the ones we've covered.
+
+89
+00:06:29,000 --> 00:06:31,000
+Isolate untrusted input.
+
+90
+00:06:31,000 --> 00:06:33,000
+Apply least privilege.
+
+91
+00:06:33,000 --> 00:06:34,000
+Screen your output.
+
+92
+00:06:34,000 --> 00:06:41,000
+And red team your own agent by feeding it documents and tool outputs that deliberately try to inject it.
+
+93
+00:06:41,000 --> 00:06:44,000
+Those are architectural. Now the traps.
+
+94
+00:06:44,000 --> 00:06:48,000
+Turning temperature up or down does nothing to injection.
+
+95
+00:06:48,000 --> 00:06:50,000
+It changes randomness.
+
+96
+00:06:50,000 --> 00:06:53,000
+Not whether the model obeys smuggled instructions.
+
+97
+00:06:53,000 --> 00:06:59,000
+And reaching for a bigger, more capable model won't eliminate injection, either.
+
+98
+00:06:59,000 --> 00:07:03,000
+Model layer defense is never fully complete on its own.
+
+99
+00:07:03,000 --> 00:07:08,000
+So a stronger model is a better probabilistic filter, not a guarantee.
+
+100
+00:07:08,000 --> 00:07:15,000
+If a control lives only in the model, treat it as one layer, never the whole defense. Let's recap.
+
+101
+00:07:15,000 --> 00:07:20,000
+Prompt injection is untrusted input the model obeys as instructions.
+
+102
+00:07:20,000 --> 00:07:24,000
+Direct from the user, or indirect from third-party content.
+
+103
+00:07:24,000 --> 00:07:26,000
+The fix is architectural.
+
+104
+00:07:26,000 --> 00:07:28,000
+Isolate untrusted content.
+
+105
+00:07:28,000 --> 00:07:30,000
+Cap the damage with least privilege.
+
+106
+00:07:30,000 --> 00:07:35,000
+Keep in mind, temperature and a bigger model don't fix the problem.
+
+107
+00:07:35,000 --> 00:07:38,000
+That covers defending against prompt injection.
+
+108
+00:07:38,000 --> 00:07:40,000
+I'll see you in the next video.
+

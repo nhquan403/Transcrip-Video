@@ -1,0 +1,260 @@
+1
+00:00:00,000 --> 00:00:05,000
+When you connect Claude to an MCP server, you hit a practical question right away.
+
+2
+00:00:05,000 --> 00:00:09,000
+How do the two actually talk to each other? That channel is called the transport,
+
+3
+00:00:09,000 --> 00:00:16,000
+and MCP gives you a standard one for local setups. This lesson covers STDIO and the client-server
+
+4
+00:00:16,000 --> 00:00:24,000
+split. Before we get to the transport, let's name the three roles in every MCP setup. First is the
+
+5
+00:00:24,000 --> 00:00:31,000
+host. That's the AI application itself, something like Claude Code or Claude Desktop, and it
+
+6
+00:00:31,000 --> 00:00:36,000
+coordinates everything. Second is the client. This is a component living inside the host,
+
+7
+00:00:36,000 --> 00:00:43,000
+and its job is to hold one dedicated connection to one server. Here's the key part. The host
+
+8
+00:00:43,000 --> 00:00:49,000
+creates one client for each server it wants to use. So if it talks to three servers, it runs
+
+9
+00:00:49,000 --> 00:00:56,000
+three clients. Third is the server, the program that actually provides the tools, resources,
+
+10
+00:00:56,000 --> 00:01:03,000
+and prompts. Host, client, server. That structure holds no matter which transport you pick.
+
+11
+00:01:04,000 --> 00:01:08,000
+Let's slow down on that client-to-server relationship because it's a common point
+
+12
+00:01:08,000 --> 00:01:15,000
+of confusion. The rule is one client, one server. Each client maintains exactly one connection to
+
+13
+00:01:15,000 --> 00:01:20,000
+exactly one server, and it doesn't fan out to several. So when you hear that an application
+
+14
+00:01:20,000 --> 00:01:26,000
+connects to many MCP servers, what's really happening is the host is spinning up a separate
+
+15
+00:01:26,000 --> 00:01:32,000
+client for each one. The host is the hub that coordinates all of them, but the individual
+
+16
+00:01:32,000 --> 00:01:37,000
+connections stay strictly one-to-one. Why does this matter? Because it keeps each connection
+
+17
+00:01:37,000 --> 00:01:44,000
+isolated and simple to reason about. One client, one server, and the host managing the whole set.
+
+18
+00:01:45,000 --> 00:01:51,000
+MCP splits into two layers, and keeping them separate makes everything clearer. The first
+
+19
+00:01:51,000 --> 00:02:00,000
+is the data layer. That's the protocol itself built on JSON RPC 2.0. It defines the lifecycle,
+
+20
+00:02:00,000 --> 00:02:06,000
+the primitives like tools and resources, and the exact shape of every message. One detail worth
+
+21
+00:02:06,000 --> 00:02:14,000
+holding, every MCP message is UTF-8 text. The second is the transport layer. That's the channel
+
+22
+00:02:14,000 --> 00:02:20,000
+that actually carries those messages from one side to the other, handling framing and delivery.
+
+23
+00:02:21,000 --> 00:02:27,000
+The data layer is what you say. The transport layer is how it travels. There are two standard
+
+24
+00:02:27,000 --> 00:02:36,000
+transports, and the one we're focused on here is STDIO. So how does STDIO actually move a message?
+
+25
+00:02:36,000 --> 00:02:42,000
+It leans on the three standard streams that every process already has. Start with standard input,
+
+26
+00:02:42,000 --> 00:02:49,000
+or stand in. The client writes its JSON RPC requests into the server's standard input,
+
+27
+00:02:49,000 --> 00:02:57,000
+one message at a time. Next is standard output, or stand out. The server writes its responses back
+
+28
+00:02:57,000 --> 00:03:02,000
+on standard output, and this part is important. Nothing but protocol messages belongs there.
+
+29
+00:03:03,000 --> 00:03:09,000
+Finally, there's standard error, or STR. The server can send log messages and diagnostics
+
+30
+00:03:09,000 --> 00:03:13,000
+to standard error, which stays completely separate from the message channel.
+
+31
+00:03:13,000 --> 00:03:19,000
+Requests in on stand in, responses out on stand out, logs off to the side on STR.
+
+32
+00:03:21,000 --> 00:03:26,000
+There's a framing rule that keeps this stream readable, and it trips people up if they miss it.
+
+33
+00:03:26,000 --> 00:03:33,000
+STDIO messages are new line delimited. Each JSON RPC message sits on its own single line,
+
+34
+00:03:33,000 --> 00:03:38,000
+and it can't contain an embedded new line, because a new line is how the other side knows
+
+35
+00:03:38,000 --> 00:03:44,000
+one message ended and the next began. That leads to two habits. Only protocol messages
+
+36
+00:03:44,000 --> 00:03:50,000
+belong on standard output, so the server keeps everything else off it. And the client sends only
+
+37
+00:03:50,000 --> 00:03:58,000
+valid JSON RPC into standard input, nothing extra. Anything that needs logging goes to standard
+
+38
+00:03:58,000 --> 00:04:04,000
+error instead. Break that line discipline. Mix stray text into the stream, and the whole thing
+
+39
+00:04:04,000 --> 00:04:11,000
+stops parsing cleanly. Let's pull together three traits that define how STDIO behaves.
+
+40
+00:04:12,000 --> 00:04:17,000
+First, it's local by design. The client and server run on the same machine, so there's no
+
+41
+00:04:17,000 --> 00:04:24,000
+network hop at all, which gives you low latency and dead simple setup. Second, it typically serves
+
+42
+00:04:24,000 --> 00:04:31,000
+a single client. One STDIO server is talking to one client, which fits local single user
+
+43
+00:04:31,000 --> 00:04:39,000
+developer tooling perfectly. Third, it follows a sub-process life cycle. The client is the one
+
+44
+00:04:39,000 --> 00:04:45,000
+that launches the server as a child process, and it manages that process, starting it up and
+
+45
+00:04:45,000 --> 00:04:52,000
+shutting it down. Local, single client, sub-process managed. Those three traits are exactly why
+
+46
+00:04:52,000 --> 00:05:01,000
+STDIO is the default choice for local tools. So, when is STDIO the right call? The simple
+
+47
+00:05:01,000 --> 00:05:08,000
+test is location. Reach for STDIO whenever the server lives on the same machine as the application
+
+48
+00:05:08,000 --> 00:05:15,000
+using it. That covers a lot of real developer work. Local tooling that plugs into your editor.
+
+49
+00:05:15,000 --> 00:05:21,000
+Command line integrations you run yourself. Any single user setup where nobody is connecting
+
+50
+00:05:21,000 --> 00:05:26,000
+from somewhere remote. In all of those, you want the lowest overhead possible,
+
+51
+00:05:26,000 --> 00:05:32,000
+and STDIO gives you exactly that with no network layer to configure. In fact, the spec recommends
+
+52
+00:05:32,000 --> 00:05:40,000
+that clients support STDIO whenever they can. If the server is local and it's just you, STDIO is
+
+53
+00:05:40,000 --> 00:05:45,000
+almost always the answer. Now let's talk about credentials, because this is where a common
+
+54
+00:05:45,000 --> 00:05:52,000
+misconception lives. A local STDIO server still might need secrets. An API key for some service,
+
+55
+00:05:52,000 --> 00:05:58,000
+say. Where does it get them? From the environment. The client sets environment variables,
+
+56
+00:05:58,000 --> 00:06:04,000
+and the server reads its credentials from there. What STDIO doesn't use is the OAuth flow.
+
+57
+00:06:05,000 --> 00:06:10,000
+This surprises people who assume every server authenticates the same way. Authorization in
+
+58
+00:06:10,000 --> 00:06:18,000
+MCP is defined only for the HTTP-based transport, so it simply doesn't apply to a local subprocess.
+
+59
+00:06:18,000 --> 00:06:23,000
+And that makes sense. The server is a child process on your own machine, so there's no
+
+60
+00:06:23,000 --> 00:06:29,000
+remote identity to prove. Environment for STDIO, OAuth for the networked case.
+
+61
+00:06:30,000 --> 00:06:36,000
+Here's what to take away. STDIO runs the MCP server as a local child process,
+
+62
+00:06:37,000 --> 00:06:43,000
+trading JSON RPC over standard input and output. It's the simplest, fastest choice
+
+63
+00:06:43,000 --> 00:06:50,000
+when everything lives on one machine. Just remember, an STDIO server pulls its credentials
+
+64
+00:06:50,000 --> 00:06:57,000
+from the environment, not from OAuth. That covers STDIO transport for local MCP servers.
+
+65
+00:06:57,000 --> 00:06:59,000
+Take a breath, and I'll see you in the next one.
+

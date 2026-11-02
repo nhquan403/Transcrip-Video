@@ -1,0 +1,368 @@
+1
+00:00:00,000 --> 00:00:05,000
+Let's talk about data leakage. When you build with sensitive data, leaks don't only happen in the final reply.
+
+2
+00:00:06,000 --> 00:00:12,000
+Personal data can slip out through tool arguments, logs, and error messages, and even bleed from one
+
+3
+00:00:12,000 --> 00:00:14,000
+user's session into another.
+
+4
+00:00:14,000 --> 00:00:17,000
+This lesson covers how to stop that. Let's break it down.
+
+5
+00:00:18,000 --> 00:00:21,000
+Let's define the shape of the problem first.
+
+6
+00:00:21,000 --> 00:00:28,000
+Leakage paths are all the routes sensitive data can escape through. Most people picture the model's answer,
+
+7
+00:00:28,000 --> 00:00:35,000
+but the list is longer. It includes tool arguments, the logs your system writes, and the error messages it throws.
+
+8
+00:00:35,000 --> 00:00:38,000
+A second problem is shared context bleed.
+
+9
+00:00:38,000 --> 00:00:44,000
+That's when one user's data surfaces in another session, because the contexts weren't kept apart, and
+
+10
+00:00:45,000 --> 00:00:48,000
+suddenly one person is seeing information that belonged to someone else.
+
+11
+00:00:49,000 --> 00:00:55,000
+Both of these fall under sensitive information disclosure, which is the unintended exposure of
+
+12
+00:00:55,000 --> 00:00:57,000
+personal data, credentials, or
+
+13
+00:00:57,000 --> 00:01:04,000
+confidential business data, whether it comes out through the model's response or through the systems wrapped around it.
+
+14
+00:01:04,000 --> 00:01:07,000
+Naming these paths is the first step to closing them.
+
+15
+00:01:08,000 --> 00:01:13,000
+Let's slow down on that first idea, because it's the one that catches teams off guard.
+
+16
+00:01:13,000 --> 00:01:17,000
+The visible answer is only one place sensitive data can escape.
+
+17
+00:01:17,000 --> 00:01:23,000
+The same data also flows through your tool arguments, your logs and traces, and your error messages,
+
+18
+00:01:24,000 --> 00:01:26,000
+plumbing that rarely gets a second look.
+
+19
+00:01:27,000 --> 00:01:31,000
+So the habit I want you to build is mapping every path your data takes,
+
+20
+00:01:31,000 --> 00:01:38,000
+from the moment it enters to every place it might land, not just the response the user reads. A
+
+21
+00:01:39,000 --> 00:01:45,000
+practical way to do that, trace one field, say an email address, through the prompt and into every tool call,
+
+22
+00:01:46,000 --> 00:01:49,000
+logline, and error handler it reaches.
+
+23
+00:01:49,000 --> 00:01:53,000
+Anywhere it lands that surprises you is a leakage path.
+
+24
+00:01:53,000 --> 00:01:57,000
+We'll walk each of those paths concretely in a moment.
+
+25
+00:01:58,000 --> 00:02:03,000
+Let's make those concrete with three everyday leakage paths. First, tool arguments.
+
+26
+00:02:03,000 --> 00:02:08,000
+When you pass raw personal data as a parameter, it can travel to a service that never needed to see
+
+27
+00:02:08,000 --> 00:02:10,000
+it, and now your data
+
+28
+00:02:10,000 --> 00:02:12,000
+lives in a second system's logs, too.
+
+29
+00:02:13,000 --> 00:02:15,000
+Second, logs and traces.
+
+30
+00:02:15,000 --> 00:02:21,000
+Debug output that records full prompts and tool payloads carries sensitive data far beyond the task
+
+31
+00:02:21,000 --> 00:02:22,000
+that created it, and
+
+32
+00:02:22,000 --> 00:02:24,000
+logs tend to stick around.
+
+33
+00:02:24,000 --> 00:02:31,000
+Third, error messages. A stack trace or an error string can surface values that were supposed to
+
+34
+00:02:31,000 --> 00:02:32,000
+stay inside the system,
+
+35
+00:02:33,000 --> 00:02:35,000
+sometimes right in front of the user.
+
+36
+00:02:35,000 --> 00:02:42,000
+Notice the pattern. In all three, the data leaked through plumbing, not through the model's actual answer.
+
+37
+00:02:42,000 --> 00:02:44,000
+That's where to look.
+
+38
+00:02:44,000 --> 00:02:49,000
+Now let's handle shared context bleed, because the fix is a design choice.
+
+39
+00:02:49,000 --> 00:02:55,000
+Shared context between users is exactly how one person's data ends up reaching another.
+
+40
+00:02:56,000 --> 00:03:01,000
+Cross-user isolation is enforced by per-user sessions, and your identity and
+
+41
+00:03:01,000 --> 00:03:07,000
+authorization layer, so the hard rule is simple. Never reuse a context window across different users.
+
+42
+00:03:08,000 --> 00:03:12,000
+Subagents help with a different, smaller problem. Within one user's session,
+
+43
+00:03:13,000 --> 00:03:18,000
+delegating a subtask to a subagent keeps that subtask's data in its own window,
+
+44
+00:03:18,000 --> 00:03:23,000
+which reduces accidental bleed inside the session. That's context hygiene,
+
+45
+00:03:23,000 --> 00:03:31,000
+not the mechanism that separates users. When per-user sessions are enforced and contexts stay isolated by default,
+
+46
+00:03:31,000 --> 00:03:37,000
+one requests sensitive data has no path to surface in the next one, and a whole class of
+
+47
+00:03:37,000 --> 00:03:39,000
+embarrassing leaks just disappears.
+
+48
+00:03:40,000 --> 00:03:46,000
+Let's talk about protecting PII across its whole lifecycle, because the best time to control it is early.
+
+49
+00:03:47,000 --> 00:03:52,000
+Start by minimizing collection. Bring in only the personal data the task genuinely needs,
+
+50
+00:03:52,000 --> 00:03:56,000
+so less sensitive information ever enters the context in the first place.
+
+51
+00:03:57,000 --> 00:04:00,000
+Next, redact or tokenize on the way in.
+
+52
+00:04:00,000 --> 00:04:07,000
+Mask the real values, or swap them for placeholders the model can still work with, so it reasons over a stand-in
+
+53
+00:04:08,000 --> 00:04:10,000
+instead of the actual data.
+
+54
+00:04:10,000 --> 00:04:13,000
+Finally, restrict access. Use least privilege,
+
+55
+00:04:13,000 --> 00:04:19,000
+so only the people and components that truly need sensitive data can reach it. Notice the order. You
+
+56
+00:04:19,000 --> 00:04:21,000
+reduce what you collect,
+
+57
+00:04:22,000 --> 00:04:27,000
+transform what remains, and lock down who can touch it. Each step means less to leak.
+
+58
+00:04:28,000 --> 00:04:35,000
+Let's zoom in on logging, because it's the leak developers create by accident. Logs outlive the task that made them,
+
+59
+00:04:35,000 --> 00:04:37,000
+so any raw data you write there
+
+60
+00:04:37,000 --> 00:04:42,000
+travels much farther than it should, and it sits in storage long after you needed it.
+
+61
+00:04:42,000 --> 00:04:50,000
+The move is to strip or mask PII before it ever reaches a logline. Keep raw prompts and full-tool payloads out of your
+
+62
+00:04:50,000 --> 00:04:52,000
+persistent logs entirely.
+
+63
+00:04:52,000 --> 00:04:58,000
+What you actually want in a log is enough to debug, so record identifiers, timings, and outcomes,
+
+64
+00:04:58,000 --> 00:05:00,000
+not the sensitive contents themselves.
+
+65
+00:05:01,000 --> 00:05:02,000
+Think of it this way.
+
+66
+00:05:02,000 --> 00:05:09,000
+Data should never travel further than the task in front of you requires, and a log is one of the
+
+67
+00:05:09,000 --> 00:05:11,000
+easiest places for it to travel too far.
+
+68
+00:05:11,000 --> 00:05:15,000
+Let's compare two defenses that people often confuse.
+
+69
+00:05:15,000 --> 00:05:21,000
+Input minimization means reducing and redacting sensitive data before it ever enters the prompt.
+
+70
+00:05:21,000 --> 00:05:27,000
+This is your primary defense, and the reason is obvious once you say it. Data that never entered the
+
+71
+00:05:27,000 --> 00:05:28,000
+context simply can't leak later.
+
+72
+00:05:29,000 --> 00:05:34,000
+Output filtering means scanning the model's responses for sensitive values before they go out the door.
+
+73
+00:05:35,000 --> 00:05:40,000
+That's useful, but it's a backstop. The last net, not the main one. The mistake
+
+74
+00:05:40,000 --> 00:05:47,000
+I see is teams leaning entirely on output filtering while pouring raw PII into the prompt on the way in.
+
+75
+00:05:47,000 --> 00:05:52,000
+Filter the output, yes, but win the fight at the input, where minimizing and redacting keep the
+
+76
+00:05:52,000 --> 00:05:54,000
+sensitive data from being there at all.
+
+77
+00:05:55,000 --> 00:06:00,000
+Let's close the loop with egress, the paths data uses to leave your system.
+
+78
+00:06:00,000 --> 00:06:06,000
+Here's the uncomfortable part. Data can walk out through legitimate channels. An approved API
+
+79
+00:06:06,000 --> 00:06:08,000
+endpoint or an allowed domain
+
+80
+00:06:08,000 --> 00:06:14,000
+can still become an exfiltration path because it looks like normal traffic, and model layer
+
+81
+00:06:14,000 --> 00:06:16,000
+inspection won't save you here
+
+82
+00:06:16,000 --> 00:06:22,000
+since it never sees the data quietly leaving through a tool call. So the control has to live in the environment.
+
+83
+00:06:23,000 --> 00:06:27,000
+Decide where your app is allowed to send data and block everything else.
+
+84
+00:06:28,000 --> 00:06:33,000
+Apply least privilege to outbound access the same way you do to secrets and tools.
+
+85
+00:06:33,000 --> 00:06:39,000
+So even if something goes wrong inside the context, the data has nowhere unauthorized to go.
+
+86
+00:06:40,000 --> 00:06:45,000
+Egress control is the boundary that holds when the softer checks miss.
+
+87
+00:06:46,000 --> 00:06:48,000
+Let's frame the big picture.
+
+88
+00:06:48,000 --> 00:06:54,000
+Preventing leakage means defending a whole lifecycle from isolating context to controlling egress.
+
+89
+00:06:54,000 --> 00:06:58,000
+Just remember, output filtering is only the backstop.
+
+90
+00:06:58,000 --> 00:07:02,000
+Minimize what you collect, redact or tokenize PII on the way in.
+
+91
+00:07:03,000 --> 00:07:08,000
+Keep raw prompts and payloads out of your logs and control where data is allowed to leave.
+
+92
+00:07:08,000 --> 00:07:13,000
+That wraps up preventing data leakage and PII exposure. Join me in the next one.
+

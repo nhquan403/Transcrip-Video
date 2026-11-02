@@ -1,0 +1,424 @@
+1
+00:00:00,000 --> 00:00:03,000
+The moment your tools run in a loop, you hit a problem.
+
+2
+00:00:03,000 --> 00:00:07,000
+A tool fails, and if you're not careful, the whole loop crashes.
+
+3
+00:00:07,000 --> 00:00:13,000
+Some calls are also risky enough that you don't want the model firing them unsupervised.
+
+4
+00:00:13,000 --> 00:00:16,000
+This lesson covers handling errors, gating high-impact calls,
+
+5
+00:00:16,000 --> 00:00:20,000
+and how agentic dispatch drives the loop.
+
+6
+00:00:20,000 --> 00:00:23,000
+Let's set up three ideas that run through this whole lesson.
+
+7
+00:00:23,000 --> 00:00:26,000
+First, agentic dispatch.
+
+8
+00:00:26,000 --> 00:00:28,000
+That's the pattern where the model,
+
+9
+00:00:28,000 --> 00:00:32,000
+not your code, chooses which tool to call each turn,
+
+10
+00:00:32,000 --> 00:00:36,000
+and your harness executes that choice and feeds the result back.
+
+11
+00:00:36,000 --> 00:00:39,000
+Second, the execution loop.
+
+12
+00:00:39,000 --> 00:00:42,000
+That's the cycle you run around CLOD, inspect the stop reason,
+
+13
+00:00:42,000 --> 00:00:49,000
+run the returned tool use, append a tool result, and re-invoke until CLOD is done.
+
+14
+00:00:49,000 --> 00:00:52,000
+Third, the approval gate.
+
+15
+00:00:52,000 --> 00:00:57,000
+That's a checkpoint that pauses a high-impact call for confirmation before it runs,
+
+16
+00:00:57,000 --> 00:01:01,000
+and it lives in your runtime, not in the model's judgment.
+
+17
+00:01:01,000 --> 00:01:04,000
+Agentic dispatch for who chooses.
+
+18
+00:01:04,000 --> 00:01:07,000
+The execution loop for how you drive it,
+
+19
+00:01:07,000 --> 00:01:10,000
+and the approval gate for what you hold back.
+
+20
+00:01:10,000 --> 00:01:13,000
+Those three frame everything ahead.
+
+21
+00:01:13,000 --> 00:01:17,000
+Let's start with agentic dispatch because it's the mindset shift.
+
+22
+00:01:17,000 --> 00:01:21,000
+In an agentic loop, the model steers and your harness executes.
+
+23
+00:01:21,000 --> 00:01:27,000
+CLOD looks at the current state of the task and selects the tool that fits this particular step.
+
+24
+00:01:27,000 --> 00:01:33,000
+Your code runs that tool and captures whatever comes back, the observation.
+
+25
+00:01:33,000 --> 00:01:39,000
+Then that observation goes right back into the next request, and CLOD decides what to do next.
+
+26
+00:01:39,000 --> 00:01:41,000
+Notice what's not happening here.
+
+27
+00:01:41,000 --> 00:01:44,000
+You're not writing a big if-then tree that says,
+
+28
+00:01:44,000 --> 00:01:47,000
+if the user asked for weather, call the weather tool.
+
+29
+00:01:47,000 --> 00:01:51,000
+The model makes that call from the tool descriptions and the context.
+
+30
+00:01:51,000 --> 00:01:59,000
+Your job shifts from deciding what to run to reliably running what the model chose and reporting the result.
+
+31
+00:01:59,000 --> 00:02:03,000
+It helps to contrast this with the older way of doing things.
+
+32
+00:02:03,000 --> 00:02:09,000
+In a hard-coded branch, your code decides which function to call using fixed if-then logic.
+
+33
+00:02:09,000 --> 00:02:15,000
+You inspect the input, match it against conditions you wrote, and dispatch to a function.
+
+34
+00:02:15,000 --> 00:02:21,000
+That's predictable, but it's brittle, and it's blind to nuance the model could pick up from the request.
+
+35
+00:02:21,000 --> 00:02:23,000
+Agentic Dispatch flips that.
+
+36
+00:02:23,000 --> 00:02:29,000
+CLOD decides which tool fits each turn, reading the user's request and your tool descriptions.
+
+37
+00:02:29,000 --> 00:02:34,000
+And your loop simply executes the choice and feeds the result back.
+
+38
+00:02:34,000 --> 00:02:35,000
+The trade-off is real.
+
+39
+00:02:35,000 --> 00:02:41,000
+You give up some determinism, but you gain the model's ability to handle requests you never
+
+40
+00:02:41,000 --> 00:02:43,000
+explicitly coded a branch for.
+
+41
+00:02:43,000 --> 00:02:48,000
+For open-ended tasks, that flexibility is usually the whole point.
+
+42
+00:02:48,000 --> 00:02:51,000
+Now to the failure that syncs naive loops.
+
+43
+00:02:51,000 --> 00:02:58,000
+A tool throws an error, and the developer lets that exception bubble up and kill the whole loop. Don't do that.
+
+44
+00:02:58,000 --> 00:03:02,000
+When a tool fails, hand the failure back to CLOD instead.
+
+45
+00:03:02,000 --> 00:03:09,000
+You put the error text into the tool result content, and USET is error to true.
+
+46
+00:03:09,000 --> 00:03:15,000
+That tells CLOD the call failed, and importantly, it lets CLOD see why.
+
+47
+00:03:15,000 --> 00:03:21,000
+From there, the model can retry with different arguments, fall back to another approach, or tell the
+
+48
+00:03:21,000 --> 00:03:22,000
+user what went wrong.
+
+49
+00:03:22,000 --> 00:03:26,000
+A returned error keeps the loop alive and recoverable.
+
+50
+00:03:26,000 --> 00:03:28,000
+A raised exception just ends it.
+
+51
+00:03:28,000 --> 00:03:34,000
+Treat a tool failure as information to pass along, not a reason to crash.
+
+52
+00:03:34,000 --> 00:03:38,000
+Let's separate three kinds of failure because they're handled differently.
+
+53
+00:03:38,000 --> 00:03:40,000
+First, a tool execution error.
+
+54
+00:03:40,000 --> 00:03:46,000
+The tool ran and genuinely failed, a timeout, a bad state, a missing record.
+
+55
+00:03:46,000 --> 00:03:52,000
+You return the reason in a tool result with is error true, and you make the message instructive.
+
+56
+00:03:52,000 --> 00:03:57,000
+Something like rate limit exceeded, retry after 60 seconds.
+
+57
+00:03:57,000 --> 00:03:58,000
+Not just the word failed.
+
+58
+00:03:58,000 --> 00:04:01,000
+Second, a malformed parameter call.
+
+59
+00:04:01,000 --> 00:04:04,000
+CLOD sent arguments that don't work.
+
+60
+00:04:04,000 --> 00:04:10,000
+You return an error, and CLOD retries with corrections, usually within a couple of attempts.
+
+61
+00:04:10,000 --> 00:04:15,000
+A better long-term fix is a sharper description or strict tool use.
+
+62
+00:04:15,000 --> 00:04:17,000
+Third, a server tool error.
+
+63
+00:04:17,000 --> 00:04:22,000
+That one fails on Anthropic's side, and CLOD handles it transparently.
+
+64
+00:04:22,000 --> 00:04:26,000
+So you don't return an is error for it at all.
+
+65
+00:04:26,000 --> 00:04:30,000
+Let's linger on that third case because it's a common mistake.
+
+66
+00:04:30,000 --> 00:04:35,000
+When a server tool fails, that error doesn't flow through your error handling.
+
+67
+00:04:35,000 --> 00:04:38,000
+CLOD catches it transparently on its own side.
+
+68
+00:04:38,000 --> 00:04:43,000
+So you don't set is error, and you don't assemble a tool result for it the same way
+
+69
+00:04:43,000 --> 00:04:46,000
+you never assembled a successful one.
+
+70
+00:04:46,000 --> 00:04:52,000
+A web search, for example, might hit a rate limit or get invalid input or exceed its allowed
+
+71
+00:04:52,000 --> 00:04:56,000
+uses, and CLOD deals with those internally.
+
+72
+00:04:56,000 --> 00:04:58,000
+The rule is clean.
+
+73
+00:04:58,000 --> 00:05:02,000
+Only client tool failures come back to your code for you to handle.
+
+74
+00:05:02,000 --> 00:05:07,000
+Server tool failures are Anthropic's to manage, and trying to handle them yourself just adds
+
+75
+00:05:07,000 --> 00:05:10,000
+code that never runs.
+
+76
+00:05:10,000 --> 00:05:16,000
+Before we leave error handling, a few message format rules will bite you if you don't know them.
+
+77
+00:05:16,000 --> 00:05:18,000
+And they usually show up as a 400 error.
+
+78
+00:05:18,000 --> 00:05:23,000
+First, a tool result has to immediately follow the tool use it answers.
+
+79
+00:05:23,000 --> 00:05:26,000
+You can't slip another message in between.
+
+80
+00:05:26,000 --> 00:05:31,000
+Second, when you send tool result blocks in a user turn, they have to come first in that
+
+81
+00:05:31,000 --> 00:05:34,000
+message, before any text you add.
+
+82
+00:05:34,000 --> 00:05:38,000
+Put text ahead of the tool result, and the request is rejected.
+
+83
+00:05:38,000 --> 00:05:44,000
+Third, there's no separate tool or function role in this API.
+
+84
+00:05:44,000 --> 00:05:50,000
+Results ride inside normal user messages, and the tool use blocks ride inside assistant messages.
+
+85
+00:05:50,000 --> 00:05:55,000
+Get that ordering right, put the results first, and keep them adjacent to their calls.
+
+86
+00:05:55,000 --> 00:05:58,000
+And the loop just runs.
+
+87
+00:05:58,000 --> 00:06:02,000
+Let's talk about the calls you don't want firing unsupervised.
+
+88
+00:06:02,000 --> 00:06:06,000
+Some actions are high impact, deleting data, sending money, emailing a customer.
+
+89
+00:06:06,000 --> 00:06:09,000
+And for those, you want an approval gate.
+
+90
+00:06:09,000 --> 00:06:10,000
+You have a few ways to build one.
+
+91
+00:06:10,000 --> 00:06:15,000
+You can gate in the runtime, pausing the call in your loop, and requiring a confirmation
+
+92
+00:06:15,000 --> 00:06:18,000
+before it executes, not after.
+
+93
+00:06:18,000 --> 00:06:24,000
+And if you're running inside the agent SDK harness, you can use a pre-tool use hook,
+
+94
+00:06:24,000 --> 00:06:28,000
+which inspects a call and blocks, or allows it, before the tool runs.
+
+95
+00:06:28,000 --> 00:06:32,000
+The one thing you shouldn't do is leave the decision to the model.
+
+96
+00:06:32,000 --> 00:06:36,000
+Don't rely on Claude to self-police a dangerous action.
+
+97
+00:06:36,000 --> 00:06:42,000
+Enforce the gate in code you control, so a risky call always stops for a human or a rule
+
+98
+00:06:42,000 --> 00:06:45,000
+before it goes through.
+
+99
+00:06:45,000 --> 00:06:47,000
+Here's the bottom line.
+
+100
+00:06:47,000 --> 00:06:52,000
+A resilient loop returns tool failures as tool result with isError true, so Claude can
+
+101
+00:06:52,000 --> 00:06:55,000
+recover instead of crashing.
+
+102
+00:06:55,000 --> 00:07:01,000
+It matters because the model drives dispatch, and it can only adapt to a failure that it can see.
+
+103
+00:07:01,000 --> 00:07:07,000
+Just remember, server tool errors are Claude's to handle, and high impact calls belong behind
+
+104
+00:07:07,000 --> 00:07:10,000
+a gate that you control.
+
+105
+00:07:10,000 --> 00:07:13,000
+That covers errors, approval gates, and agentic dispatch.
+
+106
+00:07:13,000 --> 00:07:14,000
+I'll see you in the next one.
+

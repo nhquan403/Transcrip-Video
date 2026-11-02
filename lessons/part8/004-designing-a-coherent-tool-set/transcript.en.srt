@@ -1,0 +1,252 @@
+1
+00:00:00,000 --> 00:00:05,000
+When you hand-clawed a pile of tools, you hit a problem fast. The more tools you expose, the
+
+2
+00:00:05,000 --> 00:00:11,000
+harder it gets for the model to pick the right one. This lesson covers how to design a toolset
+
+3
+00:00:11,000 --> 00:00:17,000
+that routes reliably and where teams usually get it wrong. You already know the three parts of a
+
+4
+00:00:17,000 --> 00:00:23,000
+tool definition from the descriptions lesson. Name to invoke, description to root, schema to
+
+5
+00:00:23,000 --> 00:00:29,000
+shape the arguments. So instead of re-walking the triad, let's put it to work on a real definition.
+
+6
+00:00:30,000 --> 00:00:36,000
+Picture a tool named Billing Lookup, described only as Gets Billing Info, with a schema holding
+
+7
+00:00:36,000 --> 00:00:43,000
+one open string called Query. Every part is present, and every part fails. The name states
+
+8
+00:00:43,000 --> 00:00:49,000
+no action, the description gives Claude nothing to root on against neighboring tools, and the open
+
+9
+00:00:49,000 --> 00:00:57,000
+string invites invented arguments. That's the shift this lesson makes. Set design means tuning
+
+10
+00:00:57,000 --> 00:01:05,000
+name, description, and schema across every tool at once. So each definition has to hold up next to
+
+11
+00:01:05,000 --> 00:01:12,000
+its neighbors, not just on its own. Here's the core principle. A toolset is a menu the model
+
+12
+00:01:12,000 --> 00:01:19,000
+reads on every turn, so keep it short and sharp. Fewer, more capable tools reduce selection ambiguity
+
+13
+00:01:19,000 --> 00:01:26,000
+because the model has fewer lookalike options to weigh. Each tool should map to one clear action
+
+14
+00:01:26,000 --> 00:01:32,000
+with predictable inputs. When you spread the same capability across a sprawling surface of tools,
+
+15
+00:01:32,000 --> 00:01:39,000
+wrong tool calls get more likely, and the model wastes turns backing out of bad picks. So add a
+
+16
+00:01:39,000 --> 00:01:45,000
+tool only when the task genuinely needs it. Capability comes from sharp scoping, not from
+
+17
+00:01:45,000 --> 00:01:51,000
+sheer count. A smaller set where each tool earns its place almost always outperforms a big one.
+
+18
+00:01:52,000 --> 00:01:59,000
+A common mistake is building one tool per API endpoint. It feels flexible, but it just mirrors
+
+19
+00:01:59,000 --> 00:02:06,000
+your API surface, so the agent has to juggle many low-level calls to finish one task. That floods
+
+20
+00:02:06,000 --> 00:02:12,000
+the menu with near duplicates the model has to choose between. The better move is to design tools
+
+21
+00:02:12,000 --> 00:02:19,000
+for the workflow the agent actually runs. One tool can list, filter, and act under the hood,
+
+22
+00:02:19,000 --> 00:02:25,000
+matching a realistic task in a single call. Think about what the agent is trying to accomplish,
+
+23
+00:02:25,000 --> 00:02:30,000
+then build a tool shaped like that goal. You're not exposing your backend, you're giving the
+
+24
+00:02:30,000 --> 00:02:37,000
+model a clean set of actions that line up with real work. Let's make consolidation concrete.
+
+25
+00:02:37,000 --> 00:02:42,000
+When several operations touch the same resource, fold them into one parameterized tool instead of
+
+26
+00:02:42,000 --> 00:02:49,000
+shipping three near duplicates. Say you have create, review, and merge for a pull request.
+
+27
+00:02:49,000 --> 00:02:55,000
+Rather than three separate tools with overlapping descriptions, expose one tool with an action
+
+28
+00:02:55,000 --> 00:03:02,000
+parameter that picks the operation. Consolidation shrinks the menu and that directly cuts selection
+
+29
+00:03:02,000 --> 00:03:09,000
+ambiguity. The model reasons about one clear choice and a parameter, not several competing
+
+30
+00:03:09,000 --> 00:03:15,000
+tools that all look related. This is the same idea as before, just applied at the action level.
+
+31
+00:03:16,000 --> 00:03:22,000
+Fewer, more capable tools are easier to route among, and they leave less room for the model
+
+32
+00:03:22,000 --> 00:03:29,000
+to guess wrong. These three habits keep tools aligned to real agent work. First, match real
+
+33
+00:03:29,000 --> 00:03:35,000
+workflows. Build a schedule event tool that lists people and books the slot internally. Instead of
+
+34
+00:03:35,000 --> 00:03:43,000
+three raw endpoint calls, the agent has to chain together itself. Second, compile context. A single
+
+35
+00:03:43,000 --> 00:03:48,000
+tool can gather everything the model needs at once, rather than forcing a string of small reads.
+
+36
+00:03:49,000 --> 00:03:56,000
+Third, avoid thin wrappers. A tool that just wraps one API endpoint is rarely the right shape for an
+
+37
+00:03:56,000 --> 00:04:02,000
+agent, even when it's easy to generate. The through line is simple. Build tools for what the agent does,
+
+38
+00:04:02,000 --> 00:04:08,000
+not for what your API happens to expose. The description is still where you steer routing,
+
+39
+00:04:08,000 --> 00:04:14,000
+and you know its anatomy from the descriptions lesson. So here's the set level angle. When two
+
+40
+00:04:14,000 --> 00:04:20,000
+tools could plausibly fire, the when not to use line is what keeps the model off the wrong one,
+
+41
+00:04:20,000 --> 00:04:24,000
+and that line only earns its keep when it's written against the actual neighbors in your set.
+
+42
+00:04:25,000 --> 00:04:30,000
+Same with parameters. Explain how each one changes behavior, because that's often the detail that
+
+43
+00:04:30,000 --> 00:04:37,000
+separates two look-alike tools. And when wrong tool calls show up in an agentic loop, you already
+
+44
+00:04:37,000 --> 00:04:43,000
+know the debugging order. Rewrite the description before you touch anything else. A schema says
+
+45
+00:04:43,000 --> 00:04:49,000
+what's structurally valid. The description says when a call fits, and in a set, which call fits.
+
+46
+00:04:51,000 --> 00:04:57,000
+What a tool returns matters as much as what it accepts. Three habits keep responses useful. First,
+
+47
+00:04:57,000 --> 00:05:03,000
+return high signal output. Give back only the field's clawed needs, because bloated responses
+
+48
+00:05:03,000 --> 00:05:09,000
+waste context and bury the part that matters. Second, return stable identifiers. Hand back
+
+49
+00:05:09,000 --> 00:05:15,000
+durable slugs or unique identifiers the model can reference on a later call, and favor human
+
+50
+00:05:15,000 --> 00:05:22,000
+readable ones over cryptic codes. Third, offer verbosity controls. Let the caller ask for a
+
+51
+00:05:22,000 --> 00:05:28,000
+concise result or a detailed one, so the response carries only as much as the task needs. Good
+
+52
+00:05:28,000 --> 00:05:33,000
+inputs get the tool called correctly. Good outputs keep the rest of the loop efficient and focused.
+
+53
+00:05:34,000 --> 00:05:41,000
+Here's the part teams skip. You can't tell a good tool set from a bad one just by reading it. You
+
+54
+00:05:41,000 --> 00:05:46,000
+have to measure it. Build a batch of realistic multi-tool tasks and run the agent against them.
+
+55
+00:05:47,000 --> 00:05:55,000
+Track more than accuracy. Watch the tool call count, the tokens consumed, the runtime, and the
+
+56
+00:05:55,000 --> 00:06:00,000
+errors. Then read the reasoning transcripts, because that's where ambiguous descriptions
+
+57
+00:06:00,000 --> 00:06:07,000
+show themselves. You'll see the model hesitate between two tools, or reach for the wrong one,
+
+58
+00:06:07,000 --> 00:06:13,000
+and the fix is usually a wording change. Adjust the description, rerun the evals, and compare.
+
+59
+00:06:13,000 --> 00:06:18,000
+That loop turns tool design from guesswork into something you can improve on purpose.
+
+60
+00:06:19,000 --> 00:06:26,000
+A coherent tool set is small, sharp, and built for real work. Fewer well-scoped tools route better
+
+61
+00:06:26,000 --> 00:06:32,000
+than a sprawling surface. Consolidate related actions. Design for the agent's workflow,
+
+62
+00:06:32,000 --> 00:06:38,000
+and let descriptions carry the when-to-use signal. Just remember, evaluations are how
+
+63
+00:06:38,000 --> 00:06:44,000
+you know the set is working. That covers designing a coherent tool set. I'll see you in the next one.
+

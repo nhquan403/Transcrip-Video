@@ -1,0 +1,260 @@
+1
+00:00:00,000 --> 00:00:06,000
+Welcome back. Hooks are where you stop your agent from doing damage. Get this wrong, and a model can
+
+2
+00:00:06,000 --> 00:00:12,000
+run a destructive command before anyone reviews it. The fix is a guardrail that fires before the
+
+3
+00:00:12,000 --> 00:00:18,000
+action, not a line in a prompt that you hope it obeys. This lesson covers how hooks block
+
+4
+00:00:18,000 --> 00:00:24,000
+dangerous tool calls. Let's dig in. Let's start with three terms that anchor everything here.
+
+5
+00:00:24,000 --> 00:00:32,000
+First, hooks. These are deterministic scripts you register in settings.json, and they fire at fixed
+
+6
+00:00:32,000 --> 00:00:38,000
+points in the agent's lifecycle, completely outside the model. Second, hooks as guardrails.
+
+7
+00:00:38,000 --> 00:00:44,000
+That's the specific move of using a hook to deny or ask on a dangerous pending action before it
+
+8
+00:00:44,000 --> 00:00:49,000
+executes, which gives you enforcement that doesn't depend on what the model decided.
+
+9
+00:00:49,000 --> 00:00:55,000
+Third, least privilege. That means granting a tool or identity only the capabilities it
+
+10
+00:00:55,000 --> 00:01:02,000
+truly needs, and removing everything else, so a hijacked agent simply has less it can reach.
+
+11
+00:01:02,000 --> 00:01:07,000
+Keep these three in mind, because the rest of the lesson builds directly on them.
+
+12
+00:01:08,000 --> 00:01:14,000
+Here's the idea that makes hooks powerful. A hook is code you register, not guidance you hope the
+
+13
+00:01:14,000 --> 00:01:20,000
+model follows. It lives in settings.json, and it fires at a fixed lifecycle event, like the moment
+
+14
+00:01:20,000 --> 00:01:26,000
+before a tool runs. Because it's real code, it runs the same way every single time, no matter
+
+15
+00:01:26,000 --> 00:01:31,000
+what the model produced in that turn. That's what we mean by deterministic. The behavior is
+
+16
+00:01:31,000 --> 00:01:36,000
+reproducible, and you can reason about it with confidence. Compare that to a sentence in your
+
+17
+00:01:36,000 --> 00:01:42,000
+system prompt asking the model to be careful. It might follow it, or it might not, depending on the
+
+18
+00:01:42,000 --> 00:01:47,000
+input. A hook removes that uncertainty. It's enforcement, and enforcement is exactly what a
+
+19
+00:01:47,000 --> 00:01:54,000
+guardrail is supposed to be. This next distinction is the one people get wrong, so let's be precise.
+
+20
+00:01:54,000 --> 00:02:02,000
+There are two tool events, and timing is everything. Pretool use fires before a tool call executes.
+
+21
+00:02:02,000 --> 00:02:08,000
+Because nothing has happened yet, it can deny the call, ask the user, or even rewrite the pending
+
+22
+00:02:08,000 --> 00:02:15,000
+arguments. That's the guardrail point. PostToolUse fires after the call has already run. It can log
+
+23
+00:02:15,000 --> 00:02:20,000
+what happened, check the result, or trigger a follow-up. But it can't prevent anything, because
+
+24
+00:02:20,000 --> 00:02:26,000
+the action is already done, so if you're trying to stop a destructive command, PostToolUse is too late
+
+25
+00:02:26,000 --> 00:02:32,000
+by definition. The file is already deleted. Whenever the goal is prevention, you reach for
+
+26
+00:02:32,000 --> 00:02:39,000
+PretoolUse and only PretoolUse. Let's stay on PretoolUse, because it's the event you'll register
+
+27
+00:02:39,000 --> 00:02:45,000
+most often for safety. It fires before the tool call runs, which is the whole reason blocking
+
+28
+00:02:45,000 --> 00:02:51,000
+is still on the table. There's one more thing that makes it special. PretoolUse is the only tool
+
+29
+00:02:51,000 --> 00:02:57,000
+event that can rewrite or sanitize a pending call's arguments before execution. So it can not only
+
+30
+00:02:57,000 --> 00:03:04,000
+block a bad command, it can also fix one, swapping in a safer version. The lesson here is about
+
+31
+00:03:04,000 --> 00:03:10,000
+choosing your lifecycle event deliberately. If you wire your safety check to an after-the-fact event,
+
+32
+00:03:10,000 --> 00:03:16,000
+your guardrail shows up after the damage is done. Pick the event that fires before the action, and
+
+33
+00:03:16,000 --> 00:03:23,000
+your check actually has the power to stop it. Now let's look at the four values a PretoolUse hook
+
+34
+00:03:23,000 --> 00:03:29,000
+can return, because this exact set matters. The field is called PermissionDecision, and it takes
+
+35
+00:03:29,000 --> 00:03:36,000
+four values. The first is Allow, which permits the pending call to proceed as requested. The second
+
+36
+00:03:36,000 --> 00:03:43,000
+is Deny, which blocks the call outright, stopping the action before it runs. The third is Ask, which
+
+37
+00:03:43,000 --> 00:03:49,000
+escalates to the user with a permission dialog, so a human approves it. And the fourth is Defer,
+
+38
+00:03:49,000 --> 00:03:54,000
+which hands the decision back to the normal permission flow. Watch out for the common trap
+
+39
+00:03:54,000 --> 00:04:01,000
+here. People remember Allow, Deny, and Ask, and forget Defer. There are four, not three, and Defer
+
+40
+00:04:01,000 --> 00:04:08,000
+is the one that slips people up. Let's make this concrete with the classic example, blocking a
+
+41
+00:04:08,000 --> 00:04:14,000
+destructive shell command. Picture your agent about to run something like rm-rf on an important
+
+42
+00:04:14,000 --> 00:04:20,000
+directory. First, a matcher narrows the hook so it only triggers on the bash tool, so you're not
+
+43
+00:04:20,000 --> 00:04:25,000
+inspecting every action. Then the hook looks at the actual command and checks it against patterns
+
+44
+00:04:25,000 --> 00:04:31,000
+you care about, like a recursive force delete. If it matches, the hook returns Deny with a clear
+
+45
+00:04:31,000 --> 00:04:38,000
+reason that gets shown back, explaining why it was blocked. There's also a shortcut, a hook that
+
+46
+00:04:38,000 --> 00:04:44,000
+simply exits with code two blocks the call and passes its message along as the error. Either way,
+
+47
+00:04:44,000 --> 00:04:51,000
+the command is stopped before a single file is deleted. Let's tie together three ideas about why
+
+48
+00:04:51,000 --> 00:04:57,000
+this approach is trustworthy. First, permission decision. The field, a pre-tool use hook, sets to
+
+49
+00:04:57,000 --> 00:05:06,000
+control a pending call with its four values, Allow, Deny, Ask, and Defer. Second, deterministic
+
+50
+00:05:06,000 --> 00:05:12,000
+enforcement. The hook fires and decides the same way on every run. Unlike a prompt instruction, the
+
+51
+00:05:12,000 --> 00:05:18,000
+model can interpret loosely or ignore under pressure. That reliability is the entire point.
+
+52
+00:05:19,000 --> 00:05:26,000
+Third, the exit code path. Instead of returning JSON, a hook can exit with code two to block the
+
+53
+00:05:26,000 --> 00:05:32,000
+call and return its message as the error, which is a compact way to enforce a rule. Put these
+
+54
+00:05:32,000 --> 00:05:37,000
+together and you have policy that holds regardless of how the model reasons that turn.
+
+55
+00:05:38,000 --> 00:05:44,000
+One last principle, and it's about not relying on any single control. A hook that denies an action
+
+56
+00:05:44,000 --> 00:05:50,000
+is good, but it's even stronger when the dangerous capability isn't there in the first place. That's
+
+57
+00:05:50,000 --> 00:05:57,000
+least privilege. You remove access the agent doesn't need, so there's less it can even attempt. Now the
+
+58
+00:05:57,000 --> 00:06:03,000
+hook becomes a second layer rather than your only defense. Think about it this way. If a capability
+
+59
+00:06:03,000 --> 00:06:09,000
+is both absent by design and blocked by a hook when something tries to reach for it, an attacker
+
+60
+00:06:09,000 --> 00:06:16,000
+has two independent barriers to get past. That's real defense in depth. Deterministic hooks layered
+
+61
+00:06:16,000 --> 00:06:21,000
+over a least privilege baseline is the posture you want for anything that can do damage.
+
+62
+00:06:22,000 --> 00:06:27,000
+Here's the bottom line. Hooks give you deterministic enforcement outside the model.
+
+63
+00:06:27,000 --> 00:06:34,000
+Pre-tool use is the guardrail because it fires before the action, while post-tool use runs after
+
+64
+00:06:34,000 --> 00:06:40,000
+and can't prevent anything. It only logs. Just remember, permission decision has four values,
+
+65
+00:06:40,000 --> 00:06:48,000
+allow, deny, ask, and defer. That covers blocking destructive actions with hooks. I'll see you in the next one.
+

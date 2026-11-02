@@ -1,0 +1,448 @@
+1
+00:00:00,000 --> 00:00:04,000
+So, you've got four ways to extend Claude, which is great, until you're staring at a
+
+2
+00:00:04,000 --> 00:00:07,000
+real feature and you have to pick one.
+
+3
+00:00:07,000 --> 00:00:11,000
+Reach for the wrong mechanism, and you either can't do the job, or you overbuild it.
+
+4
+00:00:11,000 --> 00:00:17,000
+This lesson covers how to choose the right one, quickly and for the right reason.
+
+5
+00:00:17,000 --> 00:00:20,000
+Here's the guiding principle for the whole lesson.
+
+6
+00:00:20,000 --> 00:00:23,000
+Pick the lightest mechanism that actually does the job.
+
+7
+00:00:23,000 --> 00:00:25,000
+That word, lightest, matters.
+
+8
+00:00:25,000 --> 00:00:28,000
+The common mistake is reaching for something heavy.
+
+9
+00:00:28,000 --> 00:00:34,000
+Opening up an MCP server, or writing a skill, when a simple built-in or custom tool would
+
+10
+00:00:34,000 --> 00:00:36,000
+have covered it.
+
+11
+00:00:36,000 --> 00:00:39,000
+Every mechanism you add carries cost.
+
+12
+00:00:39,000 --> 00:00:41,000
+Tool definitions consume context.
+
+13
+00:00:41,000 --> 00:00:45,000
+A server is infrastructure you now own and maintain.
+
+14
+00:00:45,000 --> 00:00:48,000
+So the instinct should run the other way.
+
+15
+00:00:48,000 --> 00:00:53,000
+Start from the simplest thing that fits and only move up when you have a concrete reason.
+
+16
+00:00:53,000 --> 00:00:56,000
+If a built-in tool covers the need, you're done.
+
+17
+00:00:56,000 --> 00:00:59,000
+If not, a custom tool.
+
+18
+00:00:59,000 --> 00:01:05,000
+Only when the requirement outgrows those do you reach for a skill or an MCP server.
+
+19
+00:01:05,000 --> 00:01:10,000
+Let me give you three questions that resolve most decisions. First question.
+
+20
+00:01:10,000 --> 00:01:13,000
+Does an existing built-in tool already cover this?
+
+21
+00:01:13,000 --> 00:01:20,000
+If Anthropic hosts the capability, like web search or running code, use it and stop there.
+
+22
+00:01:20,000 --> 00:01:21,000
+Second question.
+
+23
+00:01:21,000 --> 00:01:25,000
+Is this one specific action for a single application?
+
+24
+00:01:25,000 --> 00:01:31,000
+If so, a custom tool you define and run is the right size. Third question.
+
+25
+00:01:31,000 --> 00:01:37,000
+Does this capability need to be reused, shared across many clients, teams, or projects?
+
+26
+00:01:37,000 --> 00:01:40,000
+That's when a skill or an MCP server earns its weight.
+
+27
+00:01:40,000 --> 00:01:45,000
+A skill if what you're reusing is procedure and know-how.
+
+28
+00:01:45,000 --> 00:01:48,000
+An MCP server if it's access to a system.
+
+29
+00:01:48,000 --> 00:01:51,000
+Three questions and they cascade.
+
+30
+00:01:51,000 --> 00:01:53,000
+Built-in first, then custom.
+
+31
+00:01:53,000 --> 00:01:57,000
+And only then the heavier, reusable options.
+
+32
+00:01:57,000 --> 00:02:01,000
+Most of the time you'll have your answer by the second question.
+
+33
+00:02:01,000 --> 00:02:05,000
+Let's take the branches one at a time, starting with built-in tools.
+
+34
+00:02:05,000 --> 00:02:10,000
+Reach for these first whenever they cover the need because they cost you the least.
+
+35
+00:02:10,000 --> 00:02:15,000
+There's no handler to write, no server to run, and no integration to maintain.
+
+36
+00:02:15,000 --> 00:02:18,000
+You enable the tool and Claude can use it.
+
+37
+00:02:18,000 --> 00:02:26,000
+Web search, web fetch, code execution, and tool search handle a surprising range of common needs.
+
+38
+00:02:26,000 --> 00:02:31,000
+Pulling in public information, running a calculation, working with fetched content.
+
+39
+00:02:31,000 --> 00:02:34,000
+The one thing to remember is they're sealing.
+
+40
+00:02:34,000 --> 00:02:39,000
+They run on Anthropic's infrastructure, so they stop at your firewall.
+
+41
+00:02:39,000 --> 00:02:46,000
+The moment the job requires your private data or an internal service, a built-in tool can't get there.
+
+42
+00:02:46,000 --> 00:02:49,000
+Then you move to the next option.
+
+43
+00:02:49,000 --> 00:02:53,000
+When a built-in can't reach far enough and the need is specific to your application,
+
+44
+00:02:53,000 --> 00:02:57,000
+a custom tool is usually the right call.
+
+45
+00:02:57,000 --> 00:02:58,000
+This is the workhorse.
+
+46
+00:02:58,000 --> 00:03:01,000
+You're giving Claude one well-defined action.
+
+47
+00:03:01,000 --> 00:03:06,000
+Look up this customer, create this record, hit this internal endpoint, and it lives inside
+
+48
+00:03:06,000 --> 00:03:08,000
+the app you're building.
+
+49
+00:03:08,000 --> 00:03:13,000
+You write the description and schema, you run the handler, and you're connected to whatever
+
+50
+00:03:13,000 --> 00:03:15,000
+your code can reach.
+
+51
+00:03:15,000 --> 00:03:17,000
+Notice we haven't left simple territory yet.
+
+52
+00:03:17,000 --> 00:03:23,000
+A custom tool is more work than flipping on a built-in, but far less than standing up
+
+53
+00:03:23,000 --> 00:03:25,000
+a server or authoring a skill.
+
+54
+00:03:25,000 --> 00:03:31,000
+So if the capability belongs to this one application and nobody else needs it, stop here.
+
+55
+00:03:31,000 --> 00:03:36,000
+Don't reach for MCP just because it sounds more robust.
+
+56
+00:03:36,000 --> 00:03:40,000
+Now the pair people most often confuse, skills and MCP.
+
+57
+00:03:40,000 --> 00:03:45,000
+The mistake is treating them as rivals, as if you choose one instead of the other.
+
+58
+00:03:45,000 --> 00:03:46,000
+They solve different problems.
+
+59
+00:03:46,000 --> 00:03:49,000
+A skill packages procedural knowledge.
+
+60
+00:03:49,000 --> 00:03:55,000
+It teaches Claude how to carry out a workflow, the steps and conventions, done the same way every time.
+
+61
+00:03:55,000 --> 00:03:57,000
+MCP is about connectivity.
+
+62
+00:03:57,000 --> 00:04:03,000
+It's the standardized wiring that gives Claude access to external tools, resources, and data.
+
+63
+00:04:03,000 --> 00:04:06,000
+One is know-how, the other is reach.
+
+64
+00:04:06,000 --> 00:04:10,000
+So the honest answer is often not skill versus MCP at all.
+
+65
+00:04:10,000 --> 00:04:15,000
+You use a skill to encode the procedure and an MCP server to provide the systems that
+
+66
+00:04:15,000 --> 00:04:18,000
+procedure operates on.
+
+67
+00:04:18,000 --> 00:04:22,000
+Let me build on that because the combination is where it clicks.
+
+68
+00:04:22,000 --> 00:04:25,000
+Anthropic's own framing is explicit.
+
+69
+00:04:25,000 --> 00:04:31,000
+Skills can complement MCP servers by teaching Claude the more complex workflows that involve
+
+70
+00:04:31,000 --> 00:04:32,000
+those external tools.
+
+71
+00:04:32,000 --> 00:04:38,000
+Picture an MCP server that exposes a set of actions against some system.
+
+72
+00:04:38,000 --> 00:04:44,000
+On its own, Claude has the tools, but not your team's particular way of using them.
+
+73
+00:04:44,000 --> 00:04:49,000
+Add a skill, and now Claude knows the procedure, which tool to call in what order, what conventions
+
+74
+00:04:49,000 --> 00:04:52,000
+to follow, how to handle the edge cases.
+
+75
+00:04:52,000 --> 00:04:55,000
+The MCP server brings the reach.
+
+76
+00:04:55,000 --> 00:04:58,000
+The skill brings the method.
+
+77
+00:04:58,000 --> 00:05:05,000
+And skills stay cheap on context through progressive disclosure, so pairing them doesn't bloat every request.
+
+78
+00:05:05,000 --> 00:05:08,000
+Capability plus know-how, working together.
+
+79
+00:05:08,000 --> 00:05:13,000
+Step back and the whole decision comes down to the three forces you met last lesson.
+
+80
+00:05:13,000 --> 00:05:17,000
+Reach, reuse scope, and context cost.
+
+81
+00:05:17,000 --> 00:05:21,000
+Reach rules out built-in tools when the capability has to touch systems.
+
+82
+00:05:21,000 --> 00:05:23,000
+Anthropic doesn't host.
+
+83
+00:05:23,000 --> 00:05:29,000
+Reuse scope splits custom tools, one app, from MCP servers shared across clients and
+
+84
+00:05:29,000 --> 00:05:34,000
+teams with shared procedure pointing to a skill.
+
+85
+00:05:34,000 --> 00:05:39,000
+And context cost is why the heavier mechanisms are never the default.
+
+86
+00:05:39,000 --> 00:05:40,000
+Try a quick example.
+
+87
+00:05:40,000 --> 00:05:45,000
+You need Claude to file tickets in an internal tracker for one team.
+
+88
+00:05:45,000 --> 00:05:46,000
+Reach rules out built-ins.
+
+89
+00:05:46,000 --> 00:05:50,000
+The tracker sits behind your firewall.
+
+90
+00:05:50,000 --> 00:05:55,000
+Reuse says single app, so a custom tool beats an MCP server.
+
+91
+00:05:55,000 --> 00:05:56,000
+Context cost agrees.
+
+92
+00:05:56,000 --> 00:06:00,000
+One small schema instead of a server catalog.
+
+93
+00:06:00,000 --> 00:06:05,000
+The way those three, and the right mechanism, usually names itself.
+
+94
+00:06:05,000 --> 00:06:10,000
+One last idea before we wrap, and it frees you from thinking you have to pick just one.
+
+95
+00:06:10,000 --> 00:06:14,000
+A real agent often uses several of these at once.
+
+96
+00:06:14,000 --> 00:06:20,000
+Claude might use a built-in tool for web search, a custom tool for one internal action, an
+
+97
+00:06:20,000 --> 00:06:25,000
+MCP server for a shared system, and a skill that ties the workflow together, all in the
+
+98
+00:06:25,000 --> 00:06:27,000
+same application.
+
+99
+00:06:27,000 --> 00:06:29,000
+They aren't mutually exclusive.
+
+100
+00:06:29,000 --> 00:06:34,000
+The decision framework isn't about choosing a single winner for the whole agent.
+
+101
+00:06:34,000 --> 00:06:36,000
+It's applied per capability.
+
+102
+00:06:36,000 --> 00:06:42,000
+For each thing you want Claude to do, you ask which mechanism is the lightest fit, and
+
+103
+00:06:42,000 --> 00:06:46,000
+you may well land on different answers for different capabilities.
+
+104
+00:06:46,000 --> 00:06:51,000
+Mix them deliberately, and each does the job it's best suited for.
+
+105
+00:06:51,000 --> 00:06:53,000
+Here's the bottom line.
+
+106
+00:06:53,000 --> 00:06:56,000
+Choosing among these four comes down to one habit.
+
+107
+00:06:56,000 --> 00:06:59,000
+Search for the lightest mechanism that fits.
+
+108
+00:06:59,000 --> 00:07:06,000
+Built-in when Anthropic hosts it, a custom tool for one app's action, a skill for reusable
+
+109
+00:07:06,000 --> 00:07:10,000
+procedure, MCP when a capability is shared.
+
+110
+00:07:10,000 --> 00:07:14,000
+And remember, skills and MCP complement each other.
+
+111
+00:07:14,000 --> 00:07:16,000
+They don't compete.
+
+112
+00:07:16,000 --> 00:07:18,000
+Match each need to its mechanism.
+

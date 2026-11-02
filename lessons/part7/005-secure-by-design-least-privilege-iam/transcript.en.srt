@@ -1,0 +1,288 @@
+1
+00:00:00,000 --> 00:00:05,000
+Security is one of those things that's cheap to build in early and really painful to add later.
+
+2
+00:00:05,000 --> 00:00:10,000
+Design an agent with broad access and no boundaries, and every injection or leak you'll
+
+3
+00:00:10,000 --> 00:00:16,000
+ever face was already baked in. This lesson covers secure by design, least privilege,
+
+4
+00:00:16,000 --> 00:00:22,000
+and scoping access per user, agent, and tool. Let's define three ideas that run through this
+
+5
+00:00:22,000 --> 00:00:29,000
+whole lesson. The first is secure by design. It means you build security in from the start,
+
+6
+00:00:29,000 --> 00:00:35,000
+applying privacy, identity, and access controls as architectural defaults, rather than adding
+
+7
+00:00:35,000 --> 00:00:42,000
+them after something goes wrong. The second is least privilege. You grant an agent, a tool,
+
+8
+00:00:42,000 --> 00:00:47,000
+or an identity only the minimum capability it needs, and you remove everything else,
+
+9
+00:00:47,000 --> 00:00:53,000
+because fewer capabilities means a smaller attack surface if that agent is ever hijacked.
+
+10
+00:00:54,000 --> 00:01:00,000
+The third is IAM, identity and access management. That's the systems and policies that establish
+
+11
+00:01:00,000 --> 00:01:07,000
+who each identity is and control what it can reach, scoped per user, per agent, and per tool.
+
+12
+00:01:08,000 --> 00:01:12,000
+Keep these three in mind, because everything that follows builds on them.
+
+13
+00:01:13,000 --> 00:01:18,000
+Now here's why timing matters. When you add security after the features already work,
+
+14
+00:01:18,000 --> 00:01:22,000
+the gaps from the original design are still sitting there. If you built an agent that
+
+15
+00:01:22,000 --> 00:01:27,000
+assumes broad access to your systems, the injection and leakage paths were designed
+
+16
+00:01:27,000 --> 00:01:34,000
+in before any control existed to stop them. A later hardening phase tends to filter symptoms.
+
+17
+00:01:34,000 --> 00:01:40,000
+You add a content check here, a log there, but the architecture underneath still hands out more power
+
+18
+00:01:40,000 --> 00:01:46,000
+than the job needs. And broad permissions you granted early almost never get walked back.
+
+19
+00:01:46,000 --> 00:01:52,000
+So the real move is to build privacy and access boundaries into the first version of the design,
+
+20
+00:01:52,000 --> 00:01:58,000
+not a patch you promise to add later. Let's put the two approaches side by side. Bolt-on
+
+21
+00:01:58,000 --> 00:02:05,000
+security is everything you add after the product already works. Filters, reviews, monitoring,
+
+22
+00:02:05,000 --> 00:02:11,000
+all layered over an architecture that already assumes broad access. The risky paths were
+
+23
+00:02:11,000 --> 00:02:17,000
+baked in early, so every patch is chasing a symptom instead of fixing the cause. Built-in
+
+24
+00:02:17,000 --> 00:02:23,000
+security is the opposite. Least privilege, isolation, and enforced boundaries are present
+
+25
+00:02:23,000 --> 00:02:29,000
+from day one. The agent simply never holds a capability it doesn't need. So when an attacker
+
+26
+00:02:29,000 --> 00:02:35,000
+gets a foothold, there's far less for them to reach. With Bolt-on, you're always asking how
+
+27
+00:02:35,000 --> 00:02:41,000
+to watch a dangerous power. With built-in, that power was never granted, so there's nothing
+
+28
+00:02:41,000 --> 00:02:47,000
+dangerous to watch. Design for the second one. Let's get practical about least privilege,
+
+29
+00:02:47,000 --> 00:02:54,000
+because it's easy to nod at and hard to actually do. The core idea is that the capability is absent,
+
+30
+00:02:54,000 --> 00:03:00,000
+not merely watched. Start with your tools. Give each one only the scopes its job requires,
+
+31
+00:03:00,000 --> 00:03:05,000
+and nothing wider. If a tool reads calendar events, it has no business holding right access
+
+32
+00:03:05,000 --> 00:03:12,000
+to your database. Next, withhold secrets and permissions the task never touches. The model
+
+33
+00:03:12,000 --> 00:03:18,000
+can't leak an API key you never handed it. Then prefer narrow, purpose-built tools over open-ended
+
+34
+00:03:18,000 --> 00:03:25,000
+ones. A general shell that can run anything is a much bigger risk than a small tool that does one
+
+35
+00:03:25,000 --> 00:03:30,000
+job. The payoff is simple. If an agent gets hijacked, it inherits only what you actually
+
+36
+00:03:30,000 --> 00:03:37,000
+granted. Here's the mistake I see most often. Teams think they've applied least privilege when
+
+37
+00:03:37,000 --> 00:03:44,000
+they've really just added oversight to a power the agent should never have had. Say an agent
+
+38
+00:03:44,000 --> 00:03:50,000
+has broad delete access. The first weak response is to log it. You record every time the agent uses
+
+39
+00:03:50,000 --> 00:03:56,000
+that capability, but it's still sitting there for the next attacker, and a log after the fact
+
+40
+00:03:56,000 --> 00:04:02,000
+stops nothing. The second weak response is to ask about it. You prompt the user to confirm before
+
+41
+00:04:02,000 --> 00:04:08,000
+the action runs. That's friction, not a boundary, and people click approve on autopilot. The right
+
+42
+00:04:08,000 --> 00:04:15,000
+response is to remove it. Take the capability away entirely so there's nothing left to monitor,
+
+43
+00:04:15,000 --> 00:04:20,000
+and nothing for an injection to abuse. If the agent never needed it, it shouldn't have it.
+
+44
+00:04:21,000 --> 00:04:27,000
+Let's talk about how IAM works inside an agentic system, because access control isn't just a wall
+
+45
+00:04:27,000 --> 00:04:32,000
+at the edge of your network. IAM decides which backends and which operations each identity is
+
+46
+00:04:32,000 --> 00:04:39,000
+allowed to reach, and you scope it at three levels. Per user, so a caller only ever touches
+
+47
+00:04:39,000 --> 00:04:45,000
+their own data and can't read someone else's records. Per agent, so if one agent is compromised,
+
+48
+00:04:46,000 --> 00:04:54,000
+it inherits just its own narrow role and nothing more. And per tool, so each tool reaches only the
+
+49
+00:04:54,000 --> 00:05:00,000
+specific backend it was built to use, not everything the app can see. The anti-pattern
+
+50
+00:05:00,000 --> 00:05:07,000
+is one broad service identity that every tool and every agent shares. That single overprivileged
+
+51
+00:05:07,000 --> 00:05:14,000
+identity means one compromise opens everything, which is exactly what scoping is meant to prevent.
+
+52
+00:05:15,000 --> 00:05:20,000
+Let's separate three security properties that people love to collapse into one word.
+
+53
+00:05:20,000 --> 00:05:26,000
+Confidentiality is about keeping data away from unauthorized parties. It answers who can read
+
+54
+00:05:26,000 --> 00:05:31,000
+your information, and any leak of protected data, no matter how it happens, breaks it.
+
+55
+00:05:32,000 --> 00:05:37,000
+Integrity is different. It's about keeping data and actions from unauthorized modification.
+
+56
+00:05:37,000 --> 00:05:43,000
+It answers who can change things, not just who can see them. Someone tampering with a record
+
+57
+00:05:43,000 --> 00:05:50,000
+breaks integrity, even if they never read it. Privacy is different again. It governs lawful,
+
+58
+00:05:50,000 --> 00:05:56,000
+minimal, and consented use of personal data. It's about using data properly only for what
+
+59
+00:05:56,000 --> 00:06:01,000
+the person agreed to. And this matters because a control protecting one property
+
+60
+00:06:01,000 --> 00:06:08,000
+doesn't automatically protect the other two. One last pair to preview. Authentication verifies who
+
+61
+00:06:08,000 --> 00:06:14,000
+a caller is, and authorization determines what that verified identity may do. So being authenticated
+
+62
+00:06:14,000 --> 00:06:21,000
+is never permission by itself. For this lesson, the point is where the pair fits your IAM design.
+
+63
+00:06:21,000 --> 00:06:27,000
+The identities you scoped per user, per agent, and per tool only means something if every request
+
+64
+00:06:27,000 --> 00:06:33,000
+is authenticated as one of them, and every operation is authorized against that identity's
+
+65
+00:06:33,000 --> 00:06:39,000
+narrow role. A hijacked agent presenting a valid credential should still find that its role permits
+
+66
+00:06:39,000 --> 00:06:47,000
+almost nothing. That is least privilege, and IAM doing their job at the moment of the request.
+
+67
+00:06:47,000 --> 00:06:51,000
+The access control lesson later in this domain gives the pair its full treatment,
+
+68
+00:06:51,000 --> 00:06:58,000
+including why you enforce authorization on every action. Secure by design gives you privacy,
+
+69
+00:06:58,000 --> 00:07:04,000
+identity, and access as architectural defaults. Least privilege removes the capability instead
+
+70
+00:07:04,000 --> 00:07:11,000
+of watching it, and IAM scopes access per user, agent, and tool. Just remember, authentication
+
+71
+00:07:11,000 --> 00:07:17,000
+proves identity, but authorization still gates every action. That covers secure by design
+
+72
+00:07:17,000 --> 00:07:20,000
+and least privilege IAM. I'll meet you in the next one.
+

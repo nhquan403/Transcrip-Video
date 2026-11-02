@@ -1,0 +1,604 @@
+1
+00:00:00,000 --> 00:00:04,000
+Secrets are where a single mistake becomes a real breach.
+
+2
+00:00:04,000 --> 00:00:08,000
+One leaked API key and an attacker can call your services,
+
+3
+00:00:08,000 --> 00:00:11,000
+spend your budget, and reach your data,
+
+4
+00:00:11,000 --> 00:00:13,000
+all wearing your identity.
+
+5
+00:00:13,000 --> 00:00:16,000
+This lesson covers where secrets should live
+
+6
+00:00:16,000 --> 00:00:19,000
+and how to keep them out of where they could leak.
+
+7
+00:00:19,000 --> 00:00:21,000
+Let's get three terms straight
+
+8
+00:00:21,000 --> 00:00:23,000
+because they carry the whole lesson.
+
+9
+00:00:23,000 --> 00:00:26,000
+A secret is any credential your app authenticates with,
+
+10
+00:00:27,000 --> 00:00:30,000
+an API key, a token, a password.
+
+11
+00:00:30,000 --> 00:00:33,000
+Leak one and someone else can act as you.
+
+12
+00:00:33,000 --> 00:00:37,000
+An API key specifically is a long-lived string
+
+13
+00:00:37,000 --> 00:00:39,000
+that proves who you are to a service
+
+14
+00:00:39,000 --> 00:00:42,000
+and it carries whatever access its scope allows.
+
+15
+00:00:42,000 --> 00:00:45,000
+So a broad key is a big liability.
+
+16
+00:00:45,000 --> 00:00:48,000
+Rotation is the habit of replacing a key,
+
+17
+00:00:48,000 --> 00:00:49,000
+either on a regular schedule
+
+18
+00:00:49,000 --> 00:00:52,000
+or immediately after you suspect exposure.
+
+19
+00:00:52,000 --> 00:00:55,000
+When you rotate, the old credential stops working,
+
+20
+00:00:55,000 --> 00:00:58,000
+which means a leaked key has a short shelf life
+
+21
+00:00:58,000 --> 00:01:00,000
+instead of an open-ended one.
+
+22
+00:01:00,000 --> 00:01:02,000
+Keep those three in mind and the rest follows.
+
+23
+00:01:03,000 --> 00:01:06,000
+Here's the first rule and it's the one people break most.
+
+24
+00:01:06,000 --> 00:01:10,000
+A secret never lives anywhere people can read it or share it.
+
+25
+00:01:10,000 --> 00:01:13,000
+That means you don't hard-code a key into your source code
+
+26
+00:01:13,000 --> 00:01:15,000
+and you certainly don't commit it
+
+27
+00:01:15,000 --> 00:01:17,000
+because once it's in the git history,
+
+28
+00:01:17,000 --> 00:01:21,000
+it's effectively public to anyone with the repo.
+
+29
+00:01:21,000 --> 00:01:24,000
+It also means keys stay out of your prompts
+
+30
+00:01:24,000 --> 00:01:28,000
+and out of clod.md files, which get shared and checked in.
+
+31
+00:01:28,000 --> 00:01:29,000
+So where do they go?
+
+32
+00:01:29,000 --> 00:01:32,000
+You load them from environment variables
+
+33
+00:01:32,000 --> 00:01:35,000
+or a dedicated secret store at runtime.
+
+34
+00:01:35,000 --> 00:01:38,000
+The mental model to hold onto is this,
+
+35
+00:01:38,000 --> 00:01:41,000
+where a secret lives and where it's allowed to appear
+
+36
+00:01:41,000 --> 00:01:43,000
+are two separate questions.
+
+37
+00:01:43,000 --> 00:01:46,000
+And the answer to the second one is almost nowhere.
+
+38
+00:01:47,000 --> 00:01:51,000
+So where does clod code actually keep your credentials?
+
+39
+00:01:51,000 --> 00:01:53,000
+It leans on the operating system,
+
+40
+00:01:53,000 --> 00:01:54,000
+which is the right instinct
+
+41
+00:01:54,000 --> 00:01:57,000
+because the OS already has hardened storage
+
+42
+00:01:57,000 --> 00:01:58,000
+built for exactly this.
+
+43
+00:01:58,000 --> 00:02:01,000
+On macOS, your credentials go
+
+44
+00:02:01,000 --> 00:02:03,000
+into the encrypted system key chain,
+
+45
+00:02:03,000 --> 00:02:05,000
+protected by the OS itself.
+
+46
+00:02:05,000 --> 00:02:07,000
+On Linux, they land in a credentials file
+
+47
+00:02:07,000 --> 00:02:10,000
+locked down to file mode 0600,
+
+48
+00:02:10,000 --> 00:02:13,000
+which means only your own user account can read it.
+
+49
+00:02:13,000 --> 00:02:17,000
+On Windows, the credentials file sits in your user profile,
+
+50
+00:02:17,000 --> 00:02:20,000
+restricted to your account by default.
+
+51
+00:02:20,000 --> 00:02:22,000
+Notice the pattern across all three.
+
+52
+00:02:22,000 --> 00:02:24,000
+The store is protected by the operating system
+
+53
+00:02:24,000 --> 00:02:28,000
+and it isn't a file you commit to a repository.
+
+54
+00:02:28,000 --> 00:02:31,000
+It's local, locked, and scoped to you,
+
+55
+00:02:31,000 --> 00:02:33,000
+which is exactly what you want.
+
+56
+00:02:34,000 --> 00:02:37,000
+Let's talk about why a key in a prompt is such a trap
+
+57
+00:02:37,000 --> 00:02:39,000
+because it feels harmless and it isn't.
+
+58
+00:02:39,000 --> 00:02:42,000
+The moment you paste a secret into a prompt,
+
+59
+00:02:42,000 --> 00:02:45,000
+you've lost control of it in a few different ways.
+
+60
+00:02:45,000 --> 00:02:48,000
+First, the model can echo it right back in its output,
+
+61
+00:02:48,000 --> 00:02:50,000
+maybe when summarizing the conversation,
+
+62
+00:02:50,000 --> 00:02:53,000
+and now it's in a response you might store.
+
+63
+00:02:53,000 --> 00:02:55,000
+Second, that prompt gets saved.
+
+64
+00:02:55,000 --> 00:02:57,000
+Stored transcripts and request logs
+
+65
+00:02:57,000 --> 00:03:00,000
+capture the full text, secret included.
+
+66
+00:03:00,000 --> 00:03:04,000
+Third, anyone who later has access to those logs
+
+67
+00:03:04,000 --> 00:03:06,000
+can simply read your credential,
+
+68
+00:03:06,000 --> 00:03:08,000
+so the rule is to exclude secrets
+
+69
+00:03:08,000 --> 00:03:11,000
+from context and from logs entirely.
+
+70
+00:03:11,000 --> 00:03:14,000
+A secret has no business anywhere near a prompt
+
+71
+00:03:14,000 --> 00:03:16,000
+because a prompt is designed to be processed,
+
+72
+00:03:16,000 --> 00:03:18,000
+stored, and often reviewed later.
+
+73
+00:03:19,000 --> 00:03:22,000
+Let me draw the clean line between where secrets live
+
+74
+00:03:22,000 --> 00:03:24,000
+and where they never appear
+
+75
+00:03:24,000 --> 00:03:26,000
+because holding both halves in your head
+
+76
+00:03:26,000 --> 00:03:28,000
+is the whole discipline.
+
+77
+00:03:28,000 --> 00:03:30,000
+Where they live is a short list,
+
+78
+00:03:30,000 --> 00:03:34,000
+environment variables, the operating system credential store,
+
+79
+00:03:34,000 --> 00:03:36,000
+or a managed secret manager.
+
+80
+00:03:36,000 --> 00:03:38,000
+In all of those, access is scoped,
+
+81
+00:03:38,000 --> 00:03:41,000
+it's logged, and you can revoke it.
+
+82
+00:03:41,000 --> 00:03:43,000
+Where they never appear is a longer list,
+
+83
+00:03:43,000 --> 00:03:46,000
+and it's everything readable or shareable.
+
+84
+00:03:46,000 --> 00:03:49,000
+Source code, prompts, clod.md files,
+
+85
+00:03:49,000 --> 00:03:53,000
+transcripts, logs, and yes, screenshots,
+
+86
+00:03:53,000 --> 00:03:56,000
+which sneak keys into chat threads all the time.
+
+87
+00:03:56,000 --> 00:03:58,000
+If a location can be read by a person
+
+88
+00:03:58,000 --> 00:04:02,000
+or copied into a message, a secret doesn't go there.
+
+89
+00:04:02,000 --> 00:04:05,000
+Live in the locked store, appear nowhere casual.
+
+90
+00:04:06,000 --> 00:04:09,000
+Now, some secrets rotate often
+
+91
+00:04:09,000 --> 00:04:12,000
+and you don't want to redeploy every time they do.
+
+92
+00:04:12,000 --> 00:04:14,000
+Clod code handles that with a setting
+
+93
+00:04:14,000 --> 00:04:16,000
+called API Key Helper.
+
+94
+00:04:16,000 --> 00:04:18,000
+It's a shell script you point the tool at,
+
+95
+00:04:18,000 --> 00:04:22,000
+and its job is to return a key when one is needed.
+
+96
+00:04:22,000 --> 00:04:24,000
+The reason this matters is that it lets you fetch
+
+97
+00:04:24,000 --> 00:04:27,000
+short-lived tokens from a vault on demand
+
+98
+00:04:27,000 --> 00:04:31,000
+instead of pinning a long-lived key in place.
+
+99
+00:04:31,000 --> 00:04:33,000
+The helper refreshes on a timer
+
+100
+00:04:33,000 --> 00:04:35,000
+or after an authentication failure,
+
+101
+00:04:35,000 --> 00:04:37,000
+so when a token expires,
+
+102
+00:04:37,000 --> 00:04:40,000
+the next call quietly pulls a fresh one.
+
+103
+00:04:40,000 --> 00:04:43,000
+The payoff is that rotation happens at the source.
+
+104
+00:04:43,000 --> 00:04:44,000
+You change the secret in the vault
+
+105
+00:04:44,000 --> 00:04:47,000
+and your code never has to know.
+
+106
+00:04:47,000 --> 00:04:50,000
+That's the recommended pattern for anything that rotates.
+
+107
+00:04:51,000 --> 00:04:54,000
+Two habits do most of the work of limiting damage,
+
+108
+00:04:54,000 --> 00:04:55,000
+and you want both.
+
+109
+00:04:55,000 --> 00:04:57,000
+The first is least privilege.
+
+110
+00:04:57,000 --> 00:05:01,000
+Scope every key to only what its job actually needs
+
+111
+00:05:01,000 --> 00:05:02,000
+and remove everything else.
+
+112
+00:05:02,000 --> 00:05:05,000
+A key that reads data should be a read-only key,
+
+113
+00:05:05,000 --> 00:05:08,000
+not one that can also delete or administer.
+
+114
+00:05:08,000 --> 00:05:10,000
+When a credential can't do much,
+
+115
+00:05:10,000 --> 00:05:12,000
+a leak of it can't do much either.
+
+116
+00:05:12,000 --> 00:05:15,000
+The second habit is rotation.
+
+117
+00:05:15,000 --> 00:05:17,000
+Replace keys on a regular schedule
+
+118
+00:05:17,000 --> 00:05:20,000
+so an old, forgotten key isn't sitting around,
+
+119
+00:05:20,000 --> 00:05:23,000
+and rotate immediately the moment you suspect exposure.
+
+120
+00:05:23,000 --> 00:05:25,000
+Put those together and think about
+
+121
+00:05:25,000 --> 00:05:27,000
+what an attacker actually gets.
+
+122
+00:05:27,000 --> 00:05:30,000
+A narrowly scoped key that was rotated last week
+
+123
+00:05:30,000 --> 00:05:33,000
+is a small, short-lived prize.
+
+124
+00:05:33,000 --> 00:05:33,000
+That's the goal.
+
+125
+00:05:33,000 --> 00:05:36,000
+Make every stolen key nearly worthless.
+
+126
+00:05:37,000 --> 00:05:39,000
+Let's close with the everyday hygiene
+
+127
+00:05:39,000 --> 00:05:42,000
+that keeps keys from leaking in the first place,
+
+128
+00:05:42,000 --> 00:05:44,000
+because most leaks are boring accidents,
+
+129
+00:05:44,000 --> 00:05:46,000
+not clever attacks.
+
+130
+00:05:46,000 --> 00:05:49,000
+Add your env file to gitignore
+
+131
+00:05:49,000 --> 00:05:53,000
+so that local secrets file can never be committed by Reflex.
+
+132
+00:05:53,000 --> 00:05:55,000
+Run secret scanning against your commits
+
+133
+00:05:55,000 --> 00:05:58,000
+so a key that does slip through gets flagged early
+
+134
+00:05:58,000 --> 00:06:01,000
+instead of living in history for months.
+
+135
+00:06:01,000 --> 00:06:02,000
+Watch what you share.
+
+136
+00:06:02,000 --> 00:06:05,000
+A key pasted into a shared log, a screenshot,
+
+137
+00:06:05,000 --> 00:06:09,000
+or a quick chat message is just as leaked as one in code.
+
+138
+00:06:09,000 --> 00:06:12,000
+And read secrets from the store at runtime
+
+139
+00:06:12,000 --> 00:06:15,000
+rather than typing them into a prompt.
+
+140
+00:06:15,000 --> 00:06:16,000
+None of this is hard.
+
+141
+00:06:16,000 --> 00:06:19,000
+It's a handful of habits that quietly prevent
+
+142
+00:06:19,000 --> 00:06:21,000
+the most common exposures.
+
+143
+00:06:22,000 --> 00:06:25,000
+Secrets belong in a protected store,
+
+144
+00:06:25,000 --> 00:06:27,000
+never in your code or prompts.
+
+145
+00:06:27,000 --> 00:06:32,000
+Clawed code keeps keys in the OS credential store.
+
+146
+00:06:32,000 --> 00:06:36,000
+A key in a prompt will leak through output and logs.
+
+147
+00:06:36,000 --> 00:06:39,000
+API Key Helper fetches rotating keys on demand,
+
+148
+00:06:39,000 --> 00:06:42,000
+and you should scope to least privilege
+
+149
+00:06:42,000 --> 00:06:44,000
+and rotate regularly.
+
+150
+00:06:44,000 --> 00:06:47,000
+That covers managing secrets and API keys.
+
+151
+00:06:47,000 --> 00:06:49,000
+Take a breath here, and I'll see you in the next one.
+

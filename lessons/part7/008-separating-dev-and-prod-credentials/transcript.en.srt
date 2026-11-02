@@ -1,0 +1,684 @@
+1
+00:00:00,000 --> 00:00:02,000
+Let's talk about credentials.
+
+2
+00:00:02,000 --> 00:00:04,000
+Dev keys and prod keys look the same,
+
+3
+00:00:04,000 --> 00:00:06,000
+but they have to be separated.
+
+4
+00:00:06,000 --> 00:00:10,000
+Blurring them is how a small mistake becomes a big one.
+
+5
+00:00:10,000 --> 00:00:13,000
+This lesson covers how Cloud Code authenticates,
+
+6
+00:00:13,000 --> 00:00:15,000
+the order it picks credentials in,
+
+7
+00:00:15,000 --> 00:00:18,000
+and how CI gets its own credential.
+
+8
+00:00:18,000 --> 00:00:19,000
+Let's break it down.
+
+9
+00:00:20,000 --> 00:00:23,000
+Cloud Code can authenticate a few different ways,
+
+10
+00:00:23,000 --> 00:00:26,000
+and it helps to know the main three by name.
+
+11
+00:00:26,000 --> 00:00:29,000
+The first is a direct API key.
+
+12
+00:00:29,000 --> 00:00:32,000
+That's anthropic API key, sent as a header.
+
+13
+00:00:32,000 --> 00:00:34,000
+And it's the common choice in development,
+
+14
+00:00:34,000 --> 00:00:37,000
+set as an environment variable on your machine.
+
+15
+00:00:37,000 --> 00:00:39,000
+The second is API key helper,
+
+16
+00:00:39,000 --> 00:00:42,000
+a script that returns a short-lived key,
+
+17
+00:00:42,000 --> 00:00:44,000
+usually pulled from a vault.
+
+18
+00:00:44,000 --> 00:00:45,000
+That's the pattern you reach for
+
+19
+00:00:45,000 --> 00:00:47,000
+when production secrets rotate.
+
+20
+00:00:47,000 --> 00:00:49,000
+The third is setup token,
+
+21
+00:00:49,000 --> 00:00:52,000
+a command that mints a long-lived OAuth token
+
+22
+00:00:52,000 --> 00:00:54,000
+for continuous integration,
+
+23
+00:00:54,000 --> 00:00:57,000
+where there's no interactive browser to log in with.
+
+24
+00:00:57,000 --> 00:00:59,000
+Each fits a different situation.
+
+25
+00:00:59,000 --> 00:01:04,000
+A key for local dev, a helper for rotating prod secrets,
+
+26
+00:01:04,000 --> 00:01:06,000
+and a token for automation.
+
+27
+00:01:06,000 --> 00:01:07,000
+Keep those roles distinct,
+
+28
+00:01:07,000 --> 00:01:09,000
+and the rest of this lesson lines up.
+
+29
+00:01:10,000 --> 00:01:12,000
+Here's the core discipline.
+
+30
+00:01:12,000 --> 00:01:16,000
+Development and production get separate keys, always.
+
+31
+00:01:16,000 --> 00:01:18,000
+Your dev key is a low-scope credential
+
+32
+00:01:18,000 --> 00:01:22,000
+that only ever touches test data and sandboxes.
+
+33
+00:01:22,000 --> 00:01:23,000
+That's deliberate.
+
+34
+00:01:23,000 --> 00:01:24,000
+You design its scope,
+
+35
+00:01:24,000 --> 00:01:27,000
+so a leak can reach nothing in production,
+
+36
+00:01:27,000 --> 00:01:30,000
+and you verify the scope actually enforces that,
+
+37
+00:01:30,000 --> 00:01:34,000
+leaving no path from that key to real user data.
+
+38
+00:01:34,000 --> 00:01:36,000
+Your prod key is a different animal.
+
+39
+00:01:36,000 --> 00:01:38,000
+It's tightly scoped, it rotates,
+
+40
+00:01:38,000 --> 00:01:40,000
+it gets pulled from a vault at runtime,
+
+41
+00:01:40,000 --> 00:01:42,000
+and it reaches real production data.
+
+42
+00:01:42,000 --> 00:01:46,000
+And critically, it is never shared back down to dev.
+
+43
+00:01:46,000 --> 00:01:49,000
+The reason to keep them apart is containment.
+
+44
+00:01:49,000 --> 00:01:52,000
+Two keys mean two separate blast radii.
+
+45
+00:01:52,000 --> 00:01:55,000
+When the two environments share a single credential,
+
+46
+00:01:55,000 --> 00:01:57,000
+a leak anywhere becomes a leak everywhere.
+
+47
+00:01:57,000 --> 00:02:00,000
+And that's exactly the outcome separation prevents.
+
+48
+00:02:01,000 --> 00:02:03,000
+Let me make the payoff concrete,
+
+49
+00:02:03,000 --> 00:02:06,000
+because this is the whole reason you bother.
+
+50
+00:02:06,000 --> 00:02:09,000
+The point of separate keys is to contain a single leak.
+
+51
+00:02:09,000 --> 00:02:13,000
+When your dev key leaks and dev keys leak more often
+
+52
+00:02:13,000 --> 00:02:16,000
+because they're on laptops and in test scripts,
+
+53
+00:02:16,000 --> 00:02:19,000
+that key is designed to reach nothing in production,
+
+54
+00:02:19,000 --> 00:02:22,000
+and you've verified the scope actually enforces that.
+
+55
+00:02:22,000 --> 00:02:25,000
+Each environment carries its own blast radius,
+
+56
+00:02:25,000 --> 00:02:29,000
+so an incident in one stays boxed inside that one.
+
+57
+00:02:29,000 --> 00:02:33,000
+Separation also gives you operational freedom.
+
+58
+00:02:33,000 --> 00:02:35,000
+You can rotate or revoke the dev key
+
+59
+00:02:35,000 --> 00:02:36,000
+without breaking production,
+
+60
+00:02:36,000 --> 00:02:40,000
+and rotate prod without disrupting your developers.
+
+61
+00:02:40,000 --> 00:02:44,000
+Compare that to one shared key spanning both.
+
+62
+00:02:44,000 --> 00:02:47,000
+Now a single leak exposes everything at once,
+
+63
+00:02:47,000 --> 00:02:48,000
+and you can't rotate it
+
+64
+00:02:48,000 --> 00:02:51,000
+without taking down work on both sides.
+
+65
+00:02:51,000 --> 00:02:53,000
+One key, one big problem.
+
+66
+00:02:54,000 --> 00:02:57,000
+When Cloud Code has several credentials available,
+
+67
+00:02:57,000 --> 00:02:58,000
+it doesn't guess.
+
+68
+00:02:58,000 --> 00:03:00,000
+It follows a defined precedence order,
+
+69
+00:03:00,000 --> 00:03:02,000
+and knowing the top of that order
+
+70
+00:03:02,000 --> 00:03:05,000
+clears up a common misconception.
+
+71
+00:03:05,000 --> 00:03:10,000
+People assume Anthropic API key always wins. It doesn't.
+
+72
+00:03:10,000 --> 00:03:12,000
+Cloud provider credentials come first.
+
+73
+00:03:12,000 --> 00:03:15,000
+If the flags for Amazon Bedrock, Google Vertex,
+
+74
+00:03:15,000 --> 00:03:18,000
+or Foundry are set, those win.
+
+75
+00:03:18,000 --> 00:03:21,000
+Next comes Anthropic Auth token,
+
+76
+00:03:21,000 --> 00:03:25,000
+a bearer token used for an LLM gateway or proxy.
+
+77
+00:03:25,000 --> 00:03:28,000
+Only below that sits Anthropic API key,
+
+78
+00:03:28,000 --> 00:03:30,000
+the direct API header,
+
+79
+00:03:30,000 --> 00:03:34,000
+and beneath the API key fall the API key helper output
+
+80
+00:03:34,000 --> 00:03:36,000
+and the CI OAuth token.
+
+81
+00:03:36,000 --> 00:03:40,000
+So the direct key is in the middle of the stack, not the top.
+
+82
+00:03:40,000 --> 00:03:44,000
+If you ever get surprised by which credential is in use,
+
+83
+00:03:44,000 --> 00:03:46,000
+walk the order from the top down.
+
+84
+00:03:47,000 --> 00:03:50,000
+Continuous integration is a special case
+
+85
+00:03:50,000 --> 00:03:51,000
+because there's no person sitting there
+
+86
+00:03:51,000 --> 00:03:53,000
+to log in through a browser.
+
+87
+00:03:53,000 --> 00:03:56,000
+So CI gets its own credential.
+
+88
+00:03:56,000 --> 00:04:01,000
+The setup token command mints a long-lived OAuth token
+
+89
+00:04:01,000 --> 00:04:03,000
+built for exactly this.
+
+90
+00:04:03,000 --> 00:04:06,000
+Now, here's the part people miss.
+
+91
+00:04:06,000 --> 00:04:10,000
+It prints the token to your screen and saves it nowhere.
+
+92
+00:04:10,000 --> 00:04:12,000
+Nothing is written to disk for you.
+
+93
+00:04:12,000 --> 00:04:14,000
+It's your job to copy that value
+
+94
+00:04:14,000 --> 00:04:17,000
+and set it as the Cloud Code OAuth token
+
+95
+00:04:17,000 --> 00:04:21,000
+environment variable in your CI system,
+
+96
+00:04:21,000 --> 00:04:25,000
+ideally in that system's own secret storage.
+
+97
+00:04:25,000 --> 00:04:28,000
+And this token is scoped to inference only.
+
+98
+00:04:28,000 --> 00:04:29,000
+So even if it leaks,
+
+99
+00:04:29,000 --> 00:04:34,000
+it can't be turned around to do more than run model calls.
+
+100
+00:04:34,000 --> 00:04:38,000
+A purpose-built, narrowly scoped credential for automation
+
+101
+00:04:38,000 --> 00:04:40,000
+and one you handle deliberately
+
+102
+00:04:40,000 --> 00:04:43,000
+rather than one that quietly persists.
+
+103
+00:04:44,000 --> 00:04:46,000
+Let's talk about rotation in production
+
+104
+00:04:46,000 --> 00:04:48,000
+because this is where short-lived credentials
+
+105
+00:04:48,000 --> 00:04:49,000
+earn their keep.
+
+106
+00:04:49,000 --> 00:04:52,000
+A short-lived token is one that expires quickly
+
+107
+00:04:52,000 --> 00:04:54,000
+and that expiry is a feature.
+
+108
+00:04:54,000 --> 00:04:55,000
+If someone steals it,
+
+109
+00:04:55,000 --> 00:04:58,000
+it's useless within minutes rather than months.
+
+110
+00:04:58,000 --> 00:05:00,000
+The trouble with short lifetimes
+
+111
+00:05:00,000 --> 00:05:03,000
+is that something has to keep fetching fresh tokens.
+
+112
+00:05:03,000 --> 00:05:06,000
+And that's exactly what API Key Helper does.
+
+113
+00:05:06,000 --> 00:05:08,000
+It refetches the key on a timer
+
+114
+00:05:08,000 --> 00:05:10,000
+or after an authentication failure.
+
+115
+00:05:10,000 --> 00:05:15,000
+So rotation just happens with no redeploy and no code change.
+
+116
+00:05:15,000 --> 00:05:18,000
+And the mental model to lock in is this.
+
+117
+00:05:18,000 --> 00:05:19,000
+You rotate at the source,
+
+118
+00:05:19,000 --> 00:05:21,000
+you change the secret in the vault,
+
+119
+00:05:21,000 --> 00:05:25,000
+and every run afterward picks up the new one automatically.
+
+120
+00:05:25,000 --> 00:05:28,000
+Short lifetimes plus automatic refresh
+
+121
+00:05:28,000 --> 00:05:30,000
+is how production secrets stay fresh
+
+122
+00:05:30,000 --> 00:05:32,000
+without anyone babysitting them.
+
+123
+00:05:33,000 --> 00:05:35,000
+OneTrap is worth calling out on its own
+
+124
+00:05:35,000 --> 00:05:38,000
+because it's a classic and it's costly.
+
+125
+00:05:38,000 --> 00:05:40,000
+Never commit the credentials file.
+
+126
+00:05:40,000 --> 00:05:42,000
+The whole design is that this store
+
+127
+00:05:42,000 --> 00:05:44,000
+is protected by the operating system.
+
+128
+00:05:44,000 --> 00:05:47,000
+A locked local file or the system key chain.
+
+129
+00:05:47,000 --> 00:05:50,000
+And it isn't meant to be a repository artifact.
+
+130
+00:05:50,000 --> 00:05:53,000
+If you commit it, you hand your token to everyone
+
+131
+00:05:53,000 --> 00:05:57,000
+with access to that repo and to get history forever.
+
+132
+00:05:57,000 --> 00:05:58,000
+So the split is clean.
+
+133
+00:05:58,000 --> 00:06:01,000
+Secrets live in the store or a vault.
+
+134
+00:06:01,000 --> 00:06:04,000
+And your code lives in Git and the two never mix.
+
+135
+00:06:04,000 --> 00:06:08,000
+You're getting your should keep that file out by default.
+
+136
+00:06:08,000 --> 00:06:10,000
+And if a secret ever does slip into a commit,
+
+137
+00:06:10,000 --> 00:06:12,000
+don't just delete the line.
+
+138
+00:06:12,000 --> 00:06:14,000
+Treat it as leaked, rotate it immediately,
+
+139
+00:06:14,000 --> 00:06:16,000
+and scrub it from history.
+
+140
+00:06:17,000 --> 00:06:20,000
+Let's look at how the environment itself limits damage.
+
+141
+00:06:20,000 --> 00:06:23,000
+Because good architecture assumes a credential
+
+142
+00:06:23,000 --> 00:06:25,000
+will eventually be exposed.
+
+143
+00:06:25,000 --> 00:06:28,000
+Scoped credentials are the first idea.
+
+144
+00:06:28,000 --> 00:06:30,000
+Rather than one powerful key,
+
+145
+00:06:30,000 --> 00:06:34,000
+a cloud session uses narrow, short-lived credentials,
+
+146
+00:06:34,000 --> 00:06:36,000
+each limited to a single purpose
+
+147
+00:06:36,000 --> 00:06:39,000
+and expiring on its own timeline.
+
+148
+00:06:39,000 --> 00:06:42,000
+If one is compromised, it unlocks very little.
+
+149
+00:06:42,000 --> 00:06:45,000
+The second idea is that credentials stay put.
+
+150
+00:06:45,000 --> 00:06:47,000
+In the sandbox model,
+
+151
+00:06:47,000 --> 00:06:49,000
+they never leave the environment they run in.
+
+152
+00:06:49,000 --> 00:06:52,000
+So they can't be exfiltrated out to somewhere else.
+
+153
+00:06:52,000 --> 00:06:55,000
+And third is token translation.
+
+154
+00:06:55,000 --> 00:06:58,000
+A proxy swaps a scoped sandbox credential
+
+155
+00:06:58,000 --> 00:07:01,000
+for the real token behind the scenes,
+
+156
+00:07:01,000 --> 00:07:03,000
+which means the real powerful token
+
+157
+00:07:03,000 --> 00:07:06,000
+is never exposed to the code
+
+158
+00:07:06,000 --> 00:07:08,000
+running in the sandbox at all.
+
+159
+00:07:08,000 --> 00:07:09,000
+Layer those, and a single leak
+
+160
+00:07:09,000 --> 00:07:11,000
+buys an attacker almost nothing.
+
+161
+00:07:13,000 --> 00:07:14,000
+Here's the bottom line.
+
+162
+00:07:14,000 --> 00:07:17,000
+Splitting dev and prod keys keeps one leak
+
+163
+00:07:17,000 --> 00:07:19,000
+from becoming two leaks.
+
+164
+00:07:19,000 --> 00:07:21,000
+A leaked dev key never reaches production.
+
+165
+00:07:21,000 --> 00:07:26,000
+Anthropic API key is not the top of the precedence order.
+
+166
+00:07:26,000 --> 00:07:31,000
+And setup token mints a CI token, it saves nowhere.
+
+167
+00:07:31,000 --> 00:07:33,000
+Just remember, API key helper
+
+168
+00:07:33,000 --> 00:07:35,000
+rotates prod secrets from a vault,
+
+169
+00:07:35,000 --> 00:07:38,000
+and you never commit their credential file.
+
+170
+00:07:38,000 --> 00:07:41,000
+That wraps up separating dev and prod credentials.
+
+171
+00:07:41,000 --> 00:07:43,000
+Let's keep going in the next video.
+
