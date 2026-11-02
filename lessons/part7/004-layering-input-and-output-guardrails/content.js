@@ -62,6 +62,6 @@ Vì vậy bạn xếp ba lớp: <strong>input screening, output checks, code-lev
 <p><strong>Soi đầu vào, kiểm đầu ra, khoá trong code.</strong> Lớp nào bị bỏ qua thì sự cố sẽ đi qua đúng chỗ đó.</p>
 `,
 
-  // Parts 3–6 have explanations only, no quiz.
+  // Explanation-only lesson: no quiz.
   quiz: []
 };

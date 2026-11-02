@@ -66,6 +66,6 @@ window.LESSON_CONTENT = {
 <p><strong>Đừng canh con dao, đừng đưa con dao.</strong> Authentication chứng minh bạn là ai, authorization vẫn gác <strong>từng</strong> hành động.</p>
 `,
 
-  // Parts 3–6 have explanations only, no quiz.
+  // Explanation-only lesson: no quiz.
   quiz: []
 };

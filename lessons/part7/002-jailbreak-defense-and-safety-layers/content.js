@@ -66,6 +66,6 @@ model safety + screen input + kiểm tra output, và dựa vào <strong>môi tr�
 <p><strong>Từ chối là đúng, lịch sự không phải tường, môi trường mới là ranh giới.</strong> Model thì "có lẽ", sandbox thì "chắc chắn".</p>
 `,
 
-  // Parts 3–6 have explanations only, no quiz.
+  // Explanation-only lesson: no quiz.
   quiz: []
 };

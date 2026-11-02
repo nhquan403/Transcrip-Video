@@ -64,6 +64,6 @@ Cách thắng là kiểm soát cả vòng đời: <strong>thu ít, redact ngay k
 <p><strong>Thứ không vào thì không thể ra.</strong> Thu ít → che khi vào → khoá quyền → log sạch → chặn cửa ra; lọc output đứng cuối cùng.</p>
 `,
 
-  // Parts 3–6 have explanations only, no quiz.
+  // Explanation-only lesson: no quiz.
   quiz: []
 };

@@ -7,7 +7,7 @@ window.PARTS = [
   { id: 4, title: 'Phần 4', name: 'Gỡ lỗi, khôi phục và ngân sách token', quiz: false, mindmap: true },
   { id: 5, title: 'Phần 5', name: 'Nền tảng LLM, prompting, SDK và chọn model', quiz: false, mindmap: true },
   { id: 6, title: 'Phần 6', name: 'Prompt engineering và context engineering', quiz: false, mindmap: true },
-  { id: 7, title: 'Phần 7', name: 'Bảo mật và an toàn', quiz: false },
+  { id: 7, title: 'Phần 7', name: 'Bảo mật và an toàn', quiz: false, mindmap: true },
   { id: 8, title: 'Phần 8', name: 'Tools và MCP', quiz: false, mindmap: true },
 ];
 

@@ -62,6 +62,6 @@ window.LESSON_CONTENT = {
 <p><strong>Nội dung vào tool result, lệnh của mình đi sau, soi trước khi làm, quyền càng ít càng tốt.</strong> Control nào chỉ nằm trong model thì chỉ là <strong>một lớp</strong>, không bao giờ là cả hàng rào.</p>
 `,
 
-  // Parts 3–6 have explanations only, no quiz.
+  // Explanation-only lesson: no quiz.
   quiz: []
 };
