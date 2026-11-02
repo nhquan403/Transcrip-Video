@@ -76,6 +76,6 @@ Kích thước window <strong>phụ thuộc model</strong>, nên luôn đếm th
 <p><strong>Một ba lô chung cho cả đi lẫn về.</strong> Đếm bằng count tokens, <strong>đổi model thì đếm lại</strong>, và nhớ: <strong>1M</strong> cho Fable/Opus/Sonnet, <strong>200K</strong> cho Haiku.</p>
 `,
 
-  // Parts 3–6 have explanations only, no quiz.
+  // Explanation-only lesson: no quiz.
   quiz: []
 };

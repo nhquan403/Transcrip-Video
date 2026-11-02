@@ -64,6 +64,6 @@ Không phân loại thì không chọn được cách khắc phục. Và nhớ: 
 <p><strong>Máy bận thì gọi lại, sai số thì sửa số.</strong> Transient tự hết, permanent cần thay đổi, model output đi kèm 200, integration hiện thành status.</p>
 `,
 
-  // Parts 3–6 have explanations only, no quiz.
+  // Explanation-only lesson: no quiz.
   quiz: []
 };

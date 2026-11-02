@@ -69,6 +69,6 @@ Nhưng nếu cả ngày chỉ bán đúng một bát, nấu cả nồi là <stro
 <p><strong>Đọc 10%, ghi 5 phút +25%, ghi 1 giờ ×2</strong> — nấu nồi nước dùng chỉ khi bán được nhiều bát: <strong>lớn, ổn định, dùng lại thường xuyên</strong>.</p>
 `,
 
-  // Parts 3–6 have explanations only, no quiz.
+  // Explanation-only lesson: no quiz.
   quiz: []
 };

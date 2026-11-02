@@ -75,6 +75,6 @@ bạn muốn một tờ giấy ghi câu trả lời. Nhưng nhớ: thực tập 
 <p><strong>"Làm bừa ở phòng bên, mang về một tờ giấy."</strong> Subagent bắt đầu trắng trơn – <strong>dặn đủ, giao gọn, nhận tóm tắt, kiểm tra lại</strong>.</p>
 `,
 
-  // Parts 3–6 have explanations only, no quiz.
+  // Explanation-only lesson: no quiz.
   quiz: []
 };

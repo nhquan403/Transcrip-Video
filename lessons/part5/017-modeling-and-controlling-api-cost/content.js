@@ -71,6 +71,6 @@ Với Claude, "nói" là output: <strong>một prompt ngắn mà nhận câu tr�
 <p><strong>Token × giá, output là "nói đắt"; tìm chỗ chảy tiền nhất rồi gạt: tier, prompt, cache, batch.</strong></p>
 `,
 
-  // Parts 3–6 have explanations only, no quiz.
+  // Explanation-only lesson: no quiz.
   quiz: []
 };

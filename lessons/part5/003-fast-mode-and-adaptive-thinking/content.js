@@ -70,6 +70,6 @@ Kiến thức không đổi, chỉ tốc độ đổi. Còn <strong>đổi sang 
 <p><strong>Fast = nói nhanh, Thinking = nghĩ trước.</strong> Opus: <strong>tắt tới khi bật</strong>; Sonnet 5: <strong>bật tới khi tắt</strong>; Fable 5: <strong>luôn bật</strong>. Gọi tên model trước!</p>
 `,
 
-  // Parts 3–6 have explanations only, no quiz.
+  // Explanation-only lesson: no quiz.
   quiz: []
 };

@@ -76,6 +76,6 @@ Nguyên tắc nền: <strong>chọn tier nhẹ nhất mà vẫn vượt được
 <p><strong>Khó – Nhanh – Rẻ: cân ba thứ, chọn tier nhẹ nhất vượt ngưỡng, và chia việc theo từng bước.</strong></p>
 `,
 
-  // Parts 3–6 have explanations only, no quiz.
+  // Explanation-only lesson: no quiz.
   quiz: []
 };

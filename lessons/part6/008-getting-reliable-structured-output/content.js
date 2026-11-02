@@ -70,6 +70,6 @@ Với enforcement, bạn nhận output hợp lệ, có type <strong>mọi lần<
 <p><strong>Dặn miệng → cho xem mẫu → form bắt buộc.</strong> Leo vừa đủ cao; field phải đúng thì <strong>enforce bằng schema</strong>, vì <strong>parse được ≠ đúng schema</strong>.</p>
 `,
 
-  // Parts 3–6 have explanations only, no quiz.
+  // Explanation-only lesson: no quiz.
   quiz: []
 };

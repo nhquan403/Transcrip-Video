@@ -72,6 +72,6 @@ Mục tiêu không phải nhét được nhiều nhất, mà là giữ <strong>t
 <p><strong>"Ba lô không tự dọn – informative yet tight."</strong> Drift thì <strong>nhắc lại gọn + cắt bớt</strong>, đừng hét to hơn.</p>
 `,
 
-  // Parts 3–6 have explanations only, no quiz.
+  // Explanation-only lesson: no quiz.
   quiz: []
 };

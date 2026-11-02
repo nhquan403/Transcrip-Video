@@ -68,6 +68,6 @@ window.LESSON_CONTENT = {
 <p><strong>Quen việc thì nói (zero-shot), khó tả thì cho xem một mẫu (one-shot).</strong> Bắt đầu gọn, ví dụ phải tự trả được tiền vé.</p>
 `,
 
-  // Parts 3–6 have explanations only, no quiz.
+  // Explanation-only lesson: no quiz.
   quiz: []
 };

@@ -63,6 +63,6 @@ Gán nhầm "chủ" là lỗi MCP phổ biến nhất.</p>
 <p><strong>T-M, R-A, P-U:</strong> Tools–Model, Resources–Application, Prompts–User. <strong>Tools làm, Resources kể, Prompts được chọn.</strong></p>
 `,
 
-  // Parts 3–6 have explanations only, no quiz.
+  // Explanation-only lesson: no quiz.
   quiz: []
 };

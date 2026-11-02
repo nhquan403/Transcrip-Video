@@ -74,6 +74,6 @@ Và trước khi chuyển, có người <strong>kiểm tra</strong> khối bột
 <p><strong>"Chưng cất – kiểm tra – chuyển đi."</strong> Chỉ chain khi cần <strong>xem, ép khuôn, hoặc tự sửa</strong>; chia để có tập trung, không phải theo phản xạ.</p>
 `,
 
-  // Parts 3–6 have explanations only, no quiz.
+  // Explanation-only lesson: no quiz.
   quiz: []
 };

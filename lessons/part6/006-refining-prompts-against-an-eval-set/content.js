@@ -74,6 +74,6 @@ Chính khả năng so sánh này làm cho thay đổi <strong>an toàn để gi�
 <p><strong>Một lần đẹp là may, cả bộ đều qua mới là thật.</strong> Đóng băng input, rồi: <strong>version → pin → regression test</strong>.</p>
 `,
 
-  // Parts 3–6 have explanations only, no quiz.
+  // Explanation-only lesson: no quiz.
   quiz: []
 };

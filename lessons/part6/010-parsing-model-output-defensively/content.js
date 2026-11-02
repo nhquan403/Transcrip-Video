@@ -69,6 +69,6 @@ Bắt được nó cần một <strong>semantic gate</strong> nhắm vào ý ngh
 <p><strong>Hỏi "vì sao dừng" trước khi hỏi "nói gì".</strong> stop_reason → guard theo tên và type ở ranh giới → fail loud / fall back / re-prompt.</p>
 `,
 
-  // Parts 3–6 have explanations only, no quiz.
+  // Explanation-only lesson: no quiz.
   quiz: []
 };

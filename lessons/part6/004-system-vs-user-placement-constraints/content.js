@@ -74,6 +74,6 @@ và cache không giữ được. Đó là cái giá ẩn của việc "đổ" d�
 <p><strong>Nội quy dán tường, việc hôm nay giao tay, tờ rơi chỉ để đọc.</strong> Ổn định ở trên (cache được), thay đổi ở dưới, và constraint càng cụ thể càng ít đoán.</p>
 `,
 
-  // Parts 3–6 have explanations only, no quiz.
+  // Explanation-only lesson: no quiz.
   quiz: []
 };

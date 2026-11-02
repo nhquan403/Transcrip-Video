@@ -69,6 +69,6 @@ nó là số trung thực cho phép tính chi phí (sau khi nhân mỗi phần v
 <p><strong>input_tokens là "phần lẻ", không phải "cả giỏ"</strong> — cộng đủ ba ô input mới ra prompt thật.</p>
 `,
 
-  // Parts 3–6 have explanations only, no quiz.
+  // Explanation-only lesson: no quiz.
   quiz: []
 };

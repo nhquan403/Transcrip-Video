@@ -71,6 +71,6 @@ Quán có 80 món, trong đó 15 món tên gần giống nhau, thì khách phân
 <p><strong>Thực đơn ngắn, món rõ, nấu theo bữa ăn thật, nếm thử bằng eval.</strong></p>
 `,
 
-  // Parts 3–6 have explanations only, no quiz.
+  // Explanation-only lesson: no quiz.
   quiz: []
 };

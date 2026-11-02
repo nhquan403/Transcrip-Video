@@ -76,6 +76,6 @@ Streaming giống xem phim online: hình hiện ra ngay, và kết nối luôn c
 <p><strong>Mở ngoặc, nhồi delta, đóng ngoặc.</strong> Tool JSON thì <strong>gom đủ rồi mới parse</strong>.</p>
 `,
 
-  // Parts 3–6 have explanations only, no quiz.
+  // Explanation-only lesson: no quiz.
   quiz: []
 };

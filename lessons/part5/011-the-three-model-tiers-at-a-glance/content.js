@@ -68,6 +68,6 @@ cộng thêm <strong>Fable 5</strong> đứng trên cùng cho việc khó nhất
 <p><strong>Mạnh hơn = chậm hơn = đắt hơn.</strong> Haiku xe máy, Sonnet xe tải nhỏ, Opus xe tải lớn, Fable xe chuyên dụng; Haiku chỉ có <strong>200K</strong>, còn lại <strong>1M</strong>.</p>
 `,
 
-  // Parts 3–6 have explanations only, no quiz.
+  // Explanation-only lesson: no quiz.
   quiz: []
 };

@@ -82,6 +82,6 @@ Nhưng người phụ bếp <strong>không thể nấu món mà nhà bếp khôn
 <p><strong>"Auth, Retry, Type, Stream": SDK lo ống nước, không xây thêm phòng.</strong> API không có thì SDK cũng không có.</p>
 `,
 
-  // Parts 3–6 have explanations only, no quiz.
+  // Explanation-only lesson: no quiz.
   quiz: []
 };

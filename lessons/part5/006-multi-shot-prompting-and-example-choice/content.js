@@ -78,6 +78,6 @@ Cho xem 4 ảnh: Corgi, Husky, chó Phú Quốc, chó con lông xù, là đủ �
 <p><strong>Ít mà chất: Relevant, Diverse, Delimited.</strong> Curate → test → đặt trong message history; cần format cứng thì <strong>structured output</strong>, đừng prefill.</p>
 `,
 
-  // Parts 3–6 have explanations only, no quiz.
+  // Explanation-only lesson: no quiz.
   quiz: []
 };

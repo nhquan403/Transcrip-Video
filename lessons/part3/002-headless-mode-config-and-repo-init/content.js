@@ -78,6 +78,6 @@ Hướng dẫn nằm ở <strong>CLAUDE.md</strong> (gợi ý), còn sự cưỡ
 <p><strong>Người xem thì interactive, máy chạy thì -p.</strong> <strong>CLAUDE.md để dặn, settings.json để cấm.</strong></p>
 `,
 
-  // Parts 3–6 have explanations only, no quiz.
+  // Explanation-only lesson: no quiz.
   quiz: []
 };

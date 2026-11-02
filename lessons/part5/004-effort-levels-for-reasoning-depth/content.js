@@ -77,6 +77,6 @@ Phân loại email đơn giản thì bảo làm kỹ hết mức là phí tiền
 <p><strong>Low → medium → HIGH (mặc định) → xhigh → max.</strong> Effort ở <strong>trong output config</strong>, và <strong>effort trước, đổi model sau</strong>.</p>
 `,
 
-  // Parts 3–6 have explanations only, no quiz.
+  // Explanation-only lesson: no quiz.
   quiz: []
 };

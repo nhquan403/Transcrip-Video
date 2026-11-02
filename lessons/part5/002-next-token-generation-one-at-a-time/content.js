@@ -67,6 +67,6 @@ Nếu mấy đoạn đầu lệch hướng, tàu cứ thế đi lệch xa dần.
 <p><strong>Viết tới, không nhìn trước: lái được phần đầu là lái được cả bài.</strong></p>
 `,
 
-  // Parts 3–6 have explanations only, no quiz.
+  // Explanation-only lesson: no quiz.
   quiz: []
 };

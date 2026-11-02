@@ -72,6 +72,6 @@ Ví dụ trong bài: <strong>Opus 4.1</strong> đã bị deprecate có ngày ngh
 <p><strong>Pin, freeze, test, cut over</strong> — và nhớ: <strong>pin khóa weights, không khóa cả thế giới</strong>, nên eval phải chạy lại theo lịch.</p>
 `,
 
-  // Parts 3–6 have explanations only, no quiz.
+  // Explanation-only lesson: no quiz.
   quiz: []
 };

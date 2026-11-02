@@ -76,6 +76,6 @@ nên gặp input lộn xộn là hỏng. Hãy cố ý thêm <strong>boundary inp
 <p><strong>Ba đến năm ví dụ, Relevant – Diverse – Structured, có cả ca khó, bọc trong tag.</strong> Chất và độ phủ luôn thắng số đếm.</p>
 `,
 
-  // Parts 3–6 have explanations only, no quiz.
+  // Explanation-only lesson: no quiz.
   quiz: []
 };

@@ -69,6 +69,6 @@ Tier đạt quality nhưng vượt ngân sách latency → loại. Tier rẻ nh�
 <p><strong>Ba góc cân cùng lúc, chọn tier nhẹ nhất qua hết mọi cửa, và vặn effort trước khi đổi xe.</strong></p>
 `,
 
-  // Parts 3–6 have explanations only, no quiz.
+  // Explanation-only lesson: no quiz.
   quiz: []
 };

@@ -72,6 +72,6 @@ window.LESSON_CONTENT = {
 <p><strong>List trước, call/read/get sau.</strong> Server làm 4 việc: <strong>khai báo → định tuyến → định dạng → báo lỗi</strong>. Roots là lời nhắc, sandbox mới là hàng rào.</p>
 `,
 
-  // Parts 3–6 have explanations only, no quiz.
+  // Explanation-only lesson: no quiz.
   quiz: []
 };

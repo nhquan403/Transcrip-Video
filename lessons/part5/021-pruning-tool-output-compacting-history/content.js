@@ -76,6 +76,6 @@ Mạch hội thoại thật sự quan trọng → <strong>compact</strong>. Tr�
 <p><strong>"Tỉa trước, cất sau, tóm tắt cuối."</strong> Clearing = <strong>keep, trigger, exclude</strong>, miễn phí; compaction = <strong>150K mặc định, sàn 50K</strong>, tốn phí và mất chữ nguyên văn.</p>
 `,
 
-  // Parts 3–6 have explanations only, no quiz.
+  // Explanation-only lesson: no quiz.
   quiz: []
 };

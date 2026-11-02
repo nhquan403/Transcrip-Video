@@ -77,6 +77,6 @@ Bạn chỉ được thay đổi những cuốn <strong>trên cùng</strong> (sa
 <p><strong>"Tools – System – Messages; đóng băng phía trước, để thay đổi phía sau."</strong> Cache read bằng 0 thì đi tìm <strong>một byte đang nhúc nhích</strong>.</p>
 `,
 
-  // Parts 3–6 have explanations only, no quiz.
+  // Explanation-only lesson: no quiz.
   quiz: []
 };

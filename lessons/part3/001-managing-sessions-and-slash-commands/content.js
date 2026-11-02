@@ -88,6 +88,6 @@ Claude Code <strong>không tự nhớ</strong> session trước: sự liên tụ
 <p><strong>Compact là tóm tắt, Clear là trang trắng, cuốn vở cũ vẫn còn trên giá.</strong> Muốn nhớ lâu thì ghi vào CLAUDE.md, muốn đọc lại thì resume.</p>
 `,
 
-  // Parts 3–6 have explanations only, no quiz.
+  // Explanation-only lesson: no quiz.
   quiz: []
 };

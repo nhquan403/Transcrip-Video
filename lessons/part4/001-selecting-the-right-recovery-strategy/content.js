@@ -85,6 +85,6 @@ nhưng cái đầu chỉ cần kiên nhẫn, cái sau cần một lịch backoff
 <p><strong>Kẹt xe thì chờ, sai địa chỉ thì sửa, nhầm hàng thì đổi cách làm.</strong> Thứ tự luôn là: <strong>phân loại → chọn thùng → mới hành động</strong>.</p>
 `,
 
-  // Parts 3–6 have explanations only, no quiz.
+  // Explanation-only lesson: no quiz.
   quiz: []
 };

@@ -74,6 +74,6 @@ Hãy đọc <strong>trace</strong> từ ngoài vào trong để <strong>cô lậ
 <p><strong>Shipper làm đổ thì sửa đường giao, bếp nấu dở thì sửa công thức.</strong> Status và stream → integration; stop_reason trên 200 → model; <strong>cô lập trước, sửa sau</strong>.</p>
 `,
 
-  // Parts 3–6 have explanations only, no quiz.
+  // Explanation-only lesson: no quiz.
   quiz: []
 };

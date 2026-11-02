@@ -71,6 +71,6 @@ và yêu cầu model <strong>self-check</strong> theo tiêu chí trước khi k�
 <p><strong>Tin bằng chứng, không tin giọng nói.</strong> Ground – Cross-check – Validate – Gate, và luôn <strong>generate → verify → act</strong>.</p>
 `,
 
-  // Parts 3–6 have explanations only, no quiz.
+  // Explanation-only lesson: no quiz.
   quiz: []
 };

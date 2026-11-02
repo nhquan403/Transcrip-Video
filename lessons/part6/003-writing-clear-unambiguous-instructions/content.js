@@ -71,6 +71,6 @@ Nói "một ly cà phê sữa ít đường cho khách ở bàn 3" thì lần n�
 <p><strong>"Nói như dặn nhân viên mới: định dạng gì, dài bao nhiêu, làm theo thứ tự nào – và vì sao."</strong> Output trôi → <strong>siết yêu cầu trước</strong>.</p>
 `,
 
-  // Parts 3–6 have explanations only, no quiz.
+  // Explanation-only lesson: no quiz.
   quiz: []
 };

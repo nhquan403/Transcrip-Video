@@ -71,6 +71,6 @@ Bạn biết tờ giấy đó là <strong>một phần của gói hàng</strong>
 <p><strong>Clean – Validate – Delimit, làm trước khi gọi.</strong> Data ở trong tag, lệnh ở ngoài tag; và nhớ: <strong>giảm rủi ro, không phải hết rủi ro</strong>.</p>
 `,
 
-  // Parts 3–6 have explanations only, no quiz.
+  // Explanation-only lesson: no quiz.
   quiz: []
 };

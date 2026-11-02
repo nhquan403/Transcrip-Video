@@ -72,6 +72,6 @@ Còn trên model hiện tại, bạn thậm chí <strong>không đặt được<
 <p><strong>Ý nghĩa ổn định, câu chữ thay đổi.</strong> Model mới: <strong>bỏ núm sampling, dùng prompt + effort, và luôn validate output</strong>.</p>
 `,
 
-  // Parts 3–6 have explanations only, no quiz.
+  // Explanation-only lesson: no quiz.
   quiz: []
 };

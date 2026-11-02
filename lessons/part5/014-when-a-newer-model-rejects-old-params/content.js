@@ -75,6 +75,6 @@ Code của bạn không đổi, <strong>"luật" bên dưới đã đổi</stron
 <p><strong>Sampling → effort, budget → adaptive, prefill → structured.</strong> Thấy 400 sau khi đổi model: nghi parameter trước, nghi code sau.</p>
 `,
 
-  // Parts 3–6 have explanations only, no quiz.
+  // Explanation-only lesson: no quiz.
   quiz: []
 };

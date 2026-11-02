@@ -82,6 +82,6 @@ chỉ khác bạn phải tự làm bao nhiêu việc.</div>
 <p><strong>Một endpoint, JSON vào JSON ra, không nhớ gì.</strong> SDK chỉ là người đóng gói hộ, lá thư trên đường vẫn y hệt.</p>
 `,
 
-  // Parts 3–6 have explanations only, no quiz.
+  // Explanation-only lesson: no quiz.
   quiz: []
 };

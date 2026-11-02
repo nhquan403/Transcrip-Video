@@ -75,6 +75,6 @@ Claude streaming là <strong>radio</strong>, không phải điện thoại.</div
 <p><strong>Claude là đài radio, không phải điện thoại.</strong> Nghe ping thì lờ đi, nghe error thì xử lý, gặp lạ thì bỏ qua.</p>
 `,
 
-  // Parts 3–6 have explanations only, no quiz.
+  // Explanation-only lesson: no quiz.
   quiz: []
 };

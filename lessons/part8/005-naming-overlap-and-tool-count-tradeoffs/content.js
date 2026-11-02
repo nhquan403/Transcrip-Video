@@ -63,6 +63,6 @@ Chỉ khi <strong>không bỏ vào ba lô</strong> thì mới không nặng. Đ�
 <p><strong>Tên rõ, không giẫm chân, ba lô nhẹ.</strong> Đồ ít dùng để kho (defer), đồ dùng chung thì mở cửa hàng (MCP).</p>
 `,
 
-  // Parts 3–6 have explanations only, no quiz.
+  // Explanation-only lesson: no quiz.
   quiz: []
 };

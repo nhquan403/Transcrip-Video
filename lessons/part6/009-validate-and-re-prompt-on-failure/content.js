@@ -75,6 +75,6 @@ max_tokens → có thể bị cắt, parse ra rác. Chỉ <strong>end_turn</stro
 <p><strong>Đúng mẫu chưa chắc đúng số.</strong> Thứ tự: <strong>stop_reason → schema → business rule → re-prompt kèm lỗi (có giới hạn)</strong>.</p>
 `,
 
-  // Parts 3–6 have explanations only, no quiz.
+  // Explanation-only lesson: no quiz.
   quiz: []
 };
